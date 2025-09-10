@@ -46,40 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet'])) {
     <title>Cabinet Viewer - Cabinet Information System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
-        body {
-            background-color: #f8f9fa;
-        }
-        .viewer-container {
-            max-width: 800px;
-            margin: 50px auto;
-            padding: 20px;
-        }
-        .search-box {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            padding: 30px;
-            margin-bottom: 30px;
-        }
-        .cabinet-result {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            padding: 30px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .header i {
-            font-size: 40px;
-            color: #0d6efd;
-        }
-        #reader {
-            width: 100%;
-        }
-    </style>
+    <link href="assets/css/index.css" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -114,9 +81,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet'])) {
             </form>
             
             <div class="text-center mt-3">
-                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#qrModal">
-                    <i class="fas fa-qrcode me-1"></i> Scan QR Code
-                </button>
+                <?php if ($cabinetData): ?>
+                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#qrDisplayModal">
+                        <i class="fas fa-qrcode me-1"></i> Show QR Code
+                    </button>
+                <?php else: ?>
+                    <button class="btn btn-outline-secondary" disabled>
+                        <i class="fas fa-qrcode me-1"></i> Search Cabinet First
+                    </button>
+                <?php endif; ?>
             </div>
         </div>
         
@@ -189,41 +162,64 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet'])) {
         <?php endif; ?>
     </div>
 
-    <!-- QR Modal -->
-    <div class="modal fade" id="qrModal" tabindex="-1">
+    <!-- QR Display Modal -->
+    <div class="modal fade" id="qrDisplayModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Scan QR Code</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-qrcode me-2"></i>QR Code for <?php echo htmlspecialchars($cabinetData['name'] ?? 'Cabinet'); ?>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <div id="reader"></div>
-                    <div id="result" class="mt-3"></div>
+                <div class="modal-body text-center">
+                    <?php if ($cabinetData): ?>
+                        <h6 class="mb-3">Cabinet: <?php echo htmlspecialchars($cabinetData['cabinet_number']); ?></h6>
+                        
+                        <?php if (!empty($cabinetData['qr_path']) && file_exists($cabinetData['qr_path'])): ?>
+                            <div class="qr-code-container mb-3">
+                                <img src="<?php echo htmlspecialchars($cabinetData['qr_path']); ?>" 
+                                     alt="QR Code for <?php echo htmlspecialchars($cabinetData['cabinet_number']); ?>"
+                                     class="img-fluid"
+                                     style="max-width: 250px; border: 1px solid #dee2e6; border-radius: 8px; background: white; padding: 10px;">
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-mobile-alt me-2"></i>How to use this QR Code:</h6>
+                                <ul class="list-unstyled mb-0">
+                                    <li><i class="fas fa-camera text-primary me-2"></i>Open your phone's camera</li>
+                                    <li><i class="fas fa-qrcode text-primary me-2"></i>Point at the QR code above</li>
+                                    <li><i class="fas fa-external-link-alt text-primary me-2"></i>Tap the notification to view cabinet</li>
+                                </ul>
+                            </div>
+                            
+                        <?php else: ?>
+                            <div class="alert alert-warning">
+                                <h6><i class="fas fa-exclamation-triangle me-2"></i>QR Code Not Generated</h6>
+                                <p class="mb-3">No QR code has been generated for this cabinet yet.</p>
+                                <button type="button" 
+                                        class="btn btn-primary"
+                                        onclick="generateQRForCabinet(<?php echo $cabinetData['id']; ?>, '<?php echo htmlspecialchars($cabinetData['cabinet_number']); ?>', '<?php echo htmlspecialchars($cabinetData['name']); ?>')">
+                                    <i class="fas fa-qrcode me-1"></i>Generate QR Code Now
+                                </button>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            This QR code links to: <?php echo (defined('BASE_URL') ? BASE_URL : 'http://localhost/cabinet-inventory-system/') . "index.php?cabinet=" . urlencode($cabinetData['cabinet_number']); ?>
+                        </small>
+                        
+                    <?php endif; ?>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
-    <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
-        function onScanSuccess(decodedText, decodedResult) {
-            // Redirect to the same page with the cabinet number
-            window.location.href = `index.php?cabinet=${decodedText}`;
-        }
-
-        function onScanFailure(error) {
-            // Optional: handle scan errors
-            console.warn(error);
-        }
-
-        // Initialize QR scanner when modal is shown
-        document.getElementById('qrModal').addEventListener('shown.bs.modal', function () {
-            var html5QrcodeScanner = new Html5QrcodeScanner(
-                "reader", { fps: 10, qrbox: 250 });
-            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-        });
-    </script>
+    <script src="assets/js/index.js"></script>
 </body>
 </html>

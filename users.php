@@ -108,6 +108,9 @@ $users = $stmt->fetchAll();
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         /* Ensure sidebar is hidden on page load */
+        ::-webkit-scrollbar {
+            display: none;
+        }
         #sidebar {
             left: -250px !important;
         }

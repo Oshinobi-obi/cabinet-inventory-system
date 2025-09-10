@@ -94,7 +94,7 @@
     <div class="p-3">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="text-center text-white flex-grow-1">
-                <i class="fas fa-cabinet-filing fa-2x mb-2"></i>
+                <img src="assets/images/cabinet-icon.svg" alt="Cabinet Icon" style="width: 40px; height: 40px; filter: brightness(0) invert(1);" class="mb-2">
                 <h5>Cabinet System</h5>
             </div>
             <button class="btn btn-sm btn-outline-light d-lg-none" id="sidebarClose">

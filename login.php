@@ -44,6 +44,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <title>Login - Cabinet Information System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
         body {
             background-color: #f8f9fa;
             height: 100vh;

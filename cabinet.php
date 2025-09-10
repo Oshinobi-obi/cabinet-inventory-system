@@ -196,27 +196,11 @@ $cabinetNumber = generateCabinetNumber($pdo);
     <title>Cabinets - Cabinet Information System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/cabinet.css" rel="stylesheet">
     <style>
         /* Ensure sidebar is hidden on page load */
         #sidebar {
             left: -250px !important;
-        }
-        
-        .item-row {
-            margin-bottom: 10px;
-            padding: 10px;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            background-color: #f8f9fa;
-        }
-        
-        .btn-group .btn {
-            margin-right: 2px;
-        }
-        
-        .table th {
-            background-color: #f8f9fa;
-            font-weight: 600;
         }
         
         .modal-header {
@@ -586,12 +570,11 @@ $cabinetNumber = generateCabinetNumber($pdo);
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
+        // Categories data for JavaScript
+        window.cabinetCategories = <?php echo json_encode($categories); ?>;
+        
         // Add/remove item rows dynamically
         let itemCount = 1;
-        let editItemCount = 0;
-        
-        // Categories data for JavaScript
-        const categories = <?php echo json_encode($categories); ?>;
         
         // View cabinet function
         function viewCabinet(cabinetId) {
@@ -935,5 +918,6 @@ $cabinetNumber = generateCabinetNumber($pdo);
         
 
     </script>
+    <script src="assets/js/cabinet.js"></script>
 </body>
 </html>
