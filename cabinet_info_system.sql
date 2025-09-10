@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 10, 2025 at 05:53 AM
+-- Generation Time: Sep 10, 2025 at 09:40 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -32,6 +32,7 @@ CREATE TABLE `cabinets` (
   `cabinet_number` varchar(20) NOT NULL,
   `name` varchar(100) NOT NULL,
   `photo_path` varchar(255) DEFAULT NULL,
+  `qr_path` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -40,8 +41,11 @@ CREATE TABLE `cabinets` (
 -- Dumping data for table `cabinets`
 --
 
-INSERT INTO `cabinets` (`id`, `cabinet_number`, `name`, `photo_path`, `created_at`, `updated_at`) VALUES
-(1, 'CAB20250001', 'Cabinet1', 'uploads/1757474740_Screenshot 2025-08-07 145524.png', '2025-09-10 03:25:40', '2025-09-10 03:25:40');
+INSERT INTO `cabinets` (`id`, `cabinet_number`, `name`, `photo_path`, `qr_path`, `created_at`, `updated_at`) VALUES
+(1, 'CAB20250001', 'Cabinet 1', 'uploads/1757487559_Cabinet 1.jpg', '', '2025-09-10 06:59:19', '2025-09-10 06:59:19'),
+(2, 'CAB20250002', 'Cabinet 2', 'uploads/1757488135_Cabinet 2.jpg', '', '2025-09-10 07:08:55', '2025-09-10 07:08:55'),
+(3, 'CAB20250003', 'Cabinet 3', 'uploads/1757488329_Cabinet 3.jpg', '', '2025-09-10 07:12:09', '2025-09-10 07:12:09'),
+(4, 'CAB20250004', 'Cabinet 4', 'uploads/1757489015_Cabinet 4.jpg', '', '2025-09-10 07:23:35', '2025-09-10 07:23:35');
 
 -- --------------------------------------------------------
 
@@ -88,7 +92,43 @@ CREATE TABLE `items` (
 --
 
 INSERT INTO `items` (`id`, `cabinet_id`, `category_id`, `name`, `quantity`, `created_at`, `updated_at`) VALUES
-(1, 1, 2, 'Tootpick', 5, '2025-09-10 03:25:40', '2025-09-10 03:25:40');
+(1, 1, 1, 'Memorandum', 1, '2025-09-10 06:59:19', '2025-09-10 06:59:19'),
+(2, 1, 1, 'Documents about schools', 1, '2025-09-10 06:59:19', '2025-09-10 06:59:19'),
+(3, 1, 1, 'Referral Slips/List of Assignments', 1, '2025-09-10 06:59:19', '2025-09-10 06:59:19'),
+(4, 1, 1, 'Letters (to Persons)', 1, '2025-09-10 06:59:19', '2025-09-10 06:59:19'),
+(5, 1, 1, 'DepEd Order', 1, '2025-09-10 06:59:19', '2025-09-10 06:59:19'),
+(6, 1, 1, 'Recent Files (2020-2023)', 1, '2025-09-10 06:59:19', '2025-09-10 06:59:19'),
+(7, 1, 1, 'Basic Education Data', 1, '2025-09-10 06:59:19', '2025-09-10 06:59:19'),
+(8, 1, 1, 'Research', 1, '2025-09-10 06:59:19', '2025-09-10 06:59:19'),
+(9, 1, 1, 'Regional Memorandum/Addendum', 1, '2025-09-10 06:59:19', '2025-09-10 06:59:19'),
+(10, 2, 2, 'Adventure plastic envelopes', 1, '2025-09-10 07:08:55', '2025-09-10 07:08:55'),
+(11, 2, 2, 'Steno advanced notebooks', 1, '2025-09-10 07:08:55', '2025-09-10 07:08:55'),
+(12, 2, 2, 'Everyready Batteries', 1, '2025-09-10 07:08:55', '2025-09-10 07:08:55'),
+(13, 2, 2, 'Clear Book', 1, '2025-09-10 07:08:55', '2025-09-10 07:08:55'),
+(14, 2, 2, 'Colored Plastic Envelopes', 1, '2025-09-10 07:08:55', '2025-09-10 07:08:55'),
+(15, 2, 2, 'Stapler Wire', 1, '2025-09-10 07:08:55', '2025-09-10 07:08:55'),
+(16, 2, 2, 'ID Lace', 1, '2025-09-10 07:08:55', '2025-09-10 07:08:55'),
+(17, 2, 2, 'ID Case', 1, '2025-09-10 07:08:55', '2025-09-10 07:08:55'),
+(18, 2, 2, 'Kit Bag', 1, '2025-09-10 07:08:55', '2025-09-10 07:08:55'),
+(19, 3, 2, 'Batteries', 1, '2025-09-10 07:12:09', '2025-09-10 07:12:09'),
+(20, 3, 2, 'Bond Papers', 1, '2025-09-10 07:12:09', '2025-09-10 07:12:09'),
+(21, 3, 2, 'Staples', 1, '2025-09-10 07:12:09', '2025-09-10 07:12:09'),
+(22, 3, 2, 'Books', 1, '2025-09-10 07:12:09', '2025-09-10 07:12:09'),
+(23, 3, 2, 'Storage Files', 1, '2025-09-10 07:12:09', '2025-09-10 07:12:09'),
+(24, 3, 1, 'Basic Education Data', 1, '2025-09-10 07:12:09', '2025-09-10 07:12:09'),
+(25, 3, 1, 'Elementary Public&amp;Private', 1, '2025-09-10 07:12:09', '2025-09-10 07:12:09'),
+(26, 4, 1, 'Advisory Memorandum Regional Letter (March - Present 2018)', 1, '2025-09-10 07:23:35', '2025-09-10 07:23:35'),
+(27, 4, 1, 'Memorandum Advisories Regional Letters Unnumbered Memo (July - Dec 2018)', 1, '2025-09-10 07:23:35', '2025-09-10 07:23:35'),
+(28, 4, 1, 'IPCRF 2018', 1, '2025-09-10 07:23:35', '2025-09-10 07:23:35'),
+(29, 4, 1, 'Project Proposals (Purchase Request for BAC Action)', 1, '2025-09-10 07:23:35', '2025-09-10 07:23:35'),
+(30, 4, 1, 'Early Registration Report (DATA)', 1, '2025-09-10 07:23:35', '2025-09-10 07:23:35'),
+(31, 4, 1, 'Memorandum Advisories Regional Letters Unnumbered Memo (July - Dec 2019)', 1, '2025-09-10 07:23:35', '2025-09-10 07:23:35'),
+(32, 4, 1, '2019 Miscellaneous Files', 1, '2025-09-10 07:23:35', '2025-09-10 07:23:35'),
+(33, 4, 1, 'Miscellaneous CY 2020', 1, '2025-09-10 07:23:35', '2025-09-10 07:23:35'),
+(34, 4, 1, 'Files CY 2020', 1, '2025-09-10 07:23:35', '2025-09-10 07:23:35'),
+(35, 4, 1, 'Directory Report Data 2020', 1, '2025-09-10 07:23:35', '2025-09-10 07:23:35'),
+(36, 4, 1, 'Recent Files/Data', 1, '2025-09-10 07:23:35', '2025-09-10 07:23:35'),
+(37, 4, 1, 'DepEd Advisory Letters/Notice of Meeting', 1, '2025-09-10 07:23:35', '2025-09-10 07:23:35');
 
 -- --------------------------------------------------------
 
@@ -159,7 +199,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `cabinets`
 --
 ALTER TABLE `cabinets`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `categories`
@@ -171,7 +211,7 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `items`
 --
 ALTER TABLE `items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `users`

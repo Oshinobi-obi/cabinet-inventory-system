@@ -3,6 +3,25 @@ require_once 'includes/auth.php';
 authenticate();
 authorize(['admin']);
 
+// Handle actions
+if (isset($_GET['action'])) {
+    if ($_GET['action'] == 'delete' && isset($_GET['id'])) {
+        $userId = intval($_GET['id']);
+        if ($userId != $_SESSION['user_id']) {
+            try {
+                $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+                $stmt->execute([$userId]);
+                $_SESSION['success'] = "User deleted successfully!";
+            } catch(PDOException $e) {
+                $_SESSION['error'] = "Error deleting user: " . $e->getMessage();
+            }
+        } else {
+            $_SESSION['error'] = "You cannot delete your own account!";
+        }
+        redirect('users.php');
+    }
+}
+
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['add_user'])) {
@@ -30,7 +49,48 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } catch(PDOException $e) {
             $error = "Error adding user: " . $e->getMessage();
         }
+    } elseif (isset($_POST['edit_user'])) {
+        $userId = intval($_POST['user_id']);
+        $firstName = sanitizeInput($_POST['first_name']);
+        $lastName = sanitizeInput($_POST['last_name']);
+        $office = sanitizeInput($_POST['office']);
+        $division = sanitizeInput($_POST['division']);
+        $email = sanitizeInput($_POST['email']);
+        $mobile = sanitizeInput($_POST['mobile']);
+        $username = sanitizeInput($_POST['username']);
+        $role = sanitizeInput($_POST['role']);
+        
+        try {
+            if (!empty($_POST['password'])) {
+                $hashedPassword = password_hash(sanitizeInput($_POST['password']), PASSWORD_DEFAULT);
+                $stmt = $pdo->prepare("
+                    UPDATE users SET first_name=?, last_name=?, office=?, division=?, email=?, mobile=?, username=?, password=?, role=? 
+                    WHERE id=?
+                ");
+                $stmt->execute([$firstName, $lastName, $office, $division, $email, $mobile, $username, $hashedPassword, $role, $userId]);
+            } else {
+                $stmt = $pdo->prepare("
+                    UPDATE users SET first_name=?, last_name=?, office=?, division=?, email=?, mobile=?, username=?, role=? 
+                    WHERE id=?
+                ");
+                $stmt->execute([$firstName, $lastName, $office, $division, $email, $mobile, $username, $role, $userId]);
+            }
+            
+            $_SESSION['success'] = "User updated successfully!";
+            redirect('users.php');
+        } catch(PDOException $e) {
+            $error = "Error updating user: " . $e->getMessage();
+        }
     }
+}
+
+// Get user for editing
+$editUser = null;
+if (isset($_GET['edit']) && isset($_GET['id'])) {
+    $editUserId = intval($_GET['id']);
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+    $stmt->execute([$editUserId]);
+    $editUser = $stmt->fetch();
 }
 
 // Get all users
@@ -186,15 +246,13 @@ $users = $stmt->fetchAll();
                                         </td>
                                         <td><?php echo date('M j, Y', strtotime($user['created_at'])); ?></td>
                                         <td>
-                                            <button class="btn btn-sm btn-info">
+                                            <button class="btn btn-sm btn-info" onclick="editUser(<?php echo htmlspecialchars(json_encode($user)); ?>)">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <?php if ($user['id'] != $_SESSION['user_id']): ?>
-                                            <a href="users.php?action=delete&id=<?php echo $user['id']; ?>" 
-                                               class="btn btn-sm btn-danger" 
-                                               onclick="return confirm('Are you sure you want to delete this user?')">
+                                            <button class="btn btn-sm btn-danger" onclick="deleteUser(<?php echo $user['id']; ?>, '<?php echo addslashes($user['first_name'] . ' ' . $user['last_name']); ?>')">
                                                 <i class="fas fa-trash"></i>
-                                            </a>
+                                            </button>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
@@ -205,6 +263,99 @@ $users = $stmt->fetchAll();
                     <?php else: ?>
                         <p class="text-muted">No users found.</p>
                     <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="">
+                    <div class="modal-body">
+                        <input type="hidden" id="edit_user_id" name="user_id">
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="edit_first_name" name="first_name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="edit_last_name" name="last_name" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Office</label>
+                                <input type="text" class="form-control" id="edit_office" name="office">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Division</label>
+                                <input type="text" class="form-control" id="edit_division" name="division">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="edit_email" name="email" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Mobile</label>
+                                <input type="tel" class="form-control" id="edit_mobile" name="mobile">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Username</label>
+                                <input type="text" class="form-control" id="edit_username" name="username" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Role</label>
+                                <select class="form-select" id="edit_role" name="role" required>
+                                    <option value="encoder">Encoder</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">New Password (leave blank to keep current)</label>
+                            <input type="password" class="form-control" name="password">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" name="edit_user" class="btn btn-primary">Update User</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete user <strong id="deleteUserName"></strong>?</p>
+                    <p class="text-danger">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a id="confirmDeleteBtn" href="#" class="btn btn-danger">Delete User</a>
                 </div>
             </div>
         </div>
@@ -240,6 +391,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+function editUser(user) {
+    document.getElementById('edit_user_id').value = user.id;
+    document.getElementById('edit_first_name').value = user.first_name;
+    document.getElementById('edit_last_name').value = user.last_name;
+    document.getElementById('edit_office').value = user.office || '';
+    document.getElementById('edit_division').value = user.division || '';
+    document.getElementById('edit_email').value = user.email;
+    document.getElementById('edit_mobile').value = user.mobile || '';
+    document.getElementById('edit_username').value = user.username;
+    document.getElementById('edit_role').value = user.role;
+    new bootstrap.Modal(document.getElementById('editUserModal')).show();
+}
+
+function deleteUser(userId, userName) {
+    document.getElementById('deleteUserName').textContent = userName;
+    document.getElementById('confirmDeleteBtn').href = 'users.php?action=delete&id=' + userId;
+    new bootstrap.Modal(document.getElementById('deleteUserModal')).show();
+}
 </script>
 </body>
 </html>

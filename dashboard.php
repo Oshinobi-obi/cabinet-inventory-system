@@ -70,7 +70,7 @@ authenticate();
                                     <h2 class="mb-0"><?php echo $cabinetCount; ?></h2>
                                 </div>
                                 <div class="align-self-center">
-                                    <i class="fas fa-cabinet-filing fa-3x"></i>
+                                    <img src="assets/images/cabinet-icon.svg" alt="Cabinet" style="width: 48px; height: 48px; filter: brightness(0) invert(1);">
                                 </div>
                             </div>
                         </div>

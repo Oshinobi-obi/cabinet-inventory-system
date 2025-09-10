@@ -163,17 +163,66 @@ function validateEmail($email) {
     return filter_var($email, FILTER_VALIDATE_EMAIL);
 }
 
-// Generate QR Code for cabinet
-function generateQRCode($cabinetNumber) {
-    $qrLibPath = BASE_PATH . 'phpqrcode/qrlib.php';
-    if (!file_exists($qrLibPath)) {
-        error_log('PHP QR Code library not found. Please download from http://phpqrcode.sourceforge.net/ and extract to phpqrcode directory.');
-        return false;
+// Generate a real QR Code using reliable external services
+function generateRealQRCode($data, $filename, $size = 300) {
+    // Create context with proper headers to avoid blocking
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => [
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            ],
+            'timeout' => 10
+        ]
+    ]);
+    
+    // Method 1: QR Server API (most reliable)
+    $qrServerUrl = "https://api.qrserver.com/v1/create-qr-code/?size={$size}x{$size}&format=png&data=" . urlencode($data);
+    
+    $imageData = @file_get_contents($qrServerUrl, false, $context);
+    
+    if ($imageData !== false && strlen($imageData) > 100) {
+        // Verify it's actually a PNG image by checking the header
+        if (substr($imageData, 0, 8) === "\x89PNG\r\n\x1a\n") {
+            if (file_put_contents($filename, $imageData)) {
+                return true;
+            }
+        }
     }
     
-    require_once $qrLibPath;
+    // Method 2: Google Charts API
+    $googleUrl = "https://chart.googleapis.com/chart?chs={$size}x{$size}&cht=qr&chl=" . urlencode($data) . "&choe=UTF-8";
     
-    $qrDir = BASE_PATH . 'qrcodes/';
+    $imageData = @file_get_contents($googleUrl, false, $context);
+    
+    if ($imageData !== false && strlen($imageData) > 100) {
+        // Verify it's actually a PNG image
+        if (substr($imageData, 0, 8) === "\x89PNG\r\n\x1a\n") {
+            if (file_put_contents($filename, $imageData)) {
+                return true;
+            }
+        }
+    }
+    
+    // Method 3: QuickChart API
+    $quickChartUrl = "https://quickchart.io/qr?text=" . urlencode($data) . "&size={$size}";
+    
+    $imageData = @file_get_contents($quickChartUrl, false, $context);
+    
+    if ($imageData !== false && strlen($imageData) > 100) {
+        if (substr($imageData, 0, 8) === "\x89PNG\r\n\x1a\n") {
+            if (file_put_contents($filename, $imageData)) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
+// Generate QR Code for cabinet and save to file
+function generateQRCode($cabinetNumber, $saveToFile = false) {
+    $qrDir = __DIR__ . '/../qrcodes/';
     if (!is_dir($qrDir)) {
         if (!mkdir($qrDir, 0755, true)) {
             error_log('Failed to create QR codes directory');
@@ -181,21 +230,131 @@ function generateQRCode($cabinetNumber) {
         }
     }
     
-    $qrContent = BASE_URL . "index.php?cabinet=" . urlencode($cabinetNumber);
-    $qrFile = $qrDir . 'cabinet_' . preg_replace('/[^a-zA-Z0-9]/', '_', $cabinetNumber) . '.png';
+    $qrContent = (defined('BASE_URL') ? BASE_URL : 'http://localhost/cabinet-inventory-system/') . "index.php?cabinet=" . urlencode($cabinetNumber);
+    $qrFileName = 'cabinet_' . preg_replace('/[^a-zA-Z0-9]/', '_', $cabinetNumber) . '.png';
+    $qrFile = $qrDir . $qrFileName;
+    $qrRelativePath = 'qrcodes/' . $qrFileName;
     
-    if (!class_exists('QRcode')) {
-        error_log('QRcode class not found. Please check PHP QR Code library installation.');
+    // If saving to file, use the real QR code generator
+    if ($saveToFile) {
+        if (generateRealQRCode($qrContent, $qrFile, 300)) {
+            return $qrRelativePath;
+        }
         return false;
     }
     
+    // If not saving to file, return URLs for display (old behavior)
+    // Check if file already exists
+    if (file_exists($qrFile)) {
+        return $qrRelativePath;
+    }
+    
+    // Method 1: Use QR proxy to bypass CSP restrictions
     try {
-        \QRcode::png($qrContent, $qrFile, constant('QR_ECLEVEL_L'), 10);
-        return str_replace(BASE_PATH, '', $qrFile); // Return relative path
+        $baseUrl = defined('BASE_URL') ? BASE_URL : 'http://localhost/cabinet-inventory-system/';
+        $proxyUrl = $baseUrl . 'qr_proxy.php?data=' . urlencode($qrContent) . '&size=300';
+        
+        // Return the proxy URL - it will handle the generation and serve locally
+        return $proxyUrl;
+        
     } catch (Exception $e) {
-        error_log('Failed to generate QR code: ' . $e->getMessage());
-        return false;
+        error_log('Failed to generate QR code with proxy: ' . $e->getMessage());
     }
+    
+    // Method 2: Use simple QR generator
+    try {
+        $baseUrl = defined('BASE_URL') ? BASE_URL : 'http://localhost/cabinet-inventory-system/';
+        $simpleQrUrl = $baseUrl . 'simple_qr.php?text=' . urlencode($qrContent) . '&size=300';
+        
+        return $simpleQrUrl;
+        
+    } catch (Exception $e) {
+        error_log('Failed to generate simple QR code: ' . $e->getMessage());
+    }
+    
+    // Final fallback: return direct external URL
+    return 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&format=png&data=' . urlencode($qrContent);
+}
+
+// Generate and save QR code to database
+function generateAndSaveQRCodeToDB($pdo, $cabinetId) {
+    try {
+        // Get cabinet details
+        $stmt = $pdo->prepare("SELECT cabinet_number, name FROM cabinets WHERE id = ?");
+        $stmt->execute([$cabinetId]);
+        $cabinet = $stmt->fetch();
+        
+        if (!$cabinet) {
+            return [false, "Cabinet not found"];
+        }
+        
+        // Generate QR code and save to file
+        $qrPath = generateQRCode($cabinet['cabinet_number'], true);
+        
+        if (!$qrPath) {
+            return [false, "Failed to generate QR code file"];
+        }
+        
+        // Update database with QR path
+        $stmt = $pdo->prepare("UPDATE cabinets SET qr_path = ? WHERE id = ?");
+        $success = $stmt->execute([$qrPath, $cabinetId]);
+        
+        if ($success) {
+            return [true, $qrPath, $cabinet];
+        } else {
+            return [false, "Failed to update database"];
+        }
+        
+    } catch (Exception $e) {
+        error_log('QR generation and save failed: ' . $e->getMessage());
+        return [false, "Database error: " . $e->getMessage()];
+    }
+}
+
+// Generate QR code as data URL (inline SVG)
+function generateQRCodeDataURL($content) {
+    // Simple QR code using Google Charts API as data URL
+    $googleUrl = 'https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=' . urlencode($content) . '&choe=UTF-8';
+    return $googleUrl; // Return the URL directly for display
+}
+
+// Create a simple QR code alternative when all methods fail
+function createSimpleQRAlternative($qrContent, $qrFile) {
+    // Create a simple HTML/CSS based QR placeholder
+    $qrDir = dirname($qrFile);
+    $htmlFile = $qrDir . '/qr_' . preg_replace('/[^a-zA-Z0-9]/', '_', basename($qrFile, '.png')) . '.html';
+    
+    $htmlContent = '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { margin: 0; padding: 20px; text-align: center; font-family: Arial, sans-serif; background: white; }
+        .qr-placeholder { 
+            width: 250px; height: 250px; margin: 0 auto; 
+            border: 3px solid #000; display: flex; align-items: center; justify-content: center;
+            flex-direction: column; background: #f0f0f0;
+        }
+        .qr-text { font-size: 14px; font-weight: bold; margin-bottom: 10px; }
+        .qr-url { font-size: 10px; word-break: break-all; padding: 10px; }
+    </style>
+</head>
+<body>
+    <div class="qr-placeholder">
+        <div class="qr-text">QR CODE</div>
+        <div>Scan with phone to visit:</div>
+        <div class="qr-url">' . htmlspecialchars($qrContent) . '</div>
+    </div>
+    <p><a href="' . htmlspecialchars($qrContent) . '" target="_blank">Click here to open link</a></p>
+</body>
+</html>';
+    
+    if (file_put_contents($htmlFile, $htmlContent) !== false) {
+        return basename($htmlFile);
+    }
+    
+    // Final fallback - return the Google Charts URL directly
+    return 'https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=' . urlencode($qrContent) . '&choe=UTF-8';
 }
 
 // Get user display name
