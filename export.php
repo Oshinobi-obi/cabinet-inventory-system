@@ -65,6 +65,9 @@ if ($qrFile === false) {
                 display: none;
             }
         }
+        .cabinet-photo {
+            max-height: 200px;
+        }
     </style>
 </head>
 <body>
@@ -73,7 +76,7 @@ if ($qrFile === false) {
             <a href="cabinet.php" class="btn btn-secondary">
                 <i class="fas fa-arrow-left me-1"></i> Back to Cabinets
             </a>
-            <button onclick="window.print()" class="btn btn-primary">
+            <button id="printButton" class="btn btn-primary">
                 <i class="fas fa-print me-1"></i> Print
             </button>
         </div>
@@ -92,8 +95,8 @@ if ($qrFile === false) {
                         
                         <?php if ($cabinet['photo_path']): ?>
                             <img src="<?php echo $cabinet['photo_path']; ?>" 
-                                 class="img-fluid rounded mb-3" 
-                                 alt="Cabinet Photo" style="max-height: 200px;">
+                                 class="img-fluid rounded mb-3 cabinet-photo" 
+                                 alt="Cabinet Photo">
                         <?php endif; ?>
                     </div>
                     <div class="col-md-6 text-center">
@@ -148,5 +151,15 @@ if ($qrFile === false) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
+        document.addEventListener('DOMContentLoaded', function() {
+            const printButton = document.getElementById('printButton');
+            if (printButton) {
+                printButton.addEventListener('click', function() {
+                    window.print();
+                });
+            }
+        });
+    </script>
 </body>
 </html>

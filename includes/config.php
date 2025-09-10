@@ -48,12 +48,34 @@ session_start();
 // Set timezone
 date_default_timezone_set('Asia/Manila');
 
+// Generate nonce for inline scripts/styles
+$nonce = base64_encode(random_bytes(16));
+
 // Set security headers
 header('X-Frame-Options: DENY');
 header('X-XSS-Protection: 1; mode=block');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: same-origin');
-header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' https://cdnjs.cloudflare.com;");
+
+// Build Content Security Policy with nonce
+$csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-eval' 'nonce-$nonce' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com",
+    "script-src-elem 'self' 'nonce-$nonce' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com",
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+    "style-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+    "img-src 'self' data: blob:",
+    "font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com data:",
+    "connect-src 'self' https://unpkg.com https://cdnjs.cloudflare.com",
+    "media-src 'self' blob:",
+    "object-src 'none'"
+];
+
+// Send CSP header
+header("Content-Security-Policy: " . implode('; ', $csp));
+
+// Make nonce available globally
+$GLOBALS['csp_nonce'] = $nonce;
 
 // Create database connection
 try {

@@ -85,6 +85,11 @@ $cabinetNumber = generateCabinetNumber($pdo);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* Ensure sidebar is hidden on page load */
+        #sidebar {
+            left: -250px !important;
+        }
+        
         .item-row {
             margin-bottom: 10px;
             padding: 10px;
@@ -99,10 +104,10 @@ $cabinetNumber = generateCabinetNumber($pdo);
     <div id="content">
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
             <div class="container-fluid">
-                <button id="sidebarToggle" class="btn btn-primary">
+                <button id="sidebarToggle" class="btn btn-outline-light me-2">
                     <i class="fas fa-bars"></i>
                 </button>
-                <span class="navbar-brand ms-2">Cabinets Management</span>
+                <span class="navbar-brand">Cabinets Management</span>
             </div>
         </nav>
         <div class="container-fluid p-4">
@@ -125,12 +130,13 @@ $cabinetNumber = generateCabinetNumber($pdo);
                     <form method="POST" action="" enctype="multipart/form-data">
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="cabinet_number" class="form-label">Cabinet Number</label>
-                                <input type="text" class="form-control" id="cabinet_number" 
+                                <label for="cabinet_number" class="form-label">Cabinet Number <span class="text-muted">(Auto Generated)</span></label>
+                                <input type="text" class="form-control" id
+                                ="cabinet_number" 
                                        name="cabinet_number" value="<?php echo $cabinetNumber; ?>" readonly>
                             </div>
                             <div class="col-md-6">
-                                <label for="name" class="form-label">Cabinet Name</label>
+                                <label for="name" class="form-label">Cabinet Name <span class="text-danger" style="font-size: 0.9em;">*Required</span></label>
                                 <input type="text" class="form-control" id="name" name="name" required>
                             </div>
                         </div>
@@ -239,7 +245,7 @@ $cabinetNumber = generateCabinetNumber($pdo);
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         // Add/remove item rows dynamically
         let itemCount = 1;
         

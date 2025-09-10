@@ -37,6 +37,9 @@ require_once 'includes/config.php';
             margin-top: 10px;
             text-align: center;
         }
+        #stopButton {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -71,7 +74,7 @@ require_once 'includes/config.php';
                                 <i class="fas fa-camera me-2"></i>
                                 Start Scanner
                             </button>
-                            <button id="stopButton" class="btn btn-danger" style="display: none;">
+                            <button id="stopButton" class="btn btn-danger">
                                 <i class="fas fa-stop me-2"></i>
                                 Stop Scanner
                             </button>

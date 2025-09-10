@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 10, 2025 at 04:28 AM
+-- Generation Time: Sep 10, 2025 at 05:53 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -35,6 +35,13 @@ CREATE TABLE `cabinets` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `cabinets`
+--
+
+INSERT INTO `cabinets` (`id`, `cabinet_number`, `name`, `photo_path`, `created_at`, `updated_at`) VALUES
+(1, 'CAB20250001', 'Cabinet1', 'uploads/1757474740_Screenshot 2025-08-07 145524.png', '2025-09-10 03:25:40', '2025-09-10 03:25:40');
 
 -- --------------------------------------------------------
 
@@ -76,6 +83,13 @@ CREATE TABLE `items` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `items`
+--
+
+INSERT INTO `items` (`id`, `cabinet_id`, `category_id`, `name`, `quantity`, `created_at`, `updated_at`) VALUES
+(1, 1, 2, 'Tootpick', 5, '2025-09-10 03:25:40', '2025-09-10 03:25:40');
+
 -- --------------------------------------------------------
 
 --
@@ -95,6 +109,13 @@ CREATE TABLE `users` (
   `role` enum('admin','encoder') NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`id`, `first_name`, `last_name`, `office`, `division`, `email`, `mobile`, `username`, `password`, `role`, `created_at`) VALUES
+(1, 'System', 'Administrator', 'IT', 'Admin', 'admin@example.com', '1234567890', 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', '2025-09-10 02:51:19');
 
 --
 -- Indexes for dumped tables
@@ -138,7 +159,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `cabinets`
 --
 ALTER TABLE `cabinets`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `categories`
@@ -150,13 +171,13 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `items`
 --
 ALTER TABLE `items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- Constraints for dumped tables

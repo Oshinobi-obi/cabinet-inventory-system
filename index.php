@@ -1,11 +1,24 @@
 <?php
-require_once 'includes/config.php';
+// Enable error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+try {
+    require_once 'includes/config.php';
+} catch (Exception $e) {
+    die("Config error: " . $e->getMessage());
+}
 
 // Process QR scan or search
 $cabinetData = null;
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $searchTerm = sanitizeInput($_POST['search_term']);
-    
+$error = null;
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet'])) {
+    // If POST, use search term, else use GET param
+    $searchTerm = $_SERVER['REQUEST_METHOD'] == 'POST'
+        ? sanitizeInput($_POST['search_term'])
+        : sanitizeInput($_GET['cabinet']);
+
     try {
         $stmt = $pdo->prepare("
             SELECT c.*, 
@@ -33,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <title>Cabinet Viewer - Cabinet Information System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
+    <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         body {
             background-color: #f8f9fa;
         }
@@ -62,6 +75,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         .header i {
             font-size: 40px;
             color: #0d6efd;
+        }
+        #reader {
+            width: 100%;
         }
     </style>
 </head>
@@ -104,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
         </div>
         
-        <?php if (isset($error)): ?>
+        <?php if ($error): ?>
             <div class="alert alert-danger"><?php echo $error; ?></div>
         <?php endif; ?>
         
@@ -112,11 +128,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="cabinet-result">
                 <div class="row">
                     <div class="col-md-6">
-                        <h3><?php echo $cabinetData['name']; ?></h3>
-                        <p class="text-muted">Cabinet #: <?php echo $cabinetData['cabinet_number']; ?></p>
+                        <h3><?php echo htmlspecialchars($cabinetData['name']); ?></h3>
+                        <p class="text-muted">Cabinet #: <?php echo htmlspecialchars($cabinetData['cabinet_number']); ?></p>
                         
                         <?php if ($cabinetData['photo_path']): ?>
-                            <img src="<?php echo $cabinetData['photo_path']; ?>" 
+                            <img src="<?php echo htmlspecialchars($cabinetData['photo_path']); ?>" 
                                  class="img-fluid rounded mb-3" 
                                  alt="Cabinet Photo">
                         <?php endif; ?>
@@ -152,9 +168,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <tbody>
                                     <?php foreach ($items as $item): ?>
                                     <tr>
-                                        <td><?php echo $item['name']; ?></td>
-                                        <td><?php echo $item['category']; ?></td>
-                                        <td><?php echo $item['quantity']; ?></td>
+                                        <td><?php echo htmlspecialchars($item['name']); ?></td>
+                                        <td><?php echo htmlspecialchars($item['category']); ?></td>
+                                        <td><?php echo htmlspecialchars($item['quantity']); ?></td>
                                     </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -166,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                 </div>
             </div>
-        <?php elseif ($_SERVER['REQUEST_METHOD'] == 'POST'): ?>
+        <?php elseif ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet'])): ?>
             <div class="alert alert-warning text-center">
                 No cabinet found with that number or name.
             </div>
@@ -182,7 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div id="reader" style="width: 100%;"></div>
+                    <div id="reader"></div>
                     <div id="result" class="mt-3"></div>
                 </div>
             </div>
@@ -191,14 +207,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
-    <script>
+    <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         function onScanSuccess(decodedText, decodedResult) {
             // Redirect to the same page with the cabinet number
-            window.location.href = index.php?cabinet=${decodedText};
+            window.location.href = `index.php?cabinet=${decodedText}`;
         }
 
         function onScanFailure(error) {
-            // Handle scan failure
+            // Optional: handle scan errors
+            console.warn(error);
         }
 
         // Initialize QR scanner when modal is shown

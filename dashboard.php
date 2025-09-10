@@ -12,105 +12,33 @@ authenticate();
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --sidebar-width: 250px;
-        }
-        body {
-            overflow-x: hidden;
-        }
+        /* Ensure sidebar is hidden on page load */
         #sidebar {
-            min-height: 100vh;
-            width: var(--sidebar-width);
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 100;
-            transition: all 0.3s;
+            left: -250px !important;
         }
-        #content {
-            margin-left: var(--sidebar-width);
-            transition: all 0.3s;
-            width: calc(100% - var(--sidebar-width));
+        
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         }
-        #sidebar.collapsed {
-            margin-left: -var(--sidebar-width);
-        }
-        #content.expanded {
-            margin-left: 0;
-            width: 100%;
-        }
-        .sidebar-link {
-            color: #adb5bd;
-            transition: all 0.3s;
-        }
-        .sidebar-link:hover, .sidebar-link.active {
-            color: #fff;
-            background-color: #0d6efd;
-        }
-        @media (max-width: 768px) {
-            #sidebar {
-                margin-left: -var(--sidebar-width);
-            }
-            #sidebar.collapsed {
-                margin-left: 0;
-            }
-            #content {
-                margin-left: 0;
-                width: 100%;
-            }
-            #content.expanded {
-                margin-left: var(--sidebar-width);
-                width: calc(100% - var(--sidebar-width));
-            }
+        .progress {
+            background-color: #f8f9fa;
         }
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <div id="sidebar" class="bg-dark">
-        <div class="p-3">
-            <div class="text-center text-white mb-4">
-                <i class="fas fa-cabinet-filing fa-2x mb-2"></i>
-                <h5>Cabinet System</h5>
-            </div>
-            <hr class="text-light">
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a href="dashboard.php" class="nav-link sidebar-link active">
-                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="cabinet.php" class="nav-link sidebar-link">
-                        <i class="fas fa-cabinet-filing me-2"></i> Cabinets
-                    </a>
-                </li>
-                <?php if ($_SESSION['user_role'] == 'admin'): ?>
-                <li class="nav-item">
-                    <a href="users.php" class="nav-link sidebar-link">
-                        <i class="fas fa-users me-2"></i> Users
-                    </a>
-                </li>
-                <?php endif; ?>
-                <li class="nav-item">
-                    <a href="logout.php" class="nav-link sidebar-link">
-                        <i class="fas fa-sign-out-alt me-2"></i> Logout
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </div>
+    <?php include 'includes/sidebar.php'; ?>
 
     <!-- Content -->
     <div id="content">
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
             <div class="container-fluid">
-                <button id="sidebarToggle" class="btn btn-primary">
+                <button id="sidebarToggle" class="btn btn-outline-light me-2">
                     <i class="fas fa-bars"></i>
                 </button>
-                <span class="navbar-brand ms-2">Welcome, <?php echo $_SESSION['first_name']; ?>!</span>
+                <span class="navbar-brand">Welcome, <?php echo $_SESSION['first_name']; ?>!</span>
                 <div class="ms-auto">
-                    <a href="index.php" class="btn btn-outline-light">
+                    <a href="index.php" class="btn btn-outline-light" target="_blank">
                         <i class="fas fa-external-link-alt me-1"></i> View Public Site
                     </a>
                 </div>
@@ -296,11 +224,19 @@ authenticate();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         // Toggle sidebar
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('collapsed');
-            document.getElementById('content').classList.toggle('expanded');
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            const content = document.getElementById('content');
+            
+            if (sidebarToggle && sidebar && content) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                    content.classList.toggle('expanded');
+                });
+            }
         });
     </script>
 </body>
