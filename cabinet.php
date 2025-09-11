@@ -196,6 +196,7 @@ $cabinetNumber = generateCabinetNumber($pdo);
     <title>Cabinets - Cabinet Information System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/navbar.css" rel="stylesheet">
     <link href="assets/css/cabinet.css" rel="stylesheet">
     <style>
         /* Ensure sidebar is hidden on page load */
@@ -230,12 +231,15 @@ $cabinetNumber = generateCabinetNumber($pdo);
     <?php include 'includes/sidebar.php'; ?>
     
     <div id="content">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary admin-navbar">
             <div class="container-fluid">
-                <button id="sidebarToggle" class="btn btn-outline-light me-2">
+                <button id="sidebarToggle" class="btn btn-outline-light">
                     <i class="fas fa-bars"></i>
                 </button>
-                <span class="navbar-brand">Cabinets Management</span>
+                <span class="navbar-brand">
+                    <i class="fas fa-archive"></i>
+                    Cabinet Management
+                </span>
             </div>
         </nav>
         <div class="container-fluid p-4">
@@ -417,30 +421,32 @@ $cabinetNumber = generateCabinetNumber($pdo);
     </div>
 
     <!-- View Cabinet Modal -->
-    <div class="modal fade" id="viewCabinetModal" tabindex="-1">
+    <div class="modal fade" id="viewCabinetModal" tabindex="-1" aria-labelledby="viewCabinetModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Cabinet Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="viewCabinetModalLabel">Cabinet Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="viewCabinetContent">
                     <!-- Content will be loaded here -->
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Close
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Edit Cabinet Modal -->
-    <div class="modal fade" id="editCabinetModal" tabindex="-1">
+    <div class="modal fade" id="editCabinetModal" tabindex="-1" aria-labelledby="editCabinetModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Edit Cabinet</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="editCabinetModalLabel">Edit Cabinet</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="editCabinetForm" method="POST" action="" enctype="multipart/form-data">
@@ -474,24 +480,27 @@ $cabinetNumber = generateCabinetNumber($pdo);
                             <i class="fas fa-plus me-1"></i> Add Another Item
                         </button>
                         
-                        <div class="mt-4">
-                            <button type="submit" name="edit_cabinet" class="btn btn-primary">
-                                <i class="fas fa-save me-1"></i> Update Cabinet
-                            </button>
-                        </div>
                     </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    <button type="submit" name="edit_cabinet" form="editCabinetForm" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Update Cabinet
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteCabinetModal" tabindex="-1">
+    <div class="modal fade" id="deleteCabinetModal" tabindex="-1" aria-labelledby="deleteCabinetModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Confirm Deletion</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="deleteCabinetModalLabel">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p>Are you sure you want to delete the cabinet "<strong id="deleteCabinetName"></strong>"?</p>
@@ -594,7 +603,25 @@ $cabinetNumber = generateCabinetNumber($pdo);
                     console.log('API Response:', data);
                     if (data.success) {
                         displayCabinetView(data.cabinet, data.items);
-                        const modal = new bootstrap.Modal(document.getElementById('viewCabinetModal'));
+                        const modalElement = document.getElementById('viewCabinetModal');
+                        
+                        // Ensure any existing backdrop is removed
+                        const existingBackdrop = document.querySelector('.modal-backdrop');
+                        if (existingBackdrop) {
+                            existingBackdrop.remove();
+                        }
+                        
+                        // Reset body state
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                        
+                        // Create fresh modal instance
+                        const modal = new bootstrap.Modal(modalElement, {
+                            backdrop: true,
+                            keyboard: true,
+                            focus: true
+                        });
                         modal.show();
                     } else {
                         alert('Error loading cabinet details: ' + data.message);
@@ -624,7 +651,25 @@ $cabinetNumber = generateCabinetNumber($pdo);
                     console.log('API Response:', data);
                     if (data.success) {
                         populateEditForm(data.cabinet, data.items);
-                        const modal = new bootstrap.Modal(document.getElementById('editCabinetModal'));
+                        const modalElement = document.getElementById('editCabinetModal');
+                        
+                        // Ensure any existing backdrop is removed
+                        const existingBackdrop = document.querySelector('.modal-backdrop');
+                        if (existingBackdrop) {
+                            existingBackdrop.remove();
+                        }
+                        
+                        // Reset body state
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                        
+                        // Create fresh modal instance
+                        const modal = new bootstrap.Modal(modalElement, {
+                            backdrop: true,
+                            keyboard: true,
+                            focus: true
+                        });
                         modal.show();
                     } else {
                         alert('Error loading cabinet details: ' + data.message);
@@ -641,8 +686,46 @@ $cabinetNumber = generateCabinetNumber($pdo);
             console.log('deleteCabinet called with ID:', cabinetId, 'Name:', cabinetName);
             document.getElementById('deleteCabinetName').textContent = cabinetName;
             document.getElementById('confirmDeleteBtn').href = `cabinet.php?action=delete&id=${cabinetId}`;
-            const modal = new bootstrap.Modal(document.getElementById('deleteCabinetModal'));
+            
+            const modalElement = document.getElementById('deleteCabinetModal');
+            
+            // Ensure any existing backdrop is removed
+            const existingBackdrop = document.querySelector('.modal-backdrop');
+            if (existingBackdrop) {
+                existingBackdrop.remove();
+            }
+            
+            // Reset body state
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            
+            const modal = new bootstrap.Modal(modalElement, {
+                backdrop: true,
+                keyboard: true,
+                focus: true
+            });
             modal.show();
+        }
+        
+        // Force cleanup function for stuck modals
+        function forceCleanupModals() {
+            // Remove any lingering backdrops
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                backdrop.remove();
+            });
+            
+            // Reset body state
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            
+            // Hide any visible modals
+            document.querySelectorAll('.modal.show').forEach(modal => {
+                modal.classList.remove('show');
+                modal.setAttribute('aria-hidden', 'true');
+                modal.style.display = 'none';
+            });
         }
         
         document.addEventListener('DOMContentLoaded', function() {
@@ -915,7 +998,145 @@ $cabinetNumber = generateCabinetNumber($pdo);
                 editItemCount++;
             }
         }
-        
+
+        // Modal event handlers to fix close button issues
+        document.addEventListener('DOMContentLoaded', function() {
+            // Function to properly close modal and clean up backdrop
+            function closeModal(modalElement) {
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                
+                // Force remove backdrop if it exists
+                setTimeout(() => {
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                    // Ensure body scroll is restored
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                }, 300);
+            }
+            
+            // View Cabinet Modal event handlers
+            const viewModal = document.getElementById('viewCabinetModal');
+            if (viewModal) {
+                viewModal.addEventListener('hidden.bs.modal', function () {
+                    // Clean up modal content when closed
+                    document.getElementById('viewCabinetContent').innerHTML = '';
+                    // Ensure backdrop cleanup
+                    setTimeout(() => {
+                        const backdrop = document.querySelector('.modal-backdrop');
+                        if (backdrop) {
+                            backdrop.remove();
+                        }
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                    }, 100);
+                });
+            }
+            
+            // Edit Cabinet Modal event handlers
+            const editModal = document.getElementById('editCabinetModal');
+            if (editModal) {
+                editModal.addEventListener('hidden.bs.modal', function () {
+                    // Clean up form when modal is closed
+                    document.getElementById('editCabinetForm').reset();
+                    document.getElementById('edit-items-container').innerHTML = '';
+                    document.getElementById('current_photo_preview').innerHTML = '';
+                    editItemCount = 0;
+                    // Ensure backdrop cleanup
+                    setTimeout(() => {
+                        const backdrop = document.querySelector('.modal-backdrop');
+                        if (backdrop) {
+                            backdrop.remove();
+                        }
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                    }, 100);
+                });
+            }
+            
+            // Delete Cabinet Modal event handlers
+            const deleteModal = document.getElementById('deleteCabinetModal');
+            if (deleteModal) {
+                deleteModal.addEventListener('hidden.bs.modal', function () {
+                    // Ensure backdrop cleanup
+                    setTimeout(() => {
+                        const backdrop = document.querySelector('.modal-backdrop');
+                        if (backdrop) {
+                            backdrop.remove();
+                        }
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                    }, 100);
+                });
+            }
+            
+            // Enhanced close button handlers
+            document.addEventListener('click', function(event) {
+                if (event.target.matches('[data-bs-dismiss="modal"]') || 
+                    event.target.closest('[data-bs-dismiss="modal"]')) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    const button = event.target.matches('[data-bs-dismiss="modal"]') ? 
+                                  event.target : event.target.closest('[data-bs-dismiss="modal"]');
+                    const modal = button.closest('.modal');
+                    
+                    if (modal) {
+                        closeModal(modal);
+                    }
+                }
+            });
+            
+            // Global escape key handler
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    const openModal = document.querySelector('.modal.show');
+                    if (openModal) {
+                        const modalInstance = bootstrap.Modal.getInstance(openModal);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        } else {
+                            closeModal(openModal);
+                        }
+                    }
+                }
+            });
+            
+            // Emergency cleanup - double-click anywhere to force cleanup stuck modals
+            let clickCount = 0;
+            document.addEventListener('click', function(event) {
+                clickCount++;
+                setTimeout(() => { clickCount = 0; }, 500);
+                
+                if (clickCount === 2) { // Double click
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop && !document.querySelector('.modal.show')) {
+                        console.log('Emergency cleanup triggered');
+                        forceCleanupModals();
+                    }
+                }
+            });
+            
+            // Backup cleanup function that runs periodically
+            setInterval(() => {
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop && !document.querySelector('.modal.show')) {
+                    backdrop.remove();
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                }
+            }, 2000);
+        });
 
     </script>
     <script src="assets/js/cabinet.js"></script>

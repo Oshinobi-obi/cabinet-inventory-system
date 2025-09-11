@@ -44,6 +44,7 @@ try {
     <title><?php echo ucfirst($_SESSION['user_role']); ?> Dashboard - Cabinet Information System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/navbar.css" rel="stylesheet">
     <link href="assets/css/dashboard.css" rel="stylesheet">
 </head>
 <body>
@@ -51,21 +52,21 @@ try {
 
     <!-- Content -->
     <div id="content">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary admin-navbar">
             <div class="container-fluid">
-                <button id="sidebarToggle" class="btn btn-outline-light me-2">
+                <button id="sidebarToggle" class="btn btn-outline-light">
                     <i class="fas fa-bars"></i>
                 </button>
                 <span class="navbar-brand">
-                    <i class="fas fa-<?php echo $_SESSION['user_role'] === 'admin' ? 'crown' : 'edit'; ?> me-2"></i>
+                    <i class="fas fa-<?php echo $_SESSION['user_role'] === 'admin' ? 'crown' : 'edit'; ?>"></i>
                     <?php echo ucfirst($_SESSION['user_role']); ?> Dashboard
                 </span>
                 <div class="ms-auto">
-                    <span class="text-light me-3">
+                    <span class="text-light">
                         Welcome, <?php echo $_SESSION['first_name'] . ' ' . $_SESSION['last_name']; ?>!
                     </span>
                     <a href="index.php" class="btn btn-outline-light" target="_blank">
-                        <i class="fas fa-external-link-alt me-1"></i> Public View
+                        <i class="fas fa-external-link-alt"></i> Public View
                     </a>
                 </div>
             </div>

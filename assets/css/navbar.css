@@ -1,0 +1,187 @@
+/* Standardized Navigation Bar Styles */
+
+/* Ensure consistent navbar height across all pages */
+.navbar {
+    min-height: 60px !important;
+    padding: 0.75rem 0 !important;
+}
+
+.navbar .container,
+.navbar .container-fluid {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+}
+
+.navbar-brand {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    margin-right: 0 !important;
+    padding: 0.5rem 0 !important;
+    line-height: 1.2 !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.navbar-brand i {
+    margin-right: 0.5rem !important;
+}
+
+/* Sidebar toggle button standardization */
+#sidebarToggle {
+    width: 44px !important;
+    height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-right: 1rem !important;
+    border: 1px solid rgba(255,255,255,0.3) !important;
+    border-radius: 6px !important;
+}
+
+#sidebarToggle:hover {
+    background-color: rgba(255,255,255,0.1) !important;
+    border-color: rgba(255,255,255,0.5) !important;
+}
+
+/* Navbar content alignment */
+.navbar .ms-auto {
+    display: flex !important;
+    align-items: center !important;
+    gap: 1rem !important;
+}
+
+.navbar .btn {
+    height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 0.5rem 1rem !important;
+    font-size: 0.9rem !important;
+    border-radius: 6px !important;
+}
+
+.navbar .btn-outline-light {
+    border: 1px solid rgba(255,255,255,0.3) !important;
+}
+
+.navbar .btn-outline-light:hover {
+    background-color: rgba(255,255,255,0.1) !important;
+    border-color: rgba(255,255,255,0.5) !important;
+}
+
+/* Text content in navbar */
+.navbar .text-light {
+    font-size: 0.9rem !important;
+    white-space: nowrap !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1rem !important;
+    }
+    
+    .navbar .text-light {
+        display: none !important;
+    }
+    
+    .navbar .ms-auto {
+        gap: 0.5rem !important;
+    }
+    
+    .navbar .btn {
+        font-size: 0.8rem !important;
+        padding: 0.4rem 0.8rem !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .navbar {
+        min-height: 56px !important;
+        padding: 0.5rem 0 !important;
+    }
+    
+    .navbar .container,
+    .navbar .container-fluid {
+        min-height: 44px;
+    }
+    
+    #sidebarToggle {
+        width: 40px !important;
+        height: 36px !important;
+        margin-right: 0.75rem !important;
+    }
+    
+    .navbar .btn {
+        height: 36px !important;
+    }
+}
+
+/* Ensure consistent spacing for different navbar types */
+.navbar-dark.bg-primary,
+.navbar-dark.bg-dark {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* Public page navbar (index.php) specific adjustments */
+.public-navbar {
+    min-height: 60px !important;
+    padding: 0.75rem 0 !important;
+}
+
+.public-navbar .container {
+    min-height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.public-navbar .navbar-brand {
+    font-size: 1.2rem !important;
+}
+
+/* Admin/Encoder page navbar specific adjustments */
+.admin-navbar {
+    min-height: 60px !important;
+    padding: 0.75rem 0 !important;
+}
+
+.admin-navbar .container-fluid {
+    min-height: 48px !important;
+}
+
+/* Icon standardization */
+.navbar i {
+    font-size: 1rem !important;
+}
+
+.navbar-brand i {
+    font-size: 1.1rem !important;
+}
+
+#sidebarToggle i {
+    font-size: 1rem !important;
+}
+
+/* Fix for navbar brand with multiple elements */
+.navbar-brand span {
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+/* Ensure all navbar content is vertically centered */
+.navbar > .container,
+.navbar > .container-fluid {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+/* Fix button alignment issues */
+.navbar .btn,
+.navbar button {
+    vertical-align: middle !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
