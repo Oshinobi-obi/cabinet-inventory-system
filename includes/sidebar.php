@@ -72,6 +72,14 @@
         text-decoration: none;
     }
     
+    .sidebar-heading {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1rem;
+        font-weight: 600;
+        color: #6c757d !important;
+    }
+    
     /* Ensure sidebar is hidden on all screen sizes initially */
     @media (max-width: 768px) {
         #sidebar {
@@ -103,6 +111,7 @@
         </div>
         <hr class="text-light">
         <ul class="nav flex-column">
+            <!-- Core Navigation - Available to ALL roles -->
             <li class="nav-item">
                 <a href="dashboard.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'dashboard.php' ? 'active' : ''; ?>">
                     <i class="fas fa-tachometer-alt me-2"></i> Dashboard
@@ -110,22 +119,50 @@
             </li>
             <li class="nav-item">
                 <a href="cabinet.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'cabinet.php' ? 'active' : ''; ?>">
-                    <i class="fas fa-cabinet-filing me-2"></i> Cabinets
+                    <i class="fas fa-cabinet-filing me-2"></i> Cabinet Management
                 </a>
             </li>
-            <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] == 'admin'): ?>
-            <li class="nav-item">
-                <a href="users.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'users.php' ? 'active' : ''; ?>">
-                    <i class="fas fa-users me-2"></i> Users
-                </a>
-            </li>
-            <?php endif; ?>
             <li class="nav-item">
                 <a href="index.php" class="nav-link sidebar-link" target="_blank">
-                    <i class="fas fa-external-link-alt me-2"></i> Public View
+                    <i class="fas fa-search me-2"></i> Search Cabinets
                 </a>
             </li>
-            <li class="nav-item mt-3">
+            
+            <!-- Admin-Only Navigation -->
+            <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] == 'admin'): ?>
+                <li class="nav-item mt-3">
+                    <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted">
+                        <i class="fas fa-crown me-2"></i>Administration
+                    </h6>
+                </li>
+                <li class="nav-item">
+                    <a href="users.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'users.php' ? 'active' : ''; ?>">
+                        <i class="fas fa-users me-2"></i> User Management
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="export.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'export.php' ? 'active' : ''; ?>">
+                        <i class="fas fa-download me-2"></i> Export Data
+                    </a>
+                </li>
+            <?php endif; ?>
+            
+            <!-- Encoder Quick Actions -->
+            <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] == 'encoder'): ?>
+                <li class="nav-item mt-3">
+                    <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted">
+                        <i class="fas fa-edit me-2"></i>Quick Actions
+                    </h6>
+                </li>
+                <li class="nav-item">
+                    <a href="cabinet.php" class="nav-link sidebar-link">
+                        <i class="fas fa-plus me-2"></i> Add New Cabinet
+                    </a>
+                </li>
+            <?php endif; ?>
+            
+            <!-- Common Footer Navigation -->
+            <li class="nav-item mt-4">
                 <a href="logout.php" class="nav-link sidebar-link">
                     <i class="fas fa-sign-out-alt me-2"></i> Logout
                 </a>

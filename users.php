@@ -3,6 +3,12 @@ require_once 'includes/auth.php';
 authenticate();
 authorize(['admin']);
 
+// Additional security check - redirect encoders to dashboard
+if ($_SESSION['user_role'] !== 'admin') {
+    $_SESSION['error'] = "Access denied. Only administrators can manage users.";
+    redirect('dashboard.php');
+}
+
 // Handle actions
 if (isset($_GET['action'])) {
     if ($_GET['action'] == 'delete' && isset($_GET['id'])) {

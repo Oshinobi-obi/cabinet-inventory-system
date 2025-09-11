@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet'])) {
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="#">
-                <i class="fas fa-cabinet-filing me-2"></i>Cabinet System
+                <i class="fas fa-cabinet-filing me-2"></i>Cabinet Inventory System
             </a>
             <div class="ms-auto">
                 <a href="login.php" class="btn btn-outline-light">
