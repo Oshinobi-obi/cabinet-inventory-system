@@ -1,5 +1,12 @@
 /* Cabinet Management Page Styles */
 
+/* Role Badge Styling - matching dashboard */
+.badge.fs-6 {
+    font-size: 0.9rem !important;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+}
+
 /* Main Layout */
 .main-content {
     padding-top: 20px;

@@ -136,6 +136,13 @@ $users = $stmt->fetchAll();
         #sidebar {
             left: -250px !important;
         }
+        
+        /* Role Badge Styling - matching dashboard */
+        .badge.fs-6 {
+            font-size: 0.9rem !important;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+        }
     </style>
 </head>
 <body>
@@ -155,7 +162,13 @@ $users = $stmt->fetchAll();
             </div>
         </nav>
         <div class="container-fluid p-4">
-            <h2 class="mb-4">Users</h2>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-users text-warning me-2"></i>
+                    User Management
+                </h2>
+                <div class="badge bg-danger fs-6">Admin Access</div>
+            </div>
             
             <?php if (isset($error)): ?>
                 <div class="alert alert-danger"><?php echo $error; ?></div>
