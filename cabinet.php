@@ -247,16 +247,14 @@ $cabinetNumber = generateCabinetNumber($pdo);
             <?php if ($_SESSION['user_role'] === 'encoder'): ?>
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>
-                        <i class="fas fa-archive text-primary me-2"></i>
-                        Cabinet Management
+                        Welcome, <?php echo $_SESSION['first_name'] . ' ' . $_SESSION['last_name']; ?>!
                     </h2>
                     <div class="badge bg-primary fs-6">Encoder Access</div>
                 </div>
             <?php elseif ($_SESSION['user_role'] === 'admin'): ?>
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>
-                        <i class="fas fa-archive text-warning me-2"></i>
-                        Cabinet Management
+                        Welcome, <?php echo $_SESSION['first_name'] . ' ' . $_SESSION['last_name']; ?>!
                     </h2>
                     <div class="badge bg-danger fs-6">Admin Access</div>
                 </div>
@@ -311,38 +309,42 @@ $cabinetNumber = generateCabinetNumber($pdo);
                         
                         <div id="items-container">
                             <div class="item-row">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Item Name</label>
-                                        <input type="text" class="form-control" name="items[0][name]" required>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Category</label>
-                                        <select class="form-select" name="items[0][category]" required>
-                                            <option value="">Select Category</option>
-                                            <?php foreach ($categories as $category): ?>
-                                                <option value="<?php echo $category['id']; ?>"><?php echo $category['name']; ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label">Quantity</label>
-                                        <input type="number" class="form-control" name="items[0][quantity]" value="1" min="1">
-                                    </div>
-                                    <div class="col-md-3 align-self-end">
-                                        <button type="button" class="btn btn-danger remove-item">
-                                            <i class="fas fa-trash me-1"></i> Remove
-                                        </button>
+                                <div class="row g-2">
+                                    <div class="col-12">
+                                        <div class="row g-2">
+                                            <div class="col-md-4 col-sm-6">
+                                                <label class="form-label">Item Name</label>
+                                                <input type="text" class="form-control" name="items[0][name]" required>
+                                            </div>
+                                            <div class="col-md-3 col-sm-6">
+                                                <label class="form-label">Category</label>
+                                                <select class="form-select" name="items[0][category]" required>
+                                                    <option value="">Select Category</option>
+                                                    <?php foreach ($categories as $category): ?>
+                                                        <option value="<?php echo $category['id']; ?>"><?php echo $category['name']; ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3 col-sm-8">
+                                                <label class="form-label">Quantity</label>
+                                                <input type="number" class="form-control" name="items[0][quantity]" value="1" min="1">
+                                            </div>
+                                            <div class="col-md-2 col-sm-4 d-flex align-items-end">
+                                                <button type="button" class="btn btn-danger remove-item w-100">
+                                                    <i class="fas fa-trash me-1"></i> Remove
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <button type="button" id="add-item" class="btn btn-secondary mt-3">
+                        <button type="button" id="add-item" class="btn btn-secondary mt-3 w-100">
                             <i class="fas fa-plus me-1"></i> Add Another Item</button>
                         
                         <div class="mt-4">
-                            <button type="submit" name="add_cabinet" class="btn btn-primary">
+                            <button type="submit" name="add_cabinet" class="btn btn-primary w-100">
                                 <i class="fas fa-save me-1"></i> Save Cabinet
                             </button>
                         </div>
@@ -810,25 +812,29 @@ $cabinetNumber = generateCabinetNumber($pdo);
             });
             
             newRow.innerHTML = `
-                <div class="row">
-                    <div class="col-md-4">
-                        <label class="form-label">Item Name</label>
-                        <input type="text" class="form-control" name="${namePrefix}[${index}][name]" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Category</label>
-                        <select class="form-select" name="${namePrefix}[${index}][category]" required>
-                            ${categoriesOptions}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Quantity</label>
-                        <input type="number" class="form-control" name="${namePrefix}[${index}][quantity]" value="1" min="1">
-                    </div>
-                    <div class="col-md-3 align-self-end">
-                        <button type="button" class="btn btn-danger remove-item">
-                            <i class="fas fa-trash me-1"></i> Remove
-                        </button>
+                <div class="row g-2">
+                    <div class="col-12">
+                        <div class="row g-2">
+                            <div class="col-md-4 col-sm-6">
+                                <label class="form-label">Item Name</label>
+                                <input type="text" class="form-control" name="${namePrefix}[${index}][name]" required>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <label class="form-label">Category</label>
+                                <select class="form-select" name="${namePrefix}[${index}][category]" required>
+                                    ${categoriesOptions}
+                                </select>
+                            </div>
+                            <div class="col-md-3 col-sm-8">
+                                <label class="form-label">Quantity</label>
+                                <input type="number" class="form-control" name="${namePrefix}[${index}][quantity]" value="1" min="1">
+                            </div>
+                            <div class="col-md-2 col-sm-4 d-flex align-items-end">
+                                <button type="button" class="btn btn-danger remove-item w-100">
+                                    <i class="fas fa-trash me-1"></i> Remove
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;

@@ -54,7 +54,7 @@ try {
     <div id="content">
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary admin-navbar">
             <div class="container-fluid">
-                <button id="sidebarToggle" class="btn btn-outline-light me-2">
+                <button id="sidebarToggle" class="btn btn-outline-light">
                     <i class="fas fa-bars"></i>
                 </button>
                 <span class="navbar-brand">
@@ -62,9 +62,6 @@ try {
                     <?php echo ucfirst($_SESSION['user_role']); ?> Dashboard
                 </span>
                 <div class="ms-auto">
-                    <span class="text-light">
-                        Welcome, <?php echo $_SESSION['first_name'] . ' ' . $_SESSION['last_name']; ?>!
-                    </span>
                     <a href="index.php" class="btn btn-outline-light" target="_blank">
                         <i class="fas fa-external-link-alt"></i> Public View
                     </a>
@@ -82,8 +79,7 @@ try {
                 <!-- ADMIN DASHBOARD -->
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>
-                        <i class="fas fa-crown text-warning me-2"></i>
-                        Administrator Dashboard
+                        Welcome, <?php echo $_SESSION['first_name'] . ' ' . $_SESSION['last_name']; ?>!
                     </h2>
                     <div class="badge bg-danger fs-6">Admin Access</div>
                 </div>
@@ -214,8 +210,7 @@ try {
                 <!-- ENCODER DASHBOARD -->
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>
-                        <i class="fas fa-edit text-primary me-2"></i>
-                        Encoder Dashboard
+                        Welcome, <?php echo $_SESSION['first_name'] . ' ' . $_SESSION['last_name']; ?>!
                     </h2>
                     <div class="badge bg-primary fs-6">Encoder Access</div>
                 </div>

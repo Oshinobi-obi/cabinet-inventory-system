@@ -164,8 +164,7 @@ $users = $stmt->fetchAll();
         <div class="container-fluid p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>
-                    <i class="fas fa-users text-warning me-2"></i>
-                    User Management
+                    Welcome, <?php echo $_SESSION['first_name'] . ' ' . $_SESSION['last_name']; ?>!
                 </h2>
                 <div class="badge bg-danger fs-6">Admin Access</div>
             </div>
@@ -233,17 +232,21 @@ $users = $stmt->fetchAll();
                         </div>
                         
                         <div class="row mb-3">
-                            <div class="col-md-8">
+                            <div class="col-12">
                                 <label for="password" class="form-label">Password <span class="text-danger" style="font-size: 0.9em;">*Required</span></label>
-                                <div class="input-group">
-                                    <input type="password" class="form-control" id="password" name="password" required>
-                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword">Show</button>
+                                <div class="row g-2">
+                                    <div class="col-md-8">
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="password" name="password" required>
+                                            <button type="button" class="btn btn-outline-secondary" id="togglePassword">Show</button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="button" id="generatePassword" class="btn btn-secondary w-100">
+                                            <i class="fas fa-key me-1"></i> Generate Password
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-4 align-self-end">
-                                <button type="button" id="generatePassword" class="btn btn-secondary">
-                                    <i class="fas fa-key me-1"></i> Generate Password
-                                </button>
                             </div>
                         </div>
                         
