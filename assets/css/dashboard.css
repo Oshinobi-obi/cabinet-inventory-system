@@ -1,40 +1,13 @@
 /* Dashboard CSS - Role-based Design */
 
-/* Custom scrollbar styling */
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-}
-
-/* Ensure sidebar is hidden initially */
-#sidebar {
-    left: -250px !important;
-}
-
 /* Main Layout */
 .main-content {
     padding-top: 20px;
 }
 
-/* Card Enhancements */
+/* Dashboard-specific card enhancements */
 .card {
-    border: none;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border-radius: 10px;
 }
 
 .card:hover {
@@ -135,21 +108,14 @@ h2 {
     border: none;
 }
 
-/* Table Styling */
+/* Dashboard-specific table styling */
 .table th {
     border-top: none;
-    font-weight: 600;
     color: #495057;
-    background-color: #f8f9fa;
 }
 
 .table-hover tbody tr:hover {
     background-color: rgba(13, 110, 253, 0.05);
-}
-
-.table-responsive {
-    border-radius: 8px;
-    overflow: hidden;
 }
 
 /* Progress Bars */
@@ -173,10 +139,8 @@ h2 {
     border-bottom: none;
 }
 
-/* Alert Enhancements */
+/* Dashboard-specific alert styling */
 .alert {
-    border: none;
-    border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
