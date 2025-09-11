@@ -65,9 +65,9 @@ if ($qrData !== false && strlen($qrData) > 0) {
     // Add text
     $text = "QR CODE";
     if (function_exists('imagettftext')) {
-        // Use TTF if available
-        imagettftext($img, 12, 0, $size/2 - 30, $size/2 - 10, $black, null, $text);
-        imagettftext($img, 8, 0, $size/2 - 50, $size/2 + 10, $gray, null, "Generation Failed");
+        // Use built-in fonts when TTF not available
+        imagestring($img, 4, $size/2 - 30, $size/2 - 10, $text, $black);
+        imagestring($img, 3, $size/2 - 50, $size/2 + 10, "Generation Failed", $gray);
     } else {
         // Use built-in fonts
         imagestring($img, 3, $size/2 - 30, $size/2 - 10, $text, $black);

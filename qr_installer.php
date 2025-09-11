@@ -3,6 +3,9 @@
  * QR Code Library Installer and Real QR Generator
  */
 
+// Include functions for generateRealQRCode
+require_once 'includes/functions.php';
+
 // Function to download and install PHP QR Code library
 function installQRCodeLibrary() {
     $messages = [];
@@ -103,7 +106,8 @@ function generateWithLibrary($data, $filename) {
     }
     
     try {
-        QRcode::png($data, $filename, 'M', 10, 2);
+        // Use QRcode class to generate PNG
+        call_user_func_array(['QRcode', 'png'], [$data, $filename, 'M', 10, 2]);
         return true;
     } catch (Exception $e) {
         error_log('QR library error: ' . $e->getMessage());
