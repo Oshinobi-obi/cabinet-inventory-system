@@ -295,7 +295,7 @@ $cabinetNumber = generateCabinetNumber($pdo);
                                        name="cabinet_number" value="<?php echo $cabinetNumber; ?>" readonly>
                             </div>
                             <div class="col-md-6">
-                                <label for="name" class="form-label">Cabinet Name <span class="text-danger" style="font-size: 0.9em;">*Required</span></label>
+                                <label for="name" class="form-label">Cabinet Name <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
                                 <input type="text" class="form-control" id="name" name="name" required>
                             </div>
                         </div>
