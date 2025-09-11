@@ -54,7 +54,7 @@ try {
     <div id="content">
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary admin-navbar">
             <div class="container-fluid">
-                <button id="sidebarToggle" class="btn btn-outline-light">
+                <button id="sidebarToggle" class="btn btn-outline-light me-2">
                     <i class="fas fa-bars"></i>
                 </button>
                 <span class="navbar-brand">

@@ -112,11 +112,27 @@ $users = $stmt->fetchAll();
     <title>Users - Cabinet Information System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/navbar.css" rel="stylesheet">
     <style>
         /* Ensure sidebar is hidden on page load */
         ::-webkit-scrollbar {
-            display: none;
+            width: 8px;
         }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
         #sidebar {
             left: -250px !important;
         }
@@ -126,12 +142,16 @@ $users = $stmt->fetchAll();
     <?php include 'includes/sidebar.php'; ?>
     
     <div id="content">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary admin-navbar">
             <div class="container-fluid">
-                <button id="sidebarToggle" class="btn btn-outline-light me-2">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <span class="navbar-brand">User Management</span>
+                <div class="d-flex align-items-center">
+                    <button id="sidebarToggle" class="btn btn-outline-light me-2">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <span class="navbar-brand">
+                        <i class="fas fa-users me-2"></i>User Management
+                    </span>
+                </div>
             </div>
         </nav>
         <div class="container-fluid p-4">
