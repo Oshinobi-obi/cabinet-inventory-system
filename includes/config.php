@@ -66,7 +66,7 @@ $csp = [
     "style-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
     "img-src 'self' data: blob: https://chart.googleapis.com https://charts.googleapis.com",
     "font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com data:",
-    "connect-src 'self' https://unpkg.com https://cdnjs.cloudflare.com https://chart.googleapis.com https://charts.googleapis.com",
+    "connect-src 'self' https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://chart.googleapis.com https://charts.googleapis.com",
     "media-src 'self' blob:",
     "object-src 'none'"
 ];

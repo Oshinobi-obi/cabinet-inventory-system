@@ -205,7 +205,17 @@ function populateEditForm(cabinet, items) {
     // Show current photo if exists
     const photoPreview = document.getElementById('current_photo_preview');
     if (cabinet.photo_path) {
-        photoPreview.innerHTML = `<small class="text-muted">Current photo:</small><br><img src="${cabinet.photo_path}" alt="Current Photo" style="max-height: 100px;" class="img-thumbnail">`;
+        // Create img element with error handling
+        const img = document.createElement('img');
+        img.src = cabinet.photo_path;
+        img.alt = 'Current Photo';
+        img.style.maxHeight = '100px';
+        img.className = 'img-thumbnail';
+        img.onerror = function() {
+            photoPreview.innerHTML = '<small class="text-muted text-warning">Photo file not found</small>';
+        };
+        photoPreview.innerHTML = '<small class="text-muted">Current photo:</small><br>';
+        photoPreview.appendChild(img);
     } else {
         photoPreview.innerHTML = '';
     }
@@ -277,12 +287,21 @@ function addNewItem() {
 
 // Handle edit form submission
 function handleEditFormSubmit(event) {
+    console.log('handleEditFormSubmit called');
     event.preventDefault();
     
     const formData = new FormData(event.target);
     formData.append('edit_cabinet', '1');
     
-    const submitBtn = event.target.querySelector('button[type="submit"]');
+    // Look for submit button associated with this form
+    const submitBtn = event.target.querySelector('button[type="submit"]') || 
+                     document.querySelector('button[type="submit"][form="editCabinetForm"]');
+    if (!submitBtn) {
+        console.error('Submit button not found in form or associated with form');
+        return;
+    }
+    
+    console.log('Submit button found:', submitBtn);
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
     submitBtn.disabled = true;
@@ -323,6 +342,11 @@ function showDeleteConfirmation(cabinetId, cabinetName) {
 // Delete cabinet
 function deleteCabinet(cabinetId) {
     const deleteBtn = document.getElementById('confirmDeleteBtn');
+    if (!deleteBtn) {
+        console.error('Delete button not found');
+        return;
+    }
+    
     const originalText = deleteBtn.innerHTML;
     deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Deleting...';
     deleteBtn.disabled = true;
@@ -333,6 +357,11 @@ function deleteCabinet(cabinetId) {
 // QR Code generation for specific cabinet
 function generateQRForCabinet(cabinetId, cabinetNumber, cabinetName) {
     const button = event.target;
+    if (!button) {
+        console.error('QR generation button not found');
+        return;
+    }
+    
     const originalContent = button.innerHTML;
     
     // Show loading state
