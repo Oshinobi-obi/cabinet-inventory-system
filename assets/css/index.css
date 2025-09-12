@@ -5,12 +5,20 @@ body {
 }
 
 .viewer-container {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 50px auto;
     padding: 20px;
 }
 
 .search-box {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.search-results {
     background: white;
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(0,0,0,0.1);
@@ -85,7 +93,7 @@ body {
         padding: 15px;
     }
     
-    .search-box {
+    .search-box, .search-results {
         padding: 20px;
     }
     
@@ -96,4 +104,112 @@ body {
     .qr-code-container img {
         max-width: 150px;
     }
+}
+
+/* Search results card styling */
+.search-results .card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.search-results .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Radio button styling */
+.form-check-label {
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Highlight styles for searched items */
+.highlight-item {
+    background-color: #fff3cd !important;
+    animation: highlightPulse 2s ease-in-out;
+}
+
+.highlight-item td {
+    font-weight: 600;
+}
+
+@keyframes highlightPulse {
+    0% { background-color: #ffc107; }
+    50% { background-color: #fff3cd; }
+    100% { background-color: #fff3cd; }
+}
+
+/* Star icon for highlighted items */
+.highlight-item .fa-star {
+    animation: starTwinkle 2s infinite;
+}
+
+@keyframes starTwinkle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Cabinet selection styles */
+.cabinet-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.cabinet-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.cabinet-card.selected {
+    border: 3px solid #0d6efd;
+    background-color: #f0f8ff;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(13,110,253,0.3);
+}
+
+.cabinet-card .cabinet-selector {
+    transform: scale(1.2);
+    z-index: 10;
+}
+
+.cabinet-card .cabinet-selector:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Guest pagination styles */
+.guest-page-input::-webkit-outer-spin-button,
+.guest-page-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.guest-page-input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.pagination .page-item:not(:first-child) .page-link {
+    margin-left: 2px;
+}
+
+.pagination .page-item.active {
+    margin: 0 4px;
+}
+
+.pagination .page-link {
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination .page-link:hover {
+    background-color: #e9ecef;
+    border-color: #dee2e6;
 }
