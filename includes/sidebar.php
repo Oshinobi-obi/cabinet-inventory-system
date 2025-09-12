@@ -102,7 +102,7 @@
     <div class="p-3">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="text-center text-white flex-grow-1">
-                <img src="assets/images/cabinet-icon.svg" alt="Cabinet Icon" style="width: 40px; height: 40px; filter: brightness(0) invert(1);" class="mb-2">
+                <i class="bi bi-archive-fill" style="font-size: 40px;" class="mb-2"></i>
                 <h5>Cabinet Inventory System</h5>
             </div>
             <button class="btn btn-sm btn-outline-light d-lg-none" id="sidebarClose">
@@ -119,7 +119,7 @@
             </li>
             <li class="nav-item">
                 <a href="cabinet.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'cabinet.php' ? 'active' : ''; ?>">
-                    <i class="fas fa-cabinet-filing me-2"></i> Cabinet Management
+                    <i class="bi bi-archive-fill me-2"></i> Cabinet Management
                 </a>
             </li>
             <li class="nav-item">

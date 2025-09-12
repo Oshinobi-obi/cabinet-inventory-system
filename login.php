@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <div class="login-container">
         <div class="login-card">
             <div class="logo">
-                <img id="cabinetIcon" src="assets/images/cabinet-icon.svg" alt="Cabinet Icon">
+                <i class="bi bi-archive-fill text-primary" style="font-size: 64px;"></i>
                 <h3 class="mt-2">Cabinet Information System</h3>
             </div>
             

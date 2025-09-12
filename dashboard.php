@@ -143,6 +143,7 @@ try {
                     <i class="fas fa-bars"></i>
                 </button>
                 <span class="navbar-brand">
+                    <i class="bi bi-archive-fill me-2"></i>
                     <i class="fas fa-<?php echo $_SESSION['user_role'] === 'admin' ? 'crown' : 'edit'; ?>"></i>
                     <?php echo ucfirst($_SESSION['user_role']); ?> Dashboard
                 </span>
@@ -724,7 +725,7 @@ try {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="downloadExport()">
+                    <button type="button" class="btn btn-primary" id="downloadExportBtn">
                         <i class="fas fa-download me-1"></i> Download
                     </button>
                 </div>
@@ -964,6 +965,12 @@ try {
                 
                 // Initialize on page load
                 toggleAllCabinetsOption();
+            }
+
+            // Export download button handler
+            const downloadExportBtn = document.getElementById('downloadExportBtn');
+            if (downloadExportBtn) {
+                downloadExportBtn.addEventListener('click', downloadExport);
             }
 
             // Initialize Recent Activity table
@@ -1650,31 +1657,45 @@ try {
 
         // Export function
         function downloadExport() {
+            console.log('Export function called'); // Debug logging
             const form = document.getElementById('exportForm');
             const formData = new FormData(form);
             
             const cabinetId = formData.get('cabinet_id');
             const format = formData.get('format');
             
+            console.log('Cabinet ID:', cabinetId, 'Format:', format); // Debug logging
+            
             if (!cabinetId) {
                 alert('Please select a cabinet to export.');
                 return;
             }
             
-            // Create download URL
+            // Create export URL
             const url = `export.php?cabinet_id=${cabinetId}&format=${format}`;
+            console.log('Export URL:', url); // Debug logging
             
-            // Create temporary link and trigger download
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `cabinet_export_${Date.now()}.${format}`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            // Close modal
+            // Close modal first to prevent aria-hidden focus issues
             const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
             modal.hide();
+            
+            // Small delay to allow modal to close properly before opening new window
+            setTimeout(() => {
+                if (format === 'pdf') {
+                    // For PDF, open in new window which will trigger print dialog
+                    window.open(url, '_blank', 'width=1024,height=768,scrollbars=yes,resizable=yes');
+                    console.log('PDF export opened in new window'); // Debug logging
+                } else {
+                    // For other formats, create download link
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `cabinet_export_${Date.now()}.${format}`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    console.log('Export download triggered'); // Debug logging
+                }
+            }, 200);
         }
 
         // Toggle All Cabinets option visibility based on format selection

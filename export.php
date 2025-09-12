@@ -9,6 +9,7 @@ if (!isset($_GET['cabinet_id'])) {
 }
 
 $cabinetId = intval($_GET['cabinet_id']);
+$format = isset($_GET['format']) ? $_GET['format'] : 'html';
 
 // Get cabinet details
 $stmt = $pdo->prepare("
@@ -48,8 +49,37 @@ if ($qrFile === false) {
     error_log("QR code generation failed for cabinet: " . $cabinet['cabinet_number']);
 }
 
-// For PDF generation, we would use a library like TCPDF or Dompdf
-// This is a simplified version that outputs the data with the QR code
+// Handle different export formats
+if ($format === 'pdf') {
+    // For PDF format, we'll output HTML with special PDF-optimized styling
+    // The browser will handle the PDF conversion
+    header('Content-Type: text/html; charset=utf-8');
+} elseif ($format === 'excel') {
+    // For Excel format, output as CSV (simple implementation)
+    header('Content-Type: application/vnd.ms-excel');
+    header('Content-Disposition: attachment; filename="cabinet_export_' . $cabinet['cabinet_number'] . '_' . date('Y-m-d') . '.csv"');
+    
+    // Output CSV data
+    echo "Cabinet Information Export\n\n";
+    echo "Cabinet Name," . $cabinet['name'] . "\n";
+    echo "Cabinet Number," . $cabinet['cabinet_number'] . "\n";
+    echo "Total Items," . $cabinet['item_count'] . "\n";
+    echo "Categories," . ($cabinet['categories'] ?: 'No categories') . "\n";
+    echo "Last Updated," . date('M j, Y g:i A', strtotime($cabinet['updated_at'])) . "\n\n";
+    
+    echo "Item Inventory:\n";
+    echo "Item Name,Category,Quantity\n";
+    
+    if ($items) {
+        foreach ($items as $item) {
+            echo '"' . str_replace('"', '""', $item['name']) . '",';
+            echo '"' . str_replace('"', '""', $item['category']) . '",';
+            echo $item['quantity'] . "\n";
+        }
+    }
+    
+    exit; // Stop execution for Excel export
+}
 
 ?>
 <!DOCTYPE html>
@@ -57,33 +87,179 @@ if ($qrFile === false) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Export - <?php echo $cabinet['name']; ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Export - <?php echo htmlspecialchars($cabinet['name']); ?></title>
+    <?php if ($format === 'pdf'): ?>
+    <!-- PDF-optimized styles -->
     <style>
-        @media print {
-            .no-print {
-                display: none !important;
-            }
-            body {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-            .card {
-                border: 1px solid #000 !important;
-                box-shadow: none !important;
-            }
-            .card-header {
-                background-color: #f8f9fa !important;
-                border-bottom: 1px solid #000 !important;
-            }
-            .table {
-                border: 1px solid #000 !important;
-            }
-            .table th, .table td {
-                border: 1px solid #000 !important;
-            }
+        @page {
+            size: letter;
+            margin: 0.75in;
         }
         
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #000;
+            background: white;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .card {
+            border: 2px solid #000;
+            margin-bottom: 0;
+        }
+        
+        .card-header {
+            background-color: white !important;
+            border-bottom: 2px solid #000;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .export-header h3 {
+            margin: 0 0 5px 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .export-header p {
+            margin: 0;
+            font-size: 12px;
+        }
+        
+        .cabinet-info {
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .inventory-section {
+            background-color: white;
+            padding: 15px;
+            border-top: 1px solid #6b3939ff;
+            margin-top: 15px;
+        }
+        
+        .inventory-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #000;
+        }
+        
+        .inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        
+        .inventory-table th,
+        .inventory-table td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            text-align: left;
+        }
+        
+        .inventory-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .inventory-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .cabinet-title {
+            color: #0066cc;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .info-row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            min-width: 120px;
+        }
+        
+        .qr-section {
+            text-align: center;
+            border: 2px solid #000;
+            padding: 25px;
+            margin-top: 25px;
+        }
+        
+        .qr-section h5 {
+            font-size: 14px;
+            margin-bottom: 18px;
+            font-weight: bold;
+        }
+        
+        .cabinet-photo {
+            max-width: 300px;
+            max-height: 300px;
+            border: 2px solid #000;
+            display: block;
+            margin: 0 auto 20px auto;
+        }
+        
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: -10px;
+        }
+        
+        .col-left {
+            flex: 0 0 50%;
+            padding: 10px;
+        }
+        
+        .col-right {
+            flex: 0 0 50%;
+            padding: 10px;
+            text-align: center;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        
+        .qr-instructions {
+            font-size: 11px;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        .no-print {
+            display: none;
+        }
+        
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+    <?php else: ?>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <?php endif; ?>
+    <?php if ($format !== 'pdf'): ?>
+    <style>
         .cabinet-photo {
             max-height: 200px;
         }
@@ -110,26 +286,35 @@ if ($qrFile === false) {
             margin: 15px 0;
         }
         
-        .print-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-            display: none;
-        }
-        
         @media print {
-            .print-footer {
-                display: block;
+            .no-print {
+                display: none !important;
+            }
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .card {
+                border: 1px solid #000 !important;
+                box-shadow: none !important;
+            }
+            .card-header {
+                background-color: #f8f9fa !important;
+                border-bottom: 1px solid #000 !important;
+            }
+            .table {
+                border: 1px solid #000 !important;
+            }
+            .table th, .table td {
+                border: 1px solid #000 !important;
             }
         }
     </style>
+    <?php endif; ?>
 </head>
 <body>
-    <div class="container mt-4">
+    <div class="container<?php echo $format === 'pdf' ? '' : ' mt-4'; ?>">
+        <?php if ($format !== 'pdf'): ?>
         <div class="d-flex justify-content-between align-items-center mb-4 no-print">
             <div>
                 <a href="cabinet.php" class="btn btn-secondary">
@@ -148,6 +333,7 @@ if ($qrFile === false) {
                 </button>
             </div>
         </div>
+        <?php endif; ?>
         
         <div class="card">
             <div class="card-header export-header">
@@ -157,7 +343,51 @@ if ($qrFile === false) {
                 </div>
             </div>
             <div class="card-body">
-                <!-- Cabinet Summary -->
+                <?php if ($format === 'pdf'): ?>
+                <!-- Simplified PDF Layout -->
+                <div class="row">
+                    <div class="col-left">
+                        <div class="cabinet-title"><?php echo htmlspecialchars($cabinet['name']); ?></div>
+                        <div class="info-row">
+                            <span class="info-label">Cabinet Number:</span>
+                            <span><?php echo htmlspecialchars($cabinet['cabinet_number']); ?></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Total Items:</span>
+                            <span><?php echo $cabinet['item_count']; ?></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Category:</span>
+                            <span><?php echo $cabinet['categories'] ?: 'Files'; ?></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Last Updated:</span>
+                            <span><?php echo date('F j, Y g:i A', strtotime($cabinet['updated_at'])); ?></span>
+                        </div>
+                    </div>
+                    <div class="col-right">
+                        <?php if ($cabinet['photo_path'] && file_exists($cabinet['photo_path'])): ?>
+                            <img src="<?php echo $cabinet['photo_path']; ?>" 
+                                 class="cabinet-photo" 
+                                 alt="Cabinet Photo">
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
+                <div class="qr-section">
+                    <h5>Scan QR Code for Online Access</h5>
+                    <?php if ($qrFile): ?>
+                        <img src="<?php echo $qrFile; ?>" alt="QR Code" style="max-width: 140px; max-height: 140px;">
+                        <div class="qr-instructions">
+                            Scan with your mobile device to view<br>cabinet details online
+                        </div>
+                    <?php else: ?>
+                        <p>QR code could not be generated</p>
+                    <?php endif; ?>
+                </div>
+                
+                <?php else: ?>
+                <!-- Full HTML Layout for non-PDF formats -->
                 <div class="items-summary">
                     <div class="row">
                         <div class="col-md-8">
@@ -281,6 +511,7 @@ if ($qrFile === false) {
                         </small>
                     </div>
                 </div>
+                <?php endif; ?>
             </div>
         </div>
         
@@ -292,6 +523,7 @@ if ($qrFile === false) {
     </div>
 
     <!-- Share Modal -->
+    <?php if ($format !== 'pdf'): ?>
     <div class="modal fade" id="shareModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -325,10 +557,24 @@ if ($qrFile === false) {
             </div>
         </div>
     </div>
+    <?php endif; ?>
 
+    <?php if ($format !== 'pdf'): ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <?php endif; ?>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         document.addEventListener('DOMContentLoaded', function() {
+            <?php if ($format === 'pdf'): ?>
+            // For PDF format, automatically trigger print dialog
+            setTimeout(function() {
+                window.print();
+                // Close the window after print dialog
+                window.onafterprint = function() {
+                    window.close();
+                };
+            }, 500);
+            <?php else: ?>
+            // Regular HTML format with interactive buttons
             // Print functionality
             const printButton = document.getElementById('printButton');
             if (printButton) {
@@ -402,6 +648,7 @@ if ($qrFile === false) {
                     window.print();
                 }, 500);
             }
+            <?php endif; ?>
         });
     </script>
 </body>
