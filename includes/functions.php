@@ -1,6 +1,69 @@
 <?php
 require_once 'config.php';
 
+// Get the current server base URL (network-aware)
+function getBaseURL() {
+    // Check if network config exists (from server.php)
+    $networkConfigFile = __DIR__ . '/../network_config.json';
+    if (file_exists($networkConfigFile)) {
+        $networkConfig = json_decode(file_get_contents($networkConfigFile), true);
+        if ($networkConfig && isset($networkConfig['base_url'])) {
+            return $networkConfig['base_url'];
+        }
+    }
+    
+    // Fallback to auto-detection
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    
+    // If running on localhost, try to detect local IP for mobile access
+    if ($host === 'localhost' || $host === '127.0.0.1') {
+        $localIP = getServerIP();
+        if ($localIP && $localIP !== '127.0.0.1') {
+            // Check if we're running on a custom port
+            $port = $_SERVER['SERVER_PORT'] ?? '80';
+            if ($port !== '80' && $port !== '443') {
+                return "$protocol://$localIP:$port";
+            }
+            return "$protocol://$localIP";
+        }
+    }
+    
+    return "$protocol://$host";
+}
+
+// Get server IP address for mobile access
+function getServerIP() {
+    // Method 1: Try to get from network config
+    $networkConfigFile = __DIR__ . '/../network_config.json';
+    if (file_exists($networkConfigFile)) {
+        $networkConfig = json_decode(file_get_contents($networkConfigFile), true);
+        if ($networkConfig && isset($networkConfig['server_ip'])) {
+            return $networkConfig['server_ip'];
+        }
+    }
+    
+    // Method 2: Try to detect IP
+    if (function_exists('socket_create')) {
+        $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+        if ($sock) {
+            socket_connect($sock, "8.8.8.8", 53);
+            socket_getsockname($sock, $localIP);
+            socket_close($sock);
+            if ($localIP && $localIP !== '127.0.0.1') {
+                return $localIP;
+            }
+        }
+    }
+    
+    // Method 3: Use server variable if available
+    if (!empty($_SERVER['SERVER_ADDR']) && $_SERVER['SERVER_ADDR'] !== '127.0.0.1') {
+        return $_SERVER['SERVER_ADDR'];
+    }
+    
+    return '127.0.0.1';
+}
+
 // Redirect function with optional message
 function redirect($url, $message = null, $type = 'success') {
     if ($message) {
@@ -230,7 +293,13 @@ function generateQRCode($cabinetNumber, $saveToFile = false) {
         }
     }
     
-    $qrContent = (defined('BASE_URL') ? BASE_URL : 'http://localhost/cabinet-inventory-system/') . "index.php?cabinet=" . urlencode($cabinetNumber);
+    // Use network-aware base URL for mobile access
+    $baseUrl = getBaseURL() . '/';
+    if (defined('BASE_URL')) {
+        $baseUrl = BASE_URL;
+    }
+    
+    $qrContent = $baseUrl . "index.php?cabinet=" . urlencode($cabinetNumber);
     $qrFileName = 'cabinet_' . preg_replace('/[^a-zA-Z0-9]/', '_', $cabinetNumber) . '.png';
     $qrFile = $qrDir . $qrFileName;
     $qrRelativePath = 'qrcodes/' . $qrFileName;
@@ -251,7 +320,6 @@ function generateQRCode($cabinetNumber, $saveToFile = false) {
     
     // Method 1: Use QR proxy to bypass CSP restrictions
     try {
-        $baseUrl = defined('BASE_URL') ? BASE_URL : 'http://localhost/cabinet-inventory-system/';
         $proxyUrl = $baseUrl . 'qr_proxy.php?data=' . urlencode($qrContent) . '&size=300';
         
         // Return the proxy URL - it will handle the generation and serve locally
@@ -263,7 +331,6 @@ function generateQRCode($cabinetNumber, $saveToFile = false) {
     
     // Method 2: Use simple QR generator
     try {
-        $baseUrl = defined('BASE_URL') ? BASE_URL : 'http://localhost/cabinet-inventory-system/';
         $simpleQrUrl = $baseUrl . 'simple_qr.php?text=' . urlencode($qrContent) . '&size=300';
         
         return $simpleQrUrl;

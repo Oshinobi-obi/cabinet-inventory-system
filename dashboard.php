@@ -46,6 +46,41 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'recent_activity') {
     }
 }
 
+// Handle AJAX request for adding category
+if (isset($_POST['add_category']) && $_SERVER['REQUEST_METHOD'] == 'POST') {
+    header('Content-Type: application/json');
+    
+    $categoryName = sanitizeInput($_POST['category_name']);
+    
+    if (empty($categoryName)) {
+        echo json_encode(['success' => false, 'message' => 'Category name is required']);
+        exit;
+    }
+    
+    try {
+        // Check if category already exists
+        $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM categories WHERE name = ?");
+        $stmt->execute([$categoryName]);
+        $exists = $stmt->fetch()['count'] > 0;
+        
+        if ($exists) {
+            echo json_encode(['success' => false, 'message' => 'Category already exists']);
+            exit;
+        }
+        
+        // Insert new category
+        $stmt = $pdo->prepare("INSERT INTO categories (name) VALUES (?)");
+        $stmt->execute([$categoryName]);
+        
+        echo json_encode(['success' => true, 'message' => 'Category Added Successfully ✓']);
+        exit;
+        
+    } catch(PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        exit;
+    }
+}
+
 // Get dashboard statistics
 try {
     // Count cabinets
@@ -91,6 +126,7 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="assets/css/navbar.css" rel="stylesheet">
     <link href="assets/css/dashboard.css" rel="stylesheet">
+    <link href="assets/css/mobile-enhancements.css" rel="stylesheet">
     <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         /* Hide number input spinners/arrows */
         .page-input::-webkit-outer-spin-button,
@@ -470,6 +506,15 @@ try {
                                     <i class="fas fa-tags fa-2x text-muted mb-2"></i>
                                     <p class="text-muted mb-0">No categories found</p>
                                 </div>
+                            <?php endif; ?>
+                            
+                            <!-- Add Categories Button -->
+                            <?php if ($_SESSION['user_role'] === 'admin' || $_SESSION['user_role'] === 'encoder'): ?>
+                            <div class="text-center mt-3">
+                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                                    <i class="fas fa-plus me-1"></i>Add Categories
+                                </button>
+                            </div>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -852,6 +897,34 @@ try {
                 <div class="modal-footer border-0 justify-content-center">
                     <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Category Modal -->
+    <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="addCategoryForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addCategoryModalLabel">
+                            <i class="fas fa-tags me-2"></i>Add New Category
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="category_name" class="form-label">Category Name <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
+                            <input type="text" class="form-control" id="category_name" name="category_name" required placeholder="Enter category name">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Add Category
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -1719,7 +1792,72 @@ try {
                 }
             }
         }
+
+        // Add Category Form Handling
+        const addCategoryForm = document.getElementById('addCategoryForm');
+        if (addCategoryForm) {
+            addCategoryForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                
+                // Show loading state
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Adding...';
+                submitBtn.disabled = true;
+                
+                const formData = new FormData();
+                formData.append('add_category', 'true');
+                formData.append('category_name', document.getElementById('category_name').value);
+                
+                fetch('dashboard.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Reset button
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                    
+                    if (data.success) {
+                        // Close the add category modal
+                        const addModal = bootstrap.Modal.getInstance(document.getElementById('addCategoryModal'));
+                        addModal.hide();
+                        
+                        // Reset form
+                        document.getElementById('category_name').value = '';
+                        
+                        // Show success modal with custom message
+                        document.getElementById('successMessage').textContent = data.message;
+                        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                        successModal.show();
+                        
+                        // Refresh the page after success modal is closed
+                        const successModalElement = document.getElementById('successModal');
+                        const refreshHandler = function() {
+                            window.location.reload();
+                            successModalElement.removeEventListener('hidden.bs.modal', refreshHandler);
+                        };
+                        successModalElement.addEventListener('hidden.bs.modal', refreshHandler);
+                        
+                    } else {
+                        // Show error
+                        alert('Error: ' + (data.message || 'Failed to add category'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error adding category:', error);
+                    
+                    // Reset button
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                    
+                    alert('Error adding category. Please try again.');
+                });
+            });
+        }
+        
     </script>
-    });
 </body>
 </html>
