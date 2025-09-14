@@ -4,30 +4,63 @@
  * This script starts a PHP server that can be accessed from mobile devices on the same network
  */
 
-// Get the local IP address
+// Get the local IP address (Windows-compatible)
 function getLocalIP() {
-    // Try to get the local IP address
     $localIP = null;
     
-    // Method 1: Use socket connection (works on most systems)
-    $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-    if ($sock) {
-        socket_connect($sock, "8.8.8.8", 53);
-        socket_getsockname($sock, $localIP);
-        socket_close($sock);
+    // Method 1: Try using shell command (Windows)
+    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        // Windows method using ipconfig
+        $output = shell_exec('ipconfig | findstr /i "IPv4"');
+        if ($output) {
+            // Extract IP addresses from ipconfig output
+            preg_match_all('/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $output, $matches);
+            if (isset($matches[1])) {
+                foreach ($matches[1] as $ip) {
+                    // Skip localhost and look for private network IPs
+                    if ($ip !== '127.0.0.1' && 
+                        (strpos($ip, '192.168.') === 0 || 
+                         strpos($ip, '10.') === 0 || 
+                         strpos($ip, '172.') === 0)) {
+                        $localIP = $ip;
+                        break;
+                    }
+                }
+            }
+        }
+    } else {
+        // Unix/Linux/Mac method
+        $output = shell_exec("ifconfig | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | head -1");
+        if ($output) {
+            $localIP = trim($output);
+        }
     }
     
-    // Fallback method if socket doesn't work
+    // Method 2: Try using hostname (fallback)
     if (!$localIP) {
-        // Try to get from hostname
-        $localIP = gethostbyname(trim(`hostname`));
+        $hostname = gethostname();
+        $localIP = gethostbyname($hostname);
+        
+        // If it returns the same as hostname or localhost, it didn't work
+        if ($localIP === $hostname || $localIP === '127.0.0.1') {
+            $localIP = null;
+        }
+    }
+    
+    // Method 3: Try to get from $_SERVER if available (when running in web context)
+    if (!$localIP && isset($_SERVER['SERVER_ADDR'])) {
+        $serverAddr = $_SERVER['SERVER_ADDR'];
+        if ($serverAddr !== '127.0.0.1' && $serverAddr !== '::1') {
+            $localIP = $serverAddr;
+        }
     }
     
     // Final fallback
     if (!$localIP || $localIP === '127.0.0.1') {
         $localIP = '127.0.0.1';
         echo "⚠️  Warning: Could not detect network IP. Using localhost only.\n";
-        echo "   Make sure you're connected to a network to access from mobile devices.\n\n";
+        echo "   Make sure you're connected to a network to access from mobile devices.\n";
+        echo "   Try running: ipconfig (Windows) or ifconfig (Mac/Linux) to see your IP.\n\n";
     }
     
     return $localIP;

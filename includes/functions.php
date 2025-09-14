@@ -43,20 +43,44 @@ function getServerIP() {
         }
     }
     
-    // Method 2: Try to detect IP
-    if (function_exists('socket_create')) {
-        $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-        if ($sock) {
-            socket_connect($sock, "8.8.8.8", 53);
-            socket_getsockname($sock, $localIP);
-            socket_close($sock);
+    // Method 2: Windows-compatible IP detection
+    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        // Windows method using ipconfig
+        $output = shell_exec('ipconfig | findstr /i "IPv4"');
+        if ($output) {
+            // Extract IP addresses from ipconfig output
+            preg_match_all('/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $output, $matches);
+            if (isset($matches[1])) {
+                foreach ($matches[1] as $ip) {
+                    // Skip localhost and look for private network IPs
+                    if ($ip !== '127.0.0.1' && 
+                        (strpos($ip, '192.168.') === 0 || 
+                         strpos($ip, '10.') === 0 || 
+                         strpos($ip, '172.') === 0)) {
+                        return $ip;
+                    }
+                }
+            }
+        }
+    } else {
+        // Unix/Linux/Mac method
+        $output = shell_exec("ifconfig | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | head -1");
+        if ($output) {
+            $localIP = trim($output);
             if ($localIP && $localIP !== '127.0.0.1') {
                 return $localIP;
             }
         }
     }
     
-    // Method 3: Use server variable if available
+    // Method 3: Try hostname method
+    $hostname = gethostname();
+    $localIP = gethostbyname($hostname);
+    if ($localIP && $localIP !== $hostname && $localIP !== '127.0.0.1') {
+        return $localIP;
+    }
+    
+    // Method 4: Use server variable if available
     if (!empty($_SERVER['SERVER_ADDR']) && $_SERVER['SERVER_ADDR'] !== '127.0.0.1') {
         return $_SERVER['SERVER_ADDR'];
     }

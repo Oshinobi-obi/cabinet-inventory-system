@@ -9,7 +9,26 @@ define('SITE_NAME', 'Cabinet Information System');
 define('BASE_URL', 'http://' . $_SERVER['HTTP_HOST'] . '/cabinet-inventory-system/');
 
 // Database configuration
-define('DB_HOST', 'localhost');     // Replace with your MySQL server IP/hostname
+// Smart database host detection for network access
+function getDbHost() {
+    // Check if we have network config (from mobile server)
+    $networkConfigFile = dirname(dirname(__FILE__)) . '/network_config.json';
+    if (file_exists($networkConfigFile)) {
+        $networkConfig = json_decode(file_get_contents($networkConfigFile), true);
+        if ($networkConfig && isset($networkConfig['server_ip'])) {
+            $serverIP = $networkConfig['server_ip'];
+            // If accessed via network IP, use that for database connection too
+            if (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], $serverIP) !== false) {
+                return $serverIP;
+            }
+        }
+    }
+    
+    // For localhost access, use localhost
+    return 'localhost';
+}
+
+define('DB_HOST', getDbHost());     // Smart host detection
 define('DB_PORT', '3306');          // Replace with your MySQL server port if different
 define('DB_NAME', 'cabinet_info_system');
 define('DB_USER', 'root'); // Replace with your MySQL username
