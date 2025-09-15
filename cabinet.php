@@ -44,7 +44,7 @@ if (isset($_GET['action'])) {
         [$success, $qrPathOrError, $cabinet] = generateAndSaveQRCodeToDB($pdo, $cabinetId);
         
         if ($success) {
-            $_SESSION['success'] = "QR Code generated and saved successfully for " . $cabinet['name'] . "!";
+            // Don't set regular success message, use modal instead
             $_SESSION['qr_file'] = $qrPathOrError;
             $_SESSION['qr_cabinet_number'] = $cabinet['cabinet_number'];
             $_SESSION['qr_cabinet_name'] = $cabinet['name'];
@@ -58,58 +58,6 @@ if (isset($_GET['action'])) {
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['add_cabinet'])) {
-        // Add new cabinet
-        $cabinetNumber = sanitizeInput($_POST['cabinet_number']);
-        $name = sanitizeInput($_POST['name']);
-        
-        // Handle file upload
-        $photoPath = null;
-        if (isset($_FILES['photo']) && $_FILES['photo']['error'] == UPLOAD_ERR_OK) {
-            $uploadDir = 'uploads/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-            }
-            
-            $fileName = time() . '_' . basename($_FILES['photo']['name']);
-            $targetPath = $uploadDir . $fileName;
-            
-            if (move_uploaded_file($_FILES['photo']['tmp_name'], $targetPath)) {
-                $photoPath = $targetPath;
-            }
-        }
-        
-        try {
-            $stmt = $pdo->prepare("INSERT INTO cabinets (cabinet_number, name, photo_path) VALUES (?, ?, ?)");
-            $stmt->execute([$cabinetNumber, $name, $photoPath]);
-            
-            $cabinetId = $pdo->lastInsertId();
-            
-            // Add items
-            if (isset($_POST['items']) && is_array($_POST['items'])) {
-                foreach ($_POST['items'] as $item) {
-                    if (!empty($item['name']) && !empty($item['category'])) {
-                        $stmt = $pdo->prepare("
-                            INSERT INTO items (cabinet_id, category_id, name, quantity) 
-                            VALUES (?, ?, ?, ?)
-                        ");
-                        $stmt->execute([
-                            $cabinetId, 
-                            $item['category'], 
-                            sanitizeInput($item['name']), 
-                            intval($item['quantity'])
-                        ]);
-                    }
-                }
-            }
-            
-            $_SESSION['success'] = "Cabinet added successfully!";
-            redirect('cabinet.php');
-        } catch(PDOException $e) {
-            $error = "Error adding cabinet: " . $e->getMessage();
-        }
-    }
-    
     if (isset($_POST['edit_cabinet'])) {
         // Edit existing cabinet
         $cabinetId = intval($_POST['cabinet_id']);
@@ -170,22 +118,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// Get all cabinets
-$stmt = $pdo->query("
+// Pagination setup
+$itemsPerPage = 5;
+$currentPage = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$offset = ($currentPage - 1) * $itemsPerPage;
+
+// Get total count of cabinets
+$countStmt = $pdo->query("SELECT COUNT(*) FROM cabinets");
+$totalCabinets = $countStmt->fetchColumn();
+$totalPages = ceil($totalCabinets / $itemsPerPage);
+
+// Get cabinets for current page
+$stmt = $pdo->prepare("
     SELECT c.*, COUNT(i.id) as item_count 
     FROM cabinets c 
     LEFT JOIN items i ON c.id = i.cabinet_id 
     GROUP BY c.id 
-    ORDER BY c.updated_at DESC
+    ORDER BY c.updated_at DESC 
+    LIMIT ? OFFSET ?
 ");
+$stmt->execute([$itemsPerPage, $offset]);
 $cabinets = $stmt->fetchAll();
 
 // Get categories for dropdown
 $stmt = $pdo->query("SELECT * FROM categories ORDER BY name");
 $categories = $stmt->fetchAll();
-
-// Generate cabinet number
-$cabinetNumber = generateCabinetNumber($pdo);
 ?>
 
 <!DOCTYPE html>
@@ -280,78 +237,6 @@ $cabinetNumber = generateCabinetNumber($pdo);
                 </div>
             <?php endif; ?>
             
-            <!-- Add Cabinet Form -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title">Add New Cabinet</h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="" enctype="multipart/form-data">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="cabinet_number" class="form-label">Cabinet Number <span class="text-muted">(Auto Generated)</span></label>
-                                <input type="text" class="form-control" id
-                                ="cabinet_number" 
-                                       name="cabinet_number" value="<?php echo $cabinetNumber; ?>" readonly>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="name" class="form-label">Cabinet Name <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
-                                <input type="text" class="form-control" id="name" name="name" required>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="photo" class="form-label">Cabinet Photo</label>
-                            <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
-                        </div>
-                        
-                        <h5 class="mt-4 mb-3">Cabinet Contents</h5>
-                        
-                        <div id="items-container">
-                            <div class="item-row">
-                                <div class="row g-2">
-                                    <div class="col-12">
-                                        <div class="row g-2">
-                                            <div class="col-md-4 col-sm-6">
-                                                <label class="form-label">Item Name</label>
-                                                <input type="text" class="form-control" name="items[0][name]" required>
-                                            </div>
-                                            <div class="col-md-3 col-sm-6">
-                                                <label class="form-label">Category</label>
-                                                <select class="form-select" name="items[0][category]" required>
-                                                    <option value="">Select Category</option>
-                                                    <?php foreach ($categories as $category): ?>
-                                                        <option value="<?php echo $category['id']; ?>"><?php echo $category['name']; ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3 col-sm-8">
-                                                <label class="form-label">Quantity</label>
-                                                <input type="number" class="form-control" name="items[0][quantity]" value="1" min="1">
-                                            </div>
-                                            <div class="col-md-2 col-sm-4 d-flex align-items-end">
-                                                <button type="button" class="btn btn-danger remove-item w-100">
-                                                    <i class="fas fa-trash me-1"></i> Remove
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <button type="button" id="add-item" class="btn btn-secondary mt-3 w-100">
-                            <i class="fas fa-plus me-1"></i> Add Another Item</button>
-                        
-                        <div class="mt-4">
-                            <button type="submit" name="add_cabinet" class="btn btn-primary w-100">
-                                <i class="fas fa-save me-1"></i> Save Cabinet
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            
             <!-- Cabinets List -->
             <div class="card">
                 <div class="card-header">
@@ -393,45 +278,75 @@ $cabinetNumber = generateCabinetNumber($pdo);
                                         <td><?php echo date('M j, Y', strtotime($cabinet['updated_at'])); ?></td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-sm btn-info view-cabinet-btn" 
+                                                <button type="button" class="btn btn-sm btn-info view-cabinet-btn me-1" 
                                                         data-cabinet-id="<?php echo $cabinet['id']; ?>"
                                                         title="View Cabinet Details"
-                                                        data-bs-toggle="tooltip">
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#viewCabinetModal">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-success edit-cabinet-btn" 
+                                                <button type="button" class="btn btn-sm btn-success edit-cabinet-btn me-1" 
                                                         data-cabinet-id="<?php echo $cabinet['id']; ?>"
-                                                        title="Edit Cabinet"
-                                                        data-bs-toggle="tooltip">
+                                                        title="Edit Cabinet">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                <a href="export.php?cabinet_id=<?php echo $cabinet['id']; ?>" 
-                                                   class="btn btn-sm btn-warning" 
-                                                   title="Export & Print"
-                                                   data-bs-toggle="tooltip">
-                                                    <i class="fas fa-download"></i>
-                                                </a>
-                                                <a href="cabinet.php?action=generate_qr&id=<?php echo $cabinet['id']; ?>" 
-                                                   class="btn btn-sm btn-secondary" 
-                                                   title="Generate QR Code"
-                                                   data-bs-toggle="tooltip">
-                                                    <i class="fas fa-qrcode"></i>
-                                                </a>
-                                                <?php if ($_SESSION['user_role'] == 'admin'): ?>
-                                                <button type="button" class="btn btn-sm btn-danger delete-cabinet-btn" 
+                                                <button type="button" class="btn btn-sm btn-warning export-cabinet-btn me-1" 
                                                         data-cabinet-id="<?php echo $cabinet['id']; ?>"
-                                                        data-cabinet-name="<?php echo htmlspecialchars($cabinet['name']); ?>"
-                                                        title="Delete Cabinet"
-                                                        data-bs-toggle="tooltip">
-                                                    <i class="fas fa-trash"></i>
+                                                        title="Export Cabinet"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#exportModal">
+                                                    <i class="fas fa-download"></i>
                                                 </button>
-                                                <?php endif; ?>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-secondary qr-generate-btn" 
+                                                        title="Generate QR Code"
+                                                        data-bs-toggle="tooltip"
+                                                        data-cabinet-id="<?php echo $cabinet['id']; ?>">
+                                                    <i class="fas fa-qrcode"></i>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <?php if ($totalPages > 1): ?>
+                            <nav aria-label="Cabinet pagination" class="mt-4">
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <!-- Previous button -->
+                                    <?php if ($currentPage > 1): ?>
+                                        <a class="btn btn-outline-secondary btn-sm me-3" href="?page=<?php echo $currentPage - 1; ?>">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    <?php else: ?>
+                                        <button class="btn btn-outline-secondary btn-sm me-3" disabled>
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                    
+                                    <!-- Current page indicator -->
+                                    <span class="fw-bold"><?php echo $currentPage; ?></span>
+                                    
+                                    <!-- Next button -->
+                                    <?php if ($currentPage < $totalPages): ?>
+                                        <a class="btn btn-outline-secondary btn-sm ms-3" href="?page=<?php echo $currentPage + 1; ?>">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    <?php else: ?>
+                                        <button class="btn btn-outline-secondary btn-sm ms-3" disabled>
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </nav>
+                        <?php endif; ?>
+                        
+                        <!-- Pagination info -->
+                        <div class="text-center text-muted mt-2">
+                            Showing <?php echo (($currentPage - 1) * $itemsPerPage) + 1; ?>-<?php echo min($currentPage * $itemsPerPage, $totalCabinets); ?> of <?php echo $totalCabinets; ?> cabinets
                         </div>
                     <?php else: ?>
                         <p class="text-muted">No cabinets found.</p>
@@ -450,11 +365,140 @@ $cabinetNumber = generateCabinetNumber($pdo);
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="viewCabinetContent">
+                    <!-- Loading State -->
+                    <div id="view-loading-state" class="text-center py-5">
+                        <lottie-player
+                            src="assets/images/Trail loading.json"
+                            background="transparent"
+                            speed="1"
+                            style="width: 150px; height: 150px; margin: 0 auto;"
+                            loop
+                            autoplay>
+                        </lottie-player>
+                        <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
+                    </div>
+                    
                     <!-- Content will be loaded here -->
+                    <div id="view-content-container" style="display: none;">
+                        <!-- Dynamic content goes here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <?php if ($_SESSION['user_role'] == 'admin'): ?>
+                    <button type="button" class="btn btn-danger" id="deleteCabinetBtn" data-bs-toggle="modal" data-bs-target="#deleteCabinetModal">
+                        <i class="fas fa-trash me-1"></i> Delete Cabinet
+                    </button>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Cabinet Confirmation Modal -->
+    <div class="modal fade" id="deleteCabinetModal" tabindex="-1" aria-labelledby="deleteCabinetModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteCabinetModalLabel">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Delete Cabinet
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> This action cannot be undone!
+                    </div>
+                    <p>Are you sure you want to delete this cabinet?</p>
+                    <div id="deleteCabinetDetails" class="border rounded p-3 bg-light">
+                        <!-- Cabinet details will be populated here -->
+                    </div>
+                    <p class="text-muted mt-3">
+                        <i class="fas fa-info-circle me-1"></i>
+                        All items inside this cabinet will also be deleted.
+                    </p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i> Close
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="fas fa-trash me-1"></i> Delete Cabinet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Data Modal -->
+    <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exportModalLabel">
+                        <i class="fas fa-download me-2"></i>Export Cabinet Data
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Loading Overlay -->
+                    <div id="export-loading-overlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9); z-index: 1000; border-radius: 0.375rem;">
+                        <div class="d-flex flex-column justify-content-center align-items-center h-100">
+                            <lottie-player
+                                src="assets/images/Trail loading.json"
+                                background="transparent"
+                                speed="1"
+                                style="width: 120px; height: 120px;"
+                                loop
+                                autoplay>
+                            </lottie-player>
+                            <h6 class="mt-2 text-muted">Preparing Export...</h6>
+                        </div>
+                    </div>
+                    
+                    <!-- Export Form -->
+                    <form id="exportForm">
+                        <div class="mb-3">
+                            <label for="export_cabinet" class="form-label">Select Cabinet to Export</label>
+                            <select class="form-select" id="export_cabinet" name="cabinet_id" required>
+                                <option value="">Choose a cabinet...</option>
+                                <option value="all" id="all-cabinets-option">All Cabinets</option>
+                                <?php 
+                                try {
+                                    $stmt = $pdo->query("SELECT id, cabinet_number, name FROM cabinets ORDER BY cabinet_number");
+                                    $exportCabinets = $stmt->fetchAll();
+                                    foreach ($exportCabinets as $cabinet): ?>
+                                        <option value="<?php echo $cabinet['id']; ?>">
+                                            <?php echo $cabinet['cabinet_number'] . ' - ' . $cabinet['name']; ?>
+                                        </option>
+                                    <?php endforeach; 
+                                } catch(Exception $e) { /* ignore */ } 
+                                ?>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Export Format</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="format" id="format_pdf" value="pdf" checked>
+                                <label class="form-check-label" for="format_pdf">
+                                    <i class="fas fa-file-pdf text-danger me-1"></i>PDF Document
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="format" id="format_excel" value="excel">
+                                <label class="form-check-label" for="format_excel">
+                                    <i class="fas fa-file-excel text-success me-1"></i>Excel Spreadsheet
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="downloadExportBtn">
+                        <i class="fas fa-download me-1"></i> Download
                     </button>
                 </div>
             </div>
@@ -463,54 +507,75 @@ $cabinetNumber = generateCabinetNumber($pdo);
 
     <!-- Edit Cabinet Modal -->
     <div class="modal fade" id="editCabinetModal" tabindex="-1" aria-labelledby="editCabinetModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editCabinetModalLabel">Edit Cabinet</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editCabinetForm" method="POST" action="" enctype="multipart/form-data">
-                        <input type="hidden" name="cabinet_id" id="edit_cabinet_id">
-                        <input type="hidden" name="existing_photo" id="edit_existing_photo">
+                <form id="editCabinetForm" method="POST" action="cabinet.php" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editCabinetModalLabel">
+                            <i class="fas fa-edit me-2"></i>Edit Cabinet
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Loading State -->
+                        <div id="edit-loading-state" class="text-center py-5">
+                            <lottie-player
+                                src="assets/images/Trail loading.json"
+                                background="transparent"
+                                speed="1"
+                                style="width: 150px; height: 150px; margin: 0 auto;"
+                                loop
+                                autoplay>
+                            </lottie-player>
+                            <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
+                        </div>
                         
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="edit_cabinet_number" class="form-label">Cabinet Number</label>
-                                <input type="text" class="form-control" id="edit_cabinet_number" readonly>
+                        <!-- Form Content -->
+                        <div id="edit-form-content" style="display: none;">
+                            <input type="hidden" id="edit_cabinet_id" name="cabinet_id">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="edit_cabinet_number" class="form-label">Cabinet Number</label>
+                                    <input type="text" class="form-control" id="edit_cabinet_number" name="cabinet_number" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="edit_name" class="form-label">Cabinet Name <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
+                                    <input type="text" class="form-control" id="edit_name" name="name" required>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <label for="edit_name" class="form-label">Cabinet Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="edit_name" name="name" required>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-8">
+                                    <label for="edit_photo" class="form-label">Cabinet Photo</label>
+                                    <input type="file" class="form-control" id="edit_photo" name="photo" accept="image/*">
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        <span id="current-photo-text">Leave empty to keep current photo</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4" id="current-photo-preview">
+                                    <!-- Current photo preview will be shown here -->
+                                </div>
                             </div>
+                            
+                            <h6 class="mt-4 mb-3">Cabinet Contents</h6>
+                            
+                            <div id="edit-items-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 15px; background-color: #f8f9fa;">
+                                <!-- Items will be loaded dynamically -->
+                            </div>
+                            
+                            <button type="button" id="add-edit-item" class="btn btn-secondary btn-sm mt-2">
+                                <i class="fas fa-plus me-1"></i> Add Another Item
+                            </button>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="edit_photo" class="form-label">Cabinet Photo</label>
-                            <input type="file" class="form-control" id="edit_photo" name="photo" accept="image/*">
-                            <div id="current_photo_preview" class="mt-2"></div>
-                        </div>
-                        
-                        <h5 class="mt-4 mb-3">Cabinet Contents</h5>
-                        
-                        <div id="edit-items-container">
-                            <!-- Items will be loaded here -->
-                        </div>
-                        
-                        <button type="button" id="edit-add-item" class="btn btn-secondary mt-3">
-                            <i class="fas fa-plus me-1"></i> Add Another Item
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" name="edit_cabinet" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Save Changes
                         </button>
-                        
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i> Cancel
-                    </button>
-                    <button type="submit" name="edit_cabinet" form="editCabinetForm" class="btn btn-primary">
-                        <i class="fas fa-save me-1"></i> Update Cabinet
-                    </button>
-                </div>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -598,156 +663,48 @@ $cabinetNumber = generateCabinetNumber($pdo);
     unset($_SESSION['qr_file'], $_SESSION['qr_cabinet_number'], $_SESSION['qr_cabinet_name']); 
     endif; ?>
 
+    <!-- Success Message Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="fas fa-check-circle fa-3x text-success"></i>
+                    </div>
+                    <h5 class="mb-0" id="successMessage">Operation Successful!</h5>
+                </div>
+                <div class="modal-footer border-0 justify-content-center">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Success Modal -->
+    <div class="modal fade" id="qrSuccessModal" tabindex="-1" aria-labelledby="qrSuccessModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="fas fa-check-circle fa-3x text-success"></i>
+                    </div>
+                    <h5 id="qrSuccessMessage">Cabinet QR Code Generated Successfully ✓</h5>
+                </div>
+                <div class="modal-footer border-0 justify-content-center">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         // Categories data for JavaScript
         window.cabinetCategories = <?php echo json_encode($categories); ?>;
         
         // Add/remove item rows dynamically
         let itemCount = 1;
-        
-        // View cabinet function
-        function viewCabinet(cabinetId) {
-            console.log('viewCabinet called with ID:', cabinetId);
-            const url = `cabinet_api.php?action=get_cabinet&id=${cabinetId}`;
-            console.log('Fetching URL:', url);
-            
-            fetch(url)
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('API Response:', data);
-                    if (data.success) {
-                        displayCabinetView(data.cabinet, data.items);
-                        const modalElement = document.getElementById('viewCabinetModal');
-                        
-                        // Ensure any existing backdrop is removed
-                        const existingBackdrop = document.querySelector('.modal-backdrop');
-                        if (existingBackdrop) {
-                            existingBackdrop.remove();
-                        }
-                        
-                        // Reset body state
-                        document.body.classList.remove('modal-open');
-                        document.body.style.overflow = '';
-                        document.body.style.paddingRight = '';
-                        
-                        // Create fresh modal instance
-                        const modal = new bootstrap.Modal(modalElement, {
-                            backdrop: true,
-                            keyboard: true,
-                            focus: true
-                        });
-                        modal.show();
-                    } else {
-                        alert('Error loading cabinet details: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Fetch error:', error);
-                    alert('Error loading cabinet details: ' + error.message);
-                });
-        }
-        
-        // Edit cabinet function
-        function editCabinet(cabinetId) {
-            console.log('editCabinet called with ID:', cabinetId);
-            const url = `cabinet_api.php?action=get_cabinet&id=${cabinetId}`;
-            console.log('Fetching URL:', url);
-            
-            fetch(url)
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('API Response:', data);
-                    if (data.success) {
-                        populateEditForm(data.cabinet, data.items);
-                        const modalElement = document.getElementById('editCabinetModal');
-                        
-                        // Ensure any existing backdrop is removed
-                        const existingBackdrop = document.querySelector('.modal-backdrop');
-                        if (existingBackdrop) {
-                            existingBackdrop.remove();
-                        }
-                        
-                        // Reset body state
-                        document.body.classList.remove('modal-open');
-                        document.body.style.overflow = '';
-                        document.body.style.paddingRight = '';
-                        
-                        // Create fresh modal instance
-                        const modal = new bootstrap.Modal(modalElement, {
-                            backdrop: true,
-                            keyboard: true,
-                            focus: true
-                        });
-                        modal.show();
-                    } else {
-                        alert('Error loading cabinet details: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Fetch error:', error);
-                    alert('Error loading cabinet details: ' + error.message);
-                });
-        }
-        
-        // Delete cabinet function
-        function deleteCabinet(cabinetId, cabinetName) {
-            console.log('deleteCabinet called with ID:', cabinetId, 'Name:', cabinetName);
-            document.getElementById('deleteCabinetName').textContent = cabinetName;
-            document.getElementById('confirmDeleteBtn').href = `cabinet.php?action=delete&id=${cabinetId}`;
-            
-            const modalElement = document.getElementById('deleteCabinetModal');
-            
-            // Ensure any existing backdrop is removed
-            const existingBackdrop = document.querySelector('.modal-backdrop');
-            if (existingBackdrop) {
-                existingBackdrop.remove();
-            }
-            
-            // Reset body state
-            document.body.classList.remove('modal-open');
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
-            
-            const modal = new bootstrap.Modal(modalElement, {
-                backdrop: true,
-                keyboard: true,
-                focus: true
-            });
-            modal.show();
-        }
-        
-        // Force cleanup function for stuck modals
-        function forceCleanupModals() {
-            // Remove any lingering backdrops
-            document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-                backdrop.remove();
-            });
-            
-            // Reset body state
-            document.body.classList.remove('modal-open');
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
-            
-            // Hide any visible modals
-            document.querySelectorAll('.modal.show').forEach(modal => {
-                modal.classList.remove('show');
-                modal.setAttribute('aria-hidden', 'true');
-                modal.style.display = 'none';
-            });
-        }
         
         document.addEventListener('DOMContentLoaded', function() {
             // Toggle sidebar
@@ -762,89 +719,27 @@ $cabinetNumber = generateCabinetNumber($pdo);
                 });
             }
             
+            // QR Generation button event listeners
+            document.querySelectorAll('.qr-generate-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const cabinetId = this.getAttribute('data-cabinet-id');
+                    generateQR(cabinetId);
+                });
+            });
+            
             // Initialize tooltips
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
-            
-            // Add event listeners for cabinet actions
-            setupCabinetActionListeners();
-            
-            // Debug: Log if functions are properly defined
-            if (typeof viewCabinet === 'function') {
-                console.log('viewCabinet function is defined');
-            } else {
-                console.error('viewCabinet function is not defined');
-            }
-            
-            if (typeof editCabinet === 'function') {
-                console.log('editCabinet function is defined');
-            } else {
-                console.error('editCabinet function is not defined');
-            }
-            
-            // Show QR modal if QR code was generated
+
+            // Show QR success modal if QR code was generated
             <?php if (isset($_SESSION['qr_file'])): ?>
-            const qrModal = new bootstrap.Modal(document.getElementById('qrModal'));
-            qrModal.show();
+            document.getElementById('qrSuccessMessage').textContent = '<?php echo $_SESSION['qr_cabinet_name']; ?> QR Code Generated Successfully ✓';
+            const qrSuccessModal = new bootstrap.Modal(document.getElementById('qrSuccessModal'));
+            qrSuccessModal.show();
             <?php endif; ?>
         });
-        
-        document.getElementById('add-item').addEventListener('click', function() {
-            addItemRow('items-container', itemCount, 'items');
-            itemCount++;
-        });
-        
-        document.getElementById('edit-add-item').addEventListener('click', function() {
-            addItemRow('edit-items-container', editItemCount, 'items');
-            editItemCount++;
-        });
-        
-        function addItemRow(containerId, index, namePrefix) {
-            const container = document.getElementById(containerId);
-            const newRow = document.createElement('div');
-            newRow.className = 'item-row';
-            
-            let categoriesOptions = '<option value="">Select Category</option>';
-            categories.forEach(category => {
-                categoriesOptions += `<option value="${category.id}">${category.name}</option>`;
-            });
-            
-            newRow.innerHTML = `
-                <div class="row g-2">
-                    <div class="col-12">
-                        <div class="row g-2">
-                            <div class="col-md-4 col-sm-6">
-                                <label class="form-label">Item Name</label>
-                                <input type="text" class="form-control" name="${namePrefix}[${index}][name]" required>
-                            </div>
-                            <div class="col-md-3 col-sm-6">
-                                <label class="form-label">Category</label>
-                                <select class="form-select" name="${namePrefix}[${index}][category]" required>
-                                    ${categoriesOptions}
-                                </select>
-                            </div>
-                            <div class="col-md-3 col-sm-8">
-                                <label class="form-label">Quantity</label>
-                                <input type="number" class="form-control" name="${namePrefix}[${index}][quantity]" value="1" min="1">
-                            </div>
-                            <div class="col-md-2 col-sm-4 d-flex align-items-end">
-                                <button type="button" class="btn btn-danger remove-item w-100">
-                                    <i class="fas fa-trash me-1"></i> Remove
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            container.appendChild(newRow);
-            
-            // Add event listener to the new remove button
-            newRow.querySelector('.remove-item').addEventListener('click', function() {
-                newRow.remove();
-            });
-        }
         
         // Add event listeners to existing remove buttons
         document.querySelectorAll('.remove-item').forEach(button => {
@@ -853,177 +748,6 @@ $cabinetNumber = generateCabinetNumber($pdo);
             });
         });
         
-        // Setup cabinet action listeners
-        function setupCabinetActionListeners() {
-            console.log('Setting up cabinet action listeners...');
-            
-            // View cabinet buttons
-            const viewButtons = document.querySelectorAll('.view-cabinet-btn');
-            console.log('Found', viewButtons.length, 'view buttons');
-            viewButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const cabinetId = this.getAttribute('data-cabinet-id');
-                    console.log('View button clicked for cabinet ID:', cabinetId);
-                    viewCabinet(cabinetId);
-                });
-            });
-            
-            // Edit cabinet buttons
-            const editButtons = document.querySelectorAll('.edit-cabinet-btn');
-            console.log('Found', editButtons.length, 'edit buttons');
-            editButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const cabinetId = this.getAttribute('data-cabinet-id');
-                    console.log('Edit button clicked for cabinet ID:', cabinetId);
-                    editCabinet(cabinetId);
-                });
-            });
-            
-            // Delete cabinet buttons
-            const deleteButtons = document.querySelectorAll('.delete-cabinet-btn');
-            console.log('Found', deleteButtons.length, 'delete buttons');
-            deleteButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const cabinetId = this.getAttribute('data-cabinet-id');
-                    const cabinetName = this.getAttribute('data-cabinet-name');
-                    console.log('Delete button clicked for cabinet ID:', cabinetId, 'Name:', cabinetName);
-                    deleteCabinet(cabinetId, cabinetName);
-                });
-            });
-            
-            console.log('Cabinet action listeners setup complete');
-        }
-        
-        function displayCabinetView(cabinet, items) {
-            let itemsHtml = '';
-            if (items && items.length > 0) {
-                itemsHtml = '<h6 class="mt-3">Items:</h6><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Item Name</th><th>Category</th><th>Quantity</th></tr></thead><tbody>';
-                items.forEach(item => {
-                    itemsHtml += `<tr><td>${item.name}</td><td>${item.category}</td><td>${item.quantity}</td></tr>`;
-                });
-                itemsHtml += '</tbody></table></div>';
-            } else {
-                itemsHtml = '<p class="text-muted mt-3">No items in this cabinet.</p>';
-            }
-            
-            let photoHtml = '';
-            if (cabinet.photo_path) {
-                photoHtml = `<img src="${cabinet.photo_path}" alt="Cabinet Photo" class="img-fluid mb-3" style="max-height: 200px;">`;
-            }
-            
-            let qrHtml = '';
-            if (cabinet.qr_path) {
-                qrHtml = `
-                    <div class="mt-3">
-                        <h6><i class="fas fa-qrcode me-2"></i>QR Code</h6>
-                        <div class="border rounded p-2 bg-light text-center" style="max-width: 150px;">
-                            <img src="${cabinet.qr_path}" alt="QR Code" class="img-fluid" style="max-width: 120px;">
-                        </div>
-                        <small class="text-muted">Scan to view cabinet details</small>
-                    </div>
-                `;
-            } else {
-                qrHtml = `
-                    <div class="mt-3">
-                        <h6><i class="fas fa-qrcode me-2"></i>QR Code</h6>
-                        <span class="badge bg-secondary">Not Generated</span>
-                        <br><small class="text-muted">Click "Generate QR Code" to create</small>
-                    </div>
-                `;
-            }
-            
-            document.getElementById('viewCabinetContent').innerHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h5>${cabinet.name}</h5>
-                        <p><strong>Cabinet Number:</strong> ${cabinet.cabinet_number}</p>
-                        <p><strong>Total Items:</strong> ${cabinet.item_count}</p>
-                        <p><strong>Last Updated:</strong> ${new Date(cabinet.updated_at).toLocaleDateString()}</p>
-                        ${photoHtml}
-                        ${qrHtml}
-                    </div>
-                    <div class="col-md-6">
-                        ${itemsHtml}
-                    </div>
-                </div>
-            `;
-        }
-        
-        function populateEditForm(cabinet, items) {
-            document.getElementById('edit_cabinet_id').value = cabinet.id;
-            document.getElementById('edit_cabinet_number').value = cabinet.cabinet_number;
-            document.getElementById('edit_name').value = cabinet.name;
-            document.getElementById('edit_existing_photo').value = cabinet.photo_path || '';
-            
-            // Show current photo if exists
-            const photoPreview = document.getElementById('current_photo_preview');
-            if (cabinet.photo_path) {
-                photoPreview.innerHTML = `<small class="text-muted">Current photo:</small><br><img src="${cabinet.photo_path}" alt="Current Photo" style="max-height: 100px;" class="img-thumbnail">`;
-            } else {
-                photoPreview.innerHTML = '';
-            }
-            
-            // Clear and populate items
-            const container = document.getElementById('edit-items-container');
-            container.innerHTML = '';
-            editItemCount = 0;
-            
-            if (items && items.length > 0) {
-                items.forEach(item => {
-                    const newRow = document.createElement('div');
-                    newRow.className = 'item-row';
-                    
-                    let categoriesOptions = '<option value="">Select Category</option>';
-                    categories.forEach(category => {
-                        const selected = category.id == item.category_id ? 'selected' : '';
-                        categoriesOptions += `<option value="${category.id}" ${selected}>${category.name}</option>`;
-                    });
-                    
-                    newRow.innerHTML = `
-                        <div class="row">
-                            <div class="col-md-4">
-                                <label class="form-label">Item Name</label>
-                                <input type="text" class="form-control" name="items[${editItemCount}][name]" value="${item.name}" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Category</label>
-                                <select class="form-select" name="items[${editItemCount}][category]" required>
-                                    ${categoriesOptions}
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Quantity</label>
-                                <input type="number" class="form-control" name="items[${editItemCount}][quantity]" value="${item.quantity}" min="1">
-                            </div>
-                            <div class="col-md-3 align-self-end">
-                                <button type="button" class="btn btn-danger remove-item">
-                                    <i class="fas fa-trash me-1"></i> Remove
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    container.appendChild(newRow);
-                    
-                    // Add event listener to the remove button
-                    newRow.querySelector('.remove-item').addEventListener('click', function() {
-                        newRow.remove();
-                    });
-                    
-                    editItemCount++;
-                });
-            } else {
-                // Add one empty row if no items
-                addItemRow('edit-items-container', editItemCount, 'items');
-                editItemCount++;
-            }
-        }
-
         // Modal event handlers to fix close button issues
         document.addEventListener('DOMContentLoaded', function() {
             // Function to properly close modal and clean up backdrop
@@ -1051,7 +775,12 @@ $cabinetNumber = generateCabinetNumber($pdo);
             if (viewModal) {
                 viewModal.addEventListener('hidden.bs.modal', function () {
                     // Clean up modal content when closed
-                    document.getElementById('viewCabinetContent').innerHTML = '';
+                    document.getElementById('view-content-container').innerHTML = '';
+                    
+                    // Reset modal state to loading for next time
+                    document.getElementById('view-loading-state').style.display = 'block';
+                    document.getElementById('view-content-container').style.display = 'none';
+                    
                     // Ensure backdrop cleanup
                     setTimeout(() => {
                         const backdrop = document.querySelector('.modal-backdrop');
@@ -1072,8 +801,13 @@ $cabinetNumber = generateCabinetNumber($pdo);
                     // Clean up form when modal is closed
                     document.getElementById('editCabinetForm').reset();
                     document.getElementById('edit-items-container').innerHTML = '';
-                    document.getElementById('current_photo_preview').innerHTML = '';
-                    editItemCount = 0;
+                    const photoPreview = document.getElementById('current-photo-preview');
+                    if (photoPreview) photoPreview.innerHTML = '';
+                    
+                    // Reset modal state to loading for next time
+                    document.getElementById('edit-loading-state').style.display = 'block';
+                    document.getElementById('edit-form-content').style.display = 'none';
+                    
                     // Ensure backdrop cleanup
                     setTimeout(() => {
                         const backdrop = document.querySelector('.modal-backdrop');
@@ -1163,7 +897,580 @@ $cabinetNumber = generateCabinetNumber($pdo);
             }, 2000);
         });
 
+        // Dashboard-style modal functionality
+        let currentCabinetData = null;
+        
+        // View Cabinet Modal functionality
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('view-cabinet-btn') || e.target.closest('.view-cabinet-btn')) {
+                const button = e.target.classList.contains('view-cabinet-btn') ? e.target : e.target.closest('.view-cabinet-btn');
+                const cabinetId = button.getAttribute('data-cabinet-id');
+                
+                if (cabinetId) {
+                    // Get cabinet number from the table row to use the same API as dashboard
+                    const row = button.closest('tr');
+                    const cabinetNumber = row.querySelector('td:first-child').textContent;
+                    loadViewCabinetData(cabinetNumber);
+                }
+            }
+        });
+
+        // Export Modal functionality
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('export-cabinet-btn') || e.target.closest('.export-cabinet-btn')) {
+                const button = e.target.classList.contains('export-cabinet-btn') ? e.target : e.target.closest('.export-cabinet-btn');
+                const cabinetId = button.getAttribute('data-cabinet-id');
+                
+                if (cabinetId) {
+                    // Pre-select the cabinet in the export modal
+                    const exportSelect = document.getElementById('export_cabinet');
+                    if (exportSelect) {
+                        exportSelect.value = cabinetId;
+                    }
+                }
+            }
+        });
+
+        // Load cabinet data for view modal (dashboard-style)
+        function loadViewCabinetData(cabinetNumber) {
+            // Show loading state
+            document.getElementById('view-loading-state').style.display = 'block';
+            document.getElementById('view-content-container').style.display = 'none';
+
+            // Fetch cabinet data using the same API as dashboard.php
+            fetch(`cabinet_api.php?action=get_cabinet_by_number&cabinet_number=${cabinetNumber}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading, show content
+                    document.getElementById('view-loading-state').style.display = 'none';
+                    document.getElementById('view-content-container').style.display = 'block';
+                    
+                    if (data.success) {
+                        const cabinet = data.cabinet;
+                        currentCabinetData = cabinet; // Store for delete functionality
+                        
+                        document.getElementById('view-content-container').innerHTML = `
+                            <div class="row mb-4">
+                                <div class="col-md-8">
+                                    <h6 class="text-primary">Cabinet Information</h6>
+                                    <table class="table table-borderless table-sm">
+                                        <tr>
+                                            <td><strong>Cabinet Number:</strong></td>
+                                            <td>${cabinet.cabinet_number}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Cabinet Name:</strong></td>
+                                            <td>${cabinet.name}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Created:</strong></td>
+                                            <td>${new Date(cabinet.created_at).toLocaleDateString()}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Last Updated:</strong></td>
+                                            <td>${new Date(cabinet.updated_at).toLocaleDateString()}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    ${cabinet.photo_path ? `<img src="${cabinet.photo_path}" alt="Cabinet Photo" class="img-fluid rounded" style="max-height: 150px;">` : '<div class="bg-light rounded p-3"><i class="fas fa-image fa-3x text-muted"></i><p class="mt-2 mb-0 text-muted">No photo</p></div>'}
+                                </div>
+                            </div>
+                            
+                            <h6 class="text-primary">Cabinet Contents</h6>
+                            <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 10px;">
+                                ${cabinet.items && cabinet.items.length > 0 ? `
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-sm mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Item Name</th>
+                                                    <th>Category</th>
+                                                    <th>Quantity</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${cabinet.items.map(item => `
+                                                    <tr>
+                                                        <td>${item.name}</td>
+                                                        <td><span class="badge bg-secondary">${item.category_name}</span></td>
+                                                        <td>${item.quantity}</td>
+                                                    </tr>
+                                                `).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ` : `
+                                    <div class="text-center text-muted py-3">
+                                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                                        <p class="mb-0">No items in this cabinet</p>
+                                    </div>
+                                `}
+                            </div>
+                            
+                            ${cabinet.qr_path ? `
+                                <div class="text-center mt-3">
+                                    <h6 class="text-primary">QR Code</h6>
+                                    <img src="${cabinet.qr_path}" alt="QR Code" class="img-fluid" style="max-width: 150px;">
+                                </div>
+                            ` : ''}
+                        `;
+                    } else {
+                        document.getElementById('view-content-container').innerHTML = `
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Cabinet not found or error loading data.
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    // Hide loading, show content
+                    document.getElementById('view-loading-state').style.display = 'none';
+                    document.getElementById('view-content-container').style.display = 'block';
+                    
+                    console.error('Error fetching cabinet data:', error);
+                    document.getElementById('view-content-container').innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Error loading cabinet data. Please try again.
+                        </div>
+                    `;
+                });
+        }
+
+        // Delete Cabinet functionality
+        const deleteCabinetBtn = document.getElementById('deleteCabinetBtn');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        
+        if (deleteCabinetBtn) {
+            deleteCabinetBtn.addEventListener('click', function() {
+                if (!currentCabinetData) {
+                    alert('No cabinet data available for deletion.');
+                    return;
+                }
+                
+                // Populate delete confirmation modal
+                const cabinet = currentCabinetData;
+                const deleteDetails = document.getElementById('deleteCabinetDetails');
+                
+                deleteDetails.innerHTML = `
+                    <div class="row">
+                        <div class="col-12">
+                            <strong>Cabinet Number:</strong> ${cabinet.cabinet_number}<br>
+                            <strong>Cabinet Name:</strong> ${cabinet.name}<br>
+                            <strong>Total Items:</strong> ${cabinet.items ? cabinet.items.length : 0} items<br>
+                            <strong>Created:</strong> ${new Date(cabinet.created_at).toLocaleDateString()}
+                        </div>
+                    </div>
+                `;
+                
+                // Hide the view modal first
+                const viewModal = bootstrap.Modal.getInstance(document.getElementById('viewCabinetModal'));
+                if (viewModal) {
+                    viewModal.hide();
+                }
+            });
+        }
+        
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', function() {
+                if (!currentCabinetData) {
+                    alert('No cabinet data available for deletion.');
+                    return;
+                }
+                
+                const cabinet = currentCabinetData;
+                
+                // Show loading state
+                const originalBtnText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Deleting...';
+                this.disabled = true;
+                
+                // Call delete API
+                fetch('cabinet_api.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'delete_cabinet',
+                        cabinet_id: cabinet.id
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Reset button state
+                    this.innerHTML = originalBtnText;
+                    this.disabled = false;
+                    
+                    if (data.success) {
+                        // Hide delete confirmation modal
+                        const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteCabinetModal'));
+                        if (deleteModal) {
+                            deleteModal.hide();
+                        }
+                        
+                        // Show success message
+                        const successMessage = document.getElementById('successMessage');
+                        successMessage.textContent = `Cabinet "${cabinet.name}" has been successfully deleted!`;
+                        
+                        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                        successModal.show();
+                        
+                        // Refresh the page after success
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                        
+                    } else {
+                        alert('Error deleting cabinet: ' + (data.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting cabinet:', error);
+                    
+                    // Reset button state
+                    this.innerHTML = originalBtnText;
+                    this.disabled = false;
+                    
+                    alert('Error deleting cabinet. Please try again.');
+                });
+            });
+        }
+
+        // Edit Cabinet Modal - Add/Remove items functionality
+        let editItemCount = 0;
+
+        // Add new item in edit modal
+        document.getElementById('add-edit-item').addEventListener('click', function() {
+            editItemCount++;
+            const container = document.getElementById('edit-items-container');
+            const newRow = document.createElement('div');
+            newRow.className = 'item-row';
+            
+            let categoriesOptions = '<option value="">Select Category</option>';
+            window.cabinetCategories.forEach(category => {
+                categoriesOptions += '<option value="' + category.id + '">' + category.name + '</option>';
+            });
+            
+            newRow.innerHTML = 
+                '<div class="row g-2 mb-2">' +
+                    '<div class="col-md-4">' +
+                        '<label class="form-label">Item Name</label>' +
+                        '<input type="text" class="form-control" name="items[' + editItemCount + '][name]" required>' +
+                    '</div>' +
+                    '<div class="col-md-3">' +
+                        '<label class="form-label">Category</label>' +
+                        '<select class="form-select" name="items[' + editItemCount + '][category]" required>' +
+                            categoriesOptions +
+                        '</select>' +
+                    '</div>' +
+                    '<div class="col-md-3">' +
+                        '<label class="form-label">Quantity</label>' +
+                        '<input type="number" class="form-control" name="items[' + editItemCount + '][quantity]" value="1" min="1">' +
+                    '</div>' +
+                    '<div class="col-md-2 d-flex align-items-end">' +
+                        '<button type="button" class="btn btn-danger btn-sm remove-edit-item w-100">' +
+                            '<i class="fas fa-trash"></i>' +
+                        '</button>' +
+                    '</div>' +
+                '</div>';
+            container.appendChild(newRow);
+        });
+
+        // Remove item in edit modal
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-edit-item') || e.target.closest('.remove-edit-item')) {
+                const itemRow = e.target.closest('.item-row');
+                const container = document.getElementById('edit-items-container');
+                if (container.children.length > 1) {
+                    itemRow.remove();
+                } else {
+                    alert('At least one item is required!');
+                }
+            }
+        });
+
+        // Edit Cabinet function (dashboard-style)
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('edit-cabinet-btn') || e.target.closest('.edit-cabinet-btn')) {
+                const button = e.target.classList.contains('edit-cabinet-btn') ? e.target : e.target.closest('.edit-cabinet-btn');
+                const cabinetId = button.getAttribute('data-cabinet-id');
+                
+                if (cabinetId) {
+                    editCabinet(cabinetId);
+                }
+            }
+        });
+
+        function editCabinet(cabinetId) {
+            // Show modal immediately with loading state
+            const modal = new bootstrap.Modal(document.getElementById('editCabinetModal'));
+            modal.show();
+            
+            // Show loading, hide form content
+            document.getElementById('edit-loading-state').style.display = 'block';
+            document.getElementById('edit-form-content').style.display = 'none';
+            
+            // Clear form
+            document.getElementById('editCabinetForm').reset();
+            document.getElementById('edit-items-container').innerHTML = '';
+            const photoPreview = document.getElementById('current-photo-preview');
+            if (photoPreview) photoPreview.innerHTML = '';
+            editItemCount = 0;
+            
+            // Fetch cabinet data
+            fetch('cabinet_api.php?action=get_cabinet&id=' + cabinetId)
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading, show form content
+                    document.getElementById('edit-loading-state').style.display = 'none';
+                    document.getElementById('edit-form-content').style.display = 'block';
+                    
+                    if (data.success) {
+                        const cabinet = data.cabinet;
+                        const items = data.items;
+                        
+                        // Populate form fields
+                        document.getElementById('edit_cabinet_id').value = cabinet.id;
+                        document.getElementById('edit_cabinet_number').value = cabinet.cabinet_number;
+                        document.getElementById('edit_name').value = cabinet.name;
+                        
+                        // Show current photo if exists
+                        const photoPreview = document.getElementById('current-photo-preview');
+                        if (photoPreview) {
+                            if (cabinet.photo_path) {
+                                photoPreview.innerHTML = '<small class="text-muted">Current photo:</small><br><img src="' + cabinet.photo_path + '" alt="Current Photo" style="max-height: 100px;" class="img-thumbnail">';
+                            } else {
+                                photoPreview.innerHTML = '';
+                            }
+                        }
+                        
+                        // Load items
+                        if (items && items.length > 0) {
+                            items.forEach(function(item) {
+                                editItemCount++;
+                                const container = document.getElementById('edit-items-container');
+                                const newRow = document.createElement('div');
+                                newRow.className = 'item-row';
+                                
+                                let categoriesOptions = '<option value="">Select Category</option>';
+                                window.cabinetCategories.forEach(function(category) {
+                                    const selected = category.id == item.category_id ? 'selected' : '';
+                                    categoriesOptions += '<option value="' + category.id + '" ' + selected + '>' + category.name + '</option>';
+                                });
+                                
+                                newRow.innerHTML = 
+                                    '<div class="row g-2 mb-2">' +
+                                        '<div class="col-md-4">' +
+                                            '<label class="form-label">Item Name</label>' +
+                                            '<input type="text" class="form-control" name="items[' + editItemCount + '][name]" value="' + item.name + '" required>' +
+                                            '<input type="hidden" name="items[' + editItemCount + '][id]" value="' + item.id + '">' +
+                                        '</div>' +
+                                        '<div class="col-md-3">' +
+                                            '<label class="form-label">Category</label>' +
+                                            '<select class="form-select" name="items[' + editItemCount + '][category]" required>' +
+                                                categoriesOptions +
+                                            '</select>' +
+                                        '</div>' +
+                                        '<div class="col-md-3">' +
+                                            '<label class="form-label">Quantity</label>' +
+                                            '<input type="number" class="form-control" name="items[' + editItemCount + '][quantity]" value="' + item.quantity + '" min="1">' +
+                                        '</div>' +
+                                        '<div class="col-md-2 d-flex align-items-end">' +
+                                            '<button type="button" class="btn btn-danger btn-sm remove-edit-item w-100">' +
+                                                '<i class="fas fa-trash"></i>' +
+                                            '</button>' +
+                                        '</div>' +
+                                    '</div>';
+                                container.appendChild(newRow);
+                            });
+                        } else {
+                            // Add one empty item row
+                            document.getElementById('add-edit-item').click();
+                        }
+                    } else {
+                        // Hide loading, show form content even for errors
+                        document.getElementById('edit-loading-state').style.display = 'none';
+                        document.getElementById('edit-form-content').style.display = 'block';
+                        alert('Error loading cabinet data: ' + (data.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    // Hide loading, show form content
+                    document.getElementById('edit-loading-state').style.display = 'none';
+                    document.getElementById('edit-form-content').style.display = 'block';
+                    console.error('Error:', error);
+                    alert('Error loading cabinet data. Please try again.');
+                });
+        }
+
+        // Export functionality
+        const downloadExportBtn = document.getElementById('downloadExportBtn');
+        if (downloadExportBtn) {
+            downloadExportBtn.addEventListener('click', function() {
+                const form = document.getElementById('exportForm');
+                const formData = new FormData(form);
+                
+                const cabinetId = formData.get('cabinet_id');
+                const format = formData.get('format');
+                
+                if (!cabinetId) {
+                    alert('Please select a cabinet to export.');
+                    return;
+                }
+                
+                // Show loading overlay
+                document.getElementById('export-loading-overlay').style.display = 'block';
+                
+                // Create export URL
+                const url = `export.php?cabinet_id=${cabinetId}&format=${format}`;
+                
+                // Simulate some processing time, then proceed with export
+                setTimeout(() => {
+                    // Hide loading overlay
+                    document.getElementById('export-loading-overlay').style.display = 'none';
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+                    modal.hide();
+                    
+                    // Small delay to allow modal to close
+                    setTimeout(() => {
+                        if (format === 'pdf') {
+                            // For PDF, open in new window
+                            window.open(url, '_blank', 'width=1024,height=768,scrollbars=yes,resizable=yes');
+                        } else {
+                            // For other formats, create download link
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `cabinet_export_${Date.now()}.${format}`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        }
+                    }, 200);
+                }, 1000); // 1 second loading time for better UX
+            });
+        }
+
+        // Toggle All Cabinets option visibility based on format selection
+        function toggleAllCabinetsOption() {
+            const formatPdf = document.getElementById('format_pdf');
+            const formatExcel = document.getElementById('format_excel');
+            const allCabinetsOption = document.getElementById('all-cabinets-option');
+            const exportCabinetSelect = document.getElementById('export_cabinet');
+            
+            if (formatPdf && formatExcel && allCabinetsOption) {
+                if (formatExcel.checked) {
+                    // Excel format - show "All Cabinets" option
+                    allCabinetsOption.style.display = 'block';
+                } else {
+                    // PDF format - hide "All Cabinets" option
+                    allCabinetsOption.style.display = 'none';
+                    // If "All Cabinets" was selected, reset to default
+                    if (exportCabinetSelect.value === 'all') {
+                        exportCabinetSelect.value = '';
+                    }
+                }
+            }
+        }
+
+        // Export modal format change handlers
+        const formatPdf = document.getElementById('format_pdf');
+        const formatExcel = document.getElementById('format_excel');
+        
+        if (formatPdf && formatExcel) {
+            formatPdf.addEventListener('change', toggleAllCabinetsOption);
+            formatExcel.addEventListener('change', toggleAllCabinetsOption);
+            
+            // Initialize on page load
+            toggleAllCabinetsOption();
+        }
+
+        // QR Generation function with loading animation
+        function generateQR(cabinetId) {
+            // Create a modal-like overlay for QR generation using the same structure as edit modal
+            const overlay = document.createElement('div');
+            overlay.id = 'qr-loading-overlay';
+            overlay.className = 'modal fade show';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            overlay.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-body text-center py-5">
+                            <lottie-player
+                                src="assets/images/Trail loading.json"
+                                background="transparent"
+                                speed="1"
+                                style="width: 150px; height: 150px; margin: 0 auto;"
+                                loop
+                                autoplay>
+                            </lottie-player>
+                            <h5 class="mt-3 text-muted">Generating QR Code...</h5>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+            document.body.classList.add('modal-open');
+            
+            // Make AJAX request to generate QR code
+            fetch('ajax_qr_generate.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    cabinet_id: cabinetId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Remove loading overlay
+                document.body.removeChild(overlay);
+                document.body.classList.remove('modal-open');
+                
+                if (data.success) {
+                    // Show success modal
+                    document.getElementById('qrSuccessMessage').textContent = 
+                        `${data.cabinet_name} (${data.cabinet_number}) QR Code Generated Successfully ✓`;
+                    const qrSuccessModal = new bootstrap.Modal(document.getElementById('qrSuccessModal'));
+                    qrSuccessModal.show();
+                    
+                    // Reload the page after success modal is closed to show updated QR status
+                    document.getElementById('qrSuccessModal').addEventListener('hidden.bs.modal', function() {
+                        location.reload();
+                    }, { once: true });
+                } else {
+                    // Show error
+                    alert('Error generating QR code: ' + data.error);
+                }
+            })
+            .catch(error => {
+                // Remove loading overlay
+                if (document.getElementById('qr-loading-overlay')) {
+                    document.body.removeChild(overlay);
+                    document.body.classList.remove('modal-open');
+                }
+                console.error('Error:', error);
+                alert('An error occurred while generating QR code. Please try again.');
+            });
+        }
+
     </script>
-    <script src="assets/js/cabinet.js"></script>
 </body>
 </html>

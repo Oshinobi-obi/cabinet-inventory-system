@@ -213,3 +213,232 @@ body {
     background-color: #e9ecef;
     border-color: #dee2e6;
 }
+
+/* Mobile-friendly dual loading system */
+.loading-container {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.primary-spinner {
+    z-index: 1;
+}
+
+.lottie-loader {
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Ensure smooth transitions on mobile */
+@media (max-width: 768px) {
+    .loading-container {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .lottie-loader {
+        width: 120px !important;
+        height: 120px !important;
+    }
+    
+    .primary-spinner {
+        width: 2.5rem !important;
+        height: 2.5rem !important;
+    }
+}
+
+/* Cabinet Contents Scrollable Container */
+.cabinet-contents-container {
+    max-height: none; /* Default for desktop - no vertical scrollbar */
+    overflow-y: visible;
+    overflow-x: visible;
+}
+
+/* Show vertical scrollbar after 7 items (approximately 350px for 7 rows) */
+.cabinet-contents-scrollable {
+    max-height: 350px;
+    overflow-y: auto;
+    overflow-x: visible;
+}
+
+/* Mobile specific scrolling behavior */
+@media (max-width: 768px) {
+    .cabinet-contents-container {
+        max-height: 350px; /* Show vertical scrollbar on mobile after 7 items */
+        overflow-y: auto;
+        overflow-x: auto; /* Allow horizontal scrolling on mobile */
+        width: 100%;
+    }
+    
+    .cabinet-contents-scrollable {
+        overflow-x: auto; /* Horizontal scrolling for mobile */
+        overflow-y: auto;
+    }
+    
+    /* Make table properly scrollable on mobile */
+    .cabinet-contents-container .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    }
+    
+    .cabinet-contents-container .table {
+        min-width: 600px; /* Ensure minimum table width to force horizontal scroll */
+        margin-bottom: 0;
+        white-space: nowrap; /* Prevent text wrapping */
+    }
+    
+    /* Ensure table cells don't wrap */
+    .cabinet-contents-container .table td,
+    .cabinet-contents-container .table th {
+        white-space: nowrap;
+        min-width: 120px; /* Minimum column width */
+    }
+    
+    /* Item Name column can be wider */
+    .cabinet-contents-container .table td:first-child,
+    .cabinet-contents-container .table th:first-child {
+        min-width: 200px;
+    }
+}
+
+/* Scrollbar styling for better UX */
+.cabinet-contents-container::-webkit-scrollbar,
+.cabinet-contents-scrollable::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.cabinet-contents-container::-webkit-scrollbar-track,
+.cabinet-contents-scrollable::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.cabinet-contents-container::-webkit-scrollbar-thumb,
+.cabinet-contents-scrollable::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.cabinet-contents-container::-webkit-scrollbar-thumb:hover,
+.cabinet-contents-scrollable::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Make horizontal scrollbar more visible on mobile */
+@media (max-width: 768px) {
+    .cabinet-contents-container::-webkit-scrollbar,
+    .cabinet-contents-scrollable::-webkit-scrollbar {
+        height: 12px; /* Thicker horizontal scrollbar on mobile */
+    }
+    
+    .cabinet-contents-container::-webkit-scrollbar-thumb,
+    .cabinet-contents-scrollable::-webkit-scrollbar-thumb {
+        background: #c1c1c1; /* Keep original gray color */
+        border-radius: 6px;
+    }
+    
+    .cabinet-contents-container::-webkit-scrollbar-thumb:hover,
+    .cabinet-contents-scrollable::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8; /* Darker gray on hover */
+    }
+}
+
+/* QR Scanner Modal Styles */
+#qrScannerModal .modal-dialog {
+    max-width: 600px;
+}
+
+#qr-reader {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+#qr-reader video {
+    border-radius: 8px;
+    width: 100% !important;
+    height: auto !important;
+}
+
+#qr-reader canvas {
+    border-radius: 8px;
+}
+
+/* QR Scanner button styling */
+#qrScanBtn {
+    border-width: 2px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+#qrScanBtn:hover {
+    background-color: #198754;
+    border-color: #198754;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(25,135,84,0.3);
+}
+
+/* Mobile responsiveness for QR scanner */
+@media (max-width: 768px) {
+    #qrScannerModal .modal-dialog {
+        max-width: 95%;
+        margin: 0.5rem;
+    }
+    
+    #qr-reader {
+        max-width: 100%;
+    }
+    
+    /* Stack buttons on mobile */
+    .text-center .btn {
+        display: block;
+        width: 100%;
+        margin: 5px 0;
+    }
+    
+    .text-center .btn.me-2 {
+        margin-right: 0 !important;
+    }
+    
+    /* Make QR scanner success/error alerts mobile-friendly */
+    .alert.position-fixed {
+        position: fixed !important;
+        top: 10px !important;
+        left: 10px !important;
+        right: 10px !important;
+        max-width: none !important;
+        z-index: 10000 !important;
+    }
+}
+
+/* QR Scanner success/error alerts */
+.alert.position-fixed {
+    animation: slideInRight 0.5s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* QR Scanner loading states */
+.qr-scanner-loading {
+    padding: 20px;
+    text-align: center;
+}
+
+.qr-scanner-loading .spinner-border {
+    margin-bottom: 10px;
+}

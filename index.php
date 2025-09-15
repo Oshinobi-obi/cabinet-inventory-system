@@ -25,8 +25,15 @@ $offset = ($currentPage - 1) * $itemsPerPage;
 if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_GET['search_term'])) {
     // Handle different search types
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        // Get POST data
         $searchTerm = sanitizeInput($_POST['search_term']);
         $searchType = isset($_POST['search_type']) ? sanitizeInput($_POST['search_type']) : 'cabinet';
+        
+        // Redirect to GET to prevent form resubmission message
+        $redirectUrl = $_SERVER['PHP_SELF'] . '?search_term=' . urlencode($searchTerm) . '&search_type=' . urlencode($searchType);
+        header("Location: " . $redirectUrl);
+        exit();
+        
     } else if (isset($_GET['search_term'])) {
         // Handle pagination with existing search
         $searchTerm = sanitizeInput($_GET['search_term']);
@@ -153,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         </div>
         
         <div class="search-box">
-            <form method="POST" action="">
+            <form method="POST" action="" id="searchForm">
                 <!-- Search Type Radio Buttons -->
                 <div class="row mb-3">
                     <div class="col-12">
@@ -161,13 +168,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="search_type" id="search_cabinet" value="cabinet" <?php echo $searchType === 'cabinet' ? 'checked' : ''; ?>>
                                 <label class="form-check-label" for="search_cabinet">
-                                    <i class="fas fa-cabinet-filing me-1"></i> Search by Name / Number
+                                    <i class="fas fa-cabinet-filing me-1"></i> Search Cabinet
                                 </label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="search_type" id="search_item" value="item" <?php echo $searchType === 'item' ? 'checked' : ''; ?>>
                                 <label class="form-check-label" for="search_item">
-                                    <i class="fas fa-box me-1"></i> Search by Item
+                                    <i class="fas fa-box me-1"></i> Search Item
                                 </label>
                             </div>
                         </div>
@@ -180,15 +187,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                            name="search_term" 
                            value="<?php echo htmlspecialchars($searchTerm); ?>" 
                            required>
-                    <button class="btn btn-primary" type="submit">
+                    <button class="btn btn-primary" type="submit" id="searchButton">
                         <i class="fas fa-search me-1"></i> Search
                     </button>
                 </div>
             </form>
             
             <div class="text-center mt-3">
-                <button id="qrCodeBtn" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#qrDisplayModal" disabled>
+                <button id="qrCodeBtn" class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#qrDisplayModal" disabled>
                     <i class="fas fa-qrcode me-1"></i> <span id="qrBtnText">Select a Cabinet First</span>
+                </button>
+                <button id="qrScanBtn" class="btn btn-outline-success">
+                    <i class="fas fa-camera me-1"></i> Scan QR Code
                 </button>
             </div>
         </div>
@@ -208,7 +218,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     <?php foreach ($searchResults as $cabinet): ?>
                         <div class="col-md-6 col-lg-4 mb-4">
                             <div class="card h-100 shadow-sm cabinet-card" data-cabinet-id="<?php echo $cabinet['id']; ?>" data-cabinet-number="<?php echo htmlspecialchars($cabinet['cabinet_number']); ?>" data-cabinet-name="<?php echo htmlspecialchars($cabinet['name']); ?>" data-qr-path="<?php echo htmlspecialchars($cabinet['qr_path'] ?? ''); ?>">
-                                <!-- Selection checkbox -->
                                 <div class="position-absolute top-0 end-0 p-2">
                                     <input class="form-check-input cabinet-selector" type="radio" name="selected_cabinet" value="<?php echo $cabinet['id']; ?>" id="cabinet_<?php echo $cabinet['id']; ?>">
                                 </div>
@@ -349,10 +358,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                 </div>
                 <div class="modal-body">
                     <div id="viewCabinetContent">
-                        <div class="text-center">
-                            <div class="spinner-border" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
+                        <div class="text-center py-4">
+                            <lottie-player
+                                src="assets/images/Trail loading.json"
+                                background="transparent"
+                                speed="1"
+                                style="width: 150px; height: 150px; margin: 0 auto;"
+                                loop
+                                autoplay>
+                            </lottie-player>
+                            <h5 class="mt-3 text-muted" id="viewLoadingMessage">Loading Cabinet Details...</h5>
                         </div>
                     </div>
                 </div>
@@ -374,10 +389,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center" id="qrModalBody">
-                    <div class="text-center">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
+                    <div class="text-center py-4">
+                        <lottie-player
+                            src="assets/images/Trail loading.json"
+                            background="transparent"
+                            speed="1"
+                            style="width: 150px; height: 150px; margin: 0 auto;"
+                            loop
+                            autoplay>
+                        </lottie-player>
+                        <h5 class="mt-3 text-muted">Loading QR Code...</h5>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -387,13 +408,403 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         </div>
     </div>
 
+    <!-- QR Scanner Modal -->
+    <div class="modal fade" id="qrScannerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-camera me-2"></i>Scan QR Code
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0" id="qrScannerBody">
+                    <div class="text-center py-4">
+                        <div id="qr-reader" style="width: 100%; max-width: 500px; margin: 0 auto;"></div>
+                        <div id="qr-reader-results" class="mt-3"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close Scanner</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <script src="assets/js/index.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         // Handle view cabinet button clicks
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize QR button state
             updateQRButtonState();
+            
+            // Check if Html5Qrcode library is loaded
+            setTimeout(() => {
+                if (typeof Html5Qrcode !== 'undefined') {
+                    console.log('Html5Qrcode library loaded successfully');
+                } else {
+                    console.error('Html5Qrcode library failed to load');
+                }
+            }, 1000);
+            
+            // Initialize QR Scanner
+            let html5QrCode = null;
+            let isScanning = false;
+            
+            // Handle QR Scanner button click
+            document.getElementById('qrScanBtn').addEventListener('click', function() {
+                const modal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
+                modal.show();
+                
+                // Start scanning when modal is shown with a small delay to ensure library is loaded
+                document.getElementById('qrScannerModal').addEventListener('shown.bs.modal', function() {
+                    // Add a small delay to ensure Html5Qrcode library is fully loaded
+                    setTimeout(() => {
+                        startQRScanner();
+                    }, 100);
+                }, { once: true });
+                
+                // Stop scanning when modal is hidden
+                document.getElementById('qrScannerModal').addEventListener('hidden.bs.modal', function() {
+                    stopQRScanner();
+                });
+            });
+            
+            function startQRScanner() {
+                if (isScanning) return;
+                
+                const qrReaderResults = document.getElementById('qr-reader-results');
+                
+                // Check if Html5Qrcode library is loaded
+                if (typeof Html5Qrcode === 'undefined') {
+                    console.error('Html5Qrcode library not loaded');
+                    qrReaderResults.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            QR Scanner library failed to load. Please refresh the page and try again.
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Check for HTTPS requirement, but allow local network development
+                const isHTTPS = window.location.protocol === 'https:';
+                const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                const isLocalNetwork = window.location.hostname.match(/^192\.168\./) || 
+                                      window.location.hostname.match(/^10\./) || 
+                                      window.location.hostname.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./);
+                
+                // Show warning for HTTP on mobile, but still try to work
+                if (!isHTTPS && !isLocalhost && isLocalNetwork) {
+                    qrReaderResults.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>HTTP Detected (Local Network)</strong><br>
+                            Camera may not work on some browsers via HTTP. 
+                            If scanner fails, try one of these solutions:<br>
+                            <small>
+                                • Use ngrok for HTTPS: <a href="#" onclick="alert('1. Download ngrok\\n2. Run: ngrok http 8080\\n3. Use the HTTPS URL')">Quick Setup</a><br>
+                                • Some browsers allow camera on local networks<br>
+                                • Trying to start scanner anyway...
+                            </small>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-camera me-2"></i>
+                            Attempting to start camera... Please allow access if prompted.
+                        </div>
+                    `;
+                } else if (!isHTTPS && !isLocalhost) {
+                    qrReaderResults.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>HTTPS Required</strong><br>
+                            Camera access requires HTTPS for security.<br>
+                            <div class="bg-light p-2 mt-2 rounded">
+                                <strong>Quick Solutions:</strong><br>
+                                1. <strong>ngrok (Easiest):</strong> Creates HTTPS tunnel<br>
+                                   • Download from ngrok.com<br>
+                                   • Run: <code>ngrok http 8080</code><br>
+                                   • Use the HTTPS URL<br><br>
+                                2. <strong>Self-signed HTTPS:</strong> Add to server.php
+                            </div>
+                        </div>
+                    `;
+                    return; // Don't try to start camera if not secure context
+                } else {
+                    // Show loading message for secure contexts
+                    qrReaderResults.innerHTML = `
+                        <div class="alert alert-info">
+                            <i class="fas fa-camera me-2"></i>
+                            Starting camera... Please allow camera access when prompted.
+                        </div>
+                    `;
+                }
+                
+                html5QrCode = new Html5Qrcode("qr-reader");
+                
+                // Get cameras with better error handling
+                Html5Qrcode.getCameras().then(devices => {
+                    console.log('Available cameras:', devices);
+                    
+                    if (devices && devices.length) {
+                        // Filter out virtual cameras and find real cameras
+                        const realCameras = devices.filter(device => 
+                            !device.label.toLowerCase().includes('obs') &&
+                            !device.label.toLowerCase().includes('virtual') &&
+                            !device.label.toLowerCase().includes('snap') &&
+                            device.label.trim() !== ''
+                        );
+                        
+                        console.log('Real cameras found:', realCameras);
+                        
+                        // Use real cameras if available, otherwise fall back to all cameras
+                        const camerasToUse = realCameras.length > 0 ? realCameras : devices;
+                        let cameraId = camerasToUse[0].id; // Default to first camera
+                        
+                        // Try to find back camera from real cameras
+                        const backCamera = camerasToUse.find(device => 
+                            device.label.toLowerCase().includes('back') || 
+                            device.label.toLowerCase().includes('rear') ||
+                            device.label.toLowerCase().includes('environment')
+                        );
+                        
+                        if (backCamera) {
+                            cameraId = backCamera.id;
+                            console.log('Using back camera:', backCamera.label);
+                        } else {
+                            console.log('Using camera:', camerasToUse[0].label);
+                        }
+                        
+                        // Start scanning with better configuration
+                        html5QrCode.start(
+                            cameraId,
+                            {
+                                fps: 10,
+                                qrbox: { width: 250, height: 250 },
+                                aspectRatio: 1.0
+                            },
+                            (decodedText, decodedResult) => {
+                                console.log('QR Code detected:', decodedText);
+                                // QR Code detected - process it
+                                processQRCode(decodedText);
+                            },
+                            (errorMessage) => {
+                                // Scanning error - can be ignored for continuous scanning
+                                // Only log errors that aren't "No MultiFormat Readers were able to detect the code"
+                                if (!errorMessage.includes('No MultiFormat Readers')) {
+                                    console.log('QR scan error (can be ignored):', errorMessage);
+                                }
+                            }
+                        ).then(() => {
+                            isScanning = true;
+                            console.log('QR Scanner started successfully');
+                            qrReaderResults.innerHTML = `
+                                <div class="alert alert-success">
+                                    <i class="fas fa-qrcode me-2"></i>
+                                    Scanner active! Point your camera at a QR code.
+                                </div>
+                            `;
+                        }).catch(err => {
+                            console.error('Camera start error:', err);
+                            isScanning = false;
+                            
+                            let errorMessage = 'Camera access failed.';
+                            let errorDetails = err.message || 'Unknown error';
+                            
+                            // Check if we're on HTTP (not HTTPS or localhost)
+                            const isHTTPS = window.location.protocol === 'https:';
+                            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                            
+                            if (!isHTTPS && !isLocalhost) {
+                                errorMessage = 'Camera requires HTTPS connection.';
+                                errorDetails = `You're accessing via ${window.location.protocol}// but cameras require HTTPS for security. Try accessing via HTTPS or localhost.`;
+                            } else if (err.name === 'NotAllowedError') {
+                                errorMessage = 'Camera permission denied.';
+                                errorDetails = 'Please allow camera access and try again. Check your browser permissions.';
+                            } else if (err.name === 'NotFoundError') {
+                                errorMessage = 'No camera found.';
+                                errorDetails = 'No cameras detected on this device.';
+                            } else if (err.name === 'NotReadableError') {
+                                errorMessage = 'Camera is busy or unavailable.';
+                                errorDetails = 'Camera may be in use by another application (like OBS, Skype, etc.). Close other camera apps and try again.';
+                            } else if (err.name === 'OverconstrainedError') {
+                                errorMessage = 'Camera configuration not supported.';
+                                errorDetails = 'The camera doesn\'t support the required configuration.';
+                            }
+                            
+                            qrReaderResults.innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>${errorMessage}</strong>
+                                    <br><small>${errorDetails}</small>
+                                    ${!isHTTPS && !isLocalhost ? `
+                                        <hr>
+                                        <div class="text-center">
+                                            <strong>Quick Fixes:</strong><br>
+                                            1. Use HTTPS: <code>https://${window.location.host}${window.location.pathname}</code><br>
+                                            2. Or access via localhost if server is local
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        });
+                    } else {
+                        console.error('No cameras found');
+                        qrReaderResults.innerHTML = `
+                            <div class="alert alert-warning">
+                                <i class="fas fa-camera me-2"></i>
+                                No cameras found on this device.
+                            </div>
+                        `;
+                    }
+                }).catch(err => {
+                    console.error('Camera detection error:', err);
+                    
+                    // Check if we're on HTTP (not HTTPS or localhost)
+                    const isHTTPS = window.location.protocol === 'https:';
+                    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                    
+                    let errorMessage = 'Error accessing camera system.';
+                    let errorDetails = err.message || 'Unknown error';
+                    
+                    if (!isHTTPS && !isLocalhost) {
+                        errorMessage = 'HTTPS Required for Camera Access';
+                        errorDetails = `Modern browsers require HTTPS to access cameras for security. You're currently using ${window.location.protocol}//`;
+                    }
+                    
+                    qrReaderResults.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>${errorMessage}</strong>
+                            <br><small>${errorDetails}</small>
+                            ${!isHTTPS && !isLocalhost ? `
+                                <hr>
+                                <div class="bg-light p-2 mt-2 rounded">
+                                    <strong>Solutions:</strong><br>
+                                    • Enable HTTPS on your server<br>
+                                    • Access via <code>https://${window.location.host}${window.location.pathname}</code><br>
+                                    • Or use localhost if testing locally
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+            }
+            
+            function stopQRScanner() {
+                if (html5QrCode && isScanning) {
+                    html5QrCode.stop().then(() => {
+                        html5QrCode = null;
+                        isScanning = false;
+                        document.getElementById('qr-reader-results').innerHTML = '';
+                    }).catch(err => {
+                        console.error('Error stopping scanner:', err);
+                    });
+                }
+            }
+            
+            function processQRCode(decodedText) {
+                // Stop scanning
+                stopQRScanner();
+                
+                // Close the scanner modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                
+                // Extract cabinet info from QR code
+                let cabinetInfo = extractCabinetFromQR(decodedText);
+                
+                if (cabinetInfo) {
+                    // Fill the search form with cabinet info
+                    const searchInput = document.querySelector('input[name="search_term"]');
+                    const cabinetRadio = document.getElementById('search_cabinet');
+                    
+                    if (searchInput && cabinetRadio) {
+                        searchInput.value = cabinetInfo;
+                        cabinetRadio.checked = true;
+                        
+                        // Show success message
+                        showQRScanSuccess(cabinetInfo);
+                        
+                        // Automatically trigger search after a short delay
+                        setTimeout(() => {
+                            document.getElementById('searchForm').dispatchEvent(new Event('submit', { bubbles: true }));
+                        }, 1500);
+                    }
+                } else {
+                    // Show error for unrecognized QR code
+                    showQRScanError(decodedText);
+                }
+            }
+            
+            function extractCabinetFromQR(qrText) {
+                // Try to extract cabinet number or name from QR code URL
+                // Handle URLs like: /index.php?cabinet=CAB001 or /index.php?cabinet=Cabinet%201
+                const urlMatch = qrText.match(/[?&]cabinet=([^&]+)/);
+                if (urlMatch) {
+                    return decodeURIComponent(urlMatch[1]);
+                }
+                
+                // Try to match cabinet patterns directly
+                const cabinetMatch = qrText.match(/CAB\d+|Cabinet\s+\d+|Cabinet\s+[A-Za-z0-9]+/i);
+                if (cabinetMatch) {
+                    return cabinetMatch[0];
+                }
+                
+                // If it looks like a simple cabinet identifier
+                if (/^[A-Za-z0-9\s]+$/.test(qrText) && qrText.length < 50) {
+                    return qrText;
+                }
+                
+                return null;
+            }
+            
+            function showQRScanSuccess(cabinetInfo) {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                alert.style.cssText = 'top: 20px; right: 20px; z-index: 10000; max-width: 400px;';
+                alert.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>QR Code Scanned!</strong><br>
+                    Found cabinet: ${cabinetInfo}<br>
+                    <small>Searching automatically...</small>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(alert);
+                
+                // Remove after 5 seconds
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 5000);
+            }
+            
+            function showQRScanError(qrText) {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+                alert.style.cssText = 'top: 20px; right: 20px; z-index: 10000; max-width: 400px;';
+                alert.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>QR Code Not Recognized</strong><br>
+                    This doesn't appear to be a cabinet QR code.<br>
+                    <small>Scanned: ${qrText.substring(0, 50)}${qrText.length > 50 ? '...' : ''}</small>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(alert);
+                
+                // Remove after 7 seconds
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 7000);
+            }
             
             // Handle cabinet selection
             document.addEventListener('change', function(e) {
@@ -468,6 +879,117 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     }
                 }
             });
+            
+            // Handle Cabinet Details modal cleanup
+            const viewCabinetModal = document.getElementById('viewCabinetModal');
+            if (viewCabinetModal) {
+                viewCabinetModal.addEventListener('hidden.bs.modal', function () {
+                    // Clean up any remaining modal backdrops
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    backdrops.forEach(backdrop => {
+                        backdrop.remove();
+                    });
+                    
+                    // Ensure body classes are cleaned up
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                    
+                    // Reset content for next use
+                    const content = document.getElementById('viewCabinetContent');
+                    if (content) {
+                        content.innerHTML = `
+                            <div class="text-center py-4">
+                                <lottie-player
+                                    src="assets/images/Trail loading.json"
+                                    background="transparent"
+                                    speed="1"
+                                    style="width: 150px; height: 150px; margin: 0 auto;"
+                                    loop
+                                    autoplay>
+                                </lottie-player>
+                                <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            
+            // Handle search form submission with loading animation
+            const searchForm = document.getElementById('searchForm');
+            const searchButton = document.getElementById('searchButton');
+            
+            if (searchForm && searchButton) {
+                searchForm.addEventListener('submit', function(e) {
+                    e.preventDefault(); // Prevent immediate form submission
+                    
+                    // Get the search term from the input
+                    const searchInput = document.querySelector('input[name="search_term"]');
+                    const searchTerm = searchInput ? searchInput.value.trim() : '';
+                    
+                    // Show loading animation on search button
+                    searchButton.innerHTML = `
+                        <div class="d-inline-block me-2" style="width: 20px; height: 20px;">
+                            <lottie-player
+                                src="assets/images/Trail loading.json"
+                                background="transparent"
+                                speed="1"
+                                style="width: 100%; height: 100%;"
+                                loop
+                                autoplay>
+                            </lottie-player>
+                        </div>
+                        Searching...
+                    `;
+                    searchButton.disabled = true;
+                    
+                    // Create search overlay with personalized message
+                    const overlay = document.createElement('div');
+                    overlay.id = 'search-loading-overlay';
+                    overlay.className = 'modal fade show';
+                    overlay.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0,0,0,0.5);
+                        z-index: 9999;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    `;
+                    
+                    // Create personalized search message
+                    const searchMessage = searchTerm ? `Searching "${searchTerm}"...` : 'Searching...';
+                    
+                    overlay.innerHTML = `
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-body text-center py-5">
+                                    <lottie-player
+                                        src="assets/images/Trail loading.json"
+                                        background="transparent"
+                                        speed="1"
+                                        style="width: 150px; height: 150px; margin: 0 auto;"
+                                        loop
+                                        autoplay>
+                                    </lottie-player>
+                                    <h5 class="mt-3 text-muted">${searchMessage}</h5>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(overlay);
+                    document.body.classList.add('modal-open');
+                    
+                    // Wait 3 seconds to show the Trail loading animation, then submit form
+                    setTimeout(() => {
+                        searchForm.submit(); // Submit the form after 3 seconds
+                    }, 3000);
+                });
+            }
         });
 
         function updateQRButtonState() {
@@ -550,10 +1072,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             
             // Show loading initially
             modalBody.innerHTML = `
-                <div class="text-center">
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
+                <div class="text-center py-4">
+                    <lottie-player
+                        src="assets/images/Trail loading.json"
+                        background="transparent"
+                        speed="1"
+                        style="width: 150px; height: 150px; margin: 0 auto;"
+                        loop
+                        autoplay>
+                    </lottie-player>
+                    <h5 class="mt-3 text-muted">Loading QR Code...</h5>
                 </div>
             `;
             
@@ -591,104 +1119,246 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                         This QR code links to: ${window.location.origin}/cabinet-inventory-system/index.php?cabinet=${encodeURIComponent(cabinet.cabinet_number)}
                     </small>
                 `;
-            }, 500);
+            }, 3000); // 3 second delay to show Trail loading animation
         }
 
         function loadCabinetDetails(cabinetId, searchType = '', searchTerm = '') {
             const content = document.getElementById('viewCabinetContent');
+            const modal = new bootstrap.Modal(document.getElementById('viewCabinetModal'));
             
+            // Show modal first with mobile-friendly loading state
             content.innerHTML = `
-                <div class="text-center">
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                <div class="text-center py-4">
+                    <div class="loading-container position-relative">
+                        <!-- Primary loading (Bootstrap spinner) - always visible -->
+                        <div class="spinner-border text-primary primary-spinner" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <!-- Secondary loading (Lottie) - overlay if available -->
+                        <lottie-player
+                            class="lottie-loader position-absolute top-0 start-50 translate-middle-x"
+                            src="assets/images/Trail loading.json"
+                            background="transparent"
+                            speed="1"
+                            style="width: 150px; height: 150px; z-index: 10; opacity: 0;"
+                            loop
+                            autoplay>
+                        </lottie-player>
                     </div>
+                    <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
                 </div>
             `;
-
-            // Fetch cabinet data
+            modal.show();
+            console.log('Cabinet modal opened with dual loading system');
+            
+            // Enhanced fallback mechanism - keep spinner visible during entire loading process
+            let lottieLoaded = false;
+            let dataLoaded = false;
+            const lottiePlayer = content.querySelector('.lottie-loader');
+            const primarySpinner = content.querySelector('.primary-spinner');
+            
+            // Function to hide loading animations when data is ready
+            const hideLoadingAnimations = () => {
+                if (dataLoaded && lottiePlayer && primarySpinner) {
+                    lottiePlayer.style.display = 'none';
+                    primarySpinner.style.display = 'none';
+                }
+            };
+            
+            // Try to detect when Lottie loads successfully
+            const checkLottieLoad = () => {
+                if (lottiePlayer && primarySpinner && !lottieLoaded) {
+                    // More thorough checks for Lottie success
+                    const hasContent = lottiePlayer.shadowRoot && lottiePlayer.shadowRoot.children.length > 0;
+                    const hasSize = lottiePlayer.getBoundingClientRect().width > 0;
+                    const isPlaying = lottiePlayer.getCurrentFrame && lottiePlayer.getCurrentFrame() > 0;
+                    
+                    if ((hasContent && hasSize) || isPlaying) {
+                        lottieLoaded = true;
+                        lottiePlayer.style.opacity = '1';
+                        primarySpinner.style.display = 'none';
+                        console.log('Lottie animation loaded successfully');
+                    }
+                }
+            };
+            
+            // Check for Lottie loading at multiple intervals
+            const lottieCheckInterval = setInterval(() => {
+                if (lottieLoaded) {
+                    clearInterval(lottieCheckInterval);
+                    return;
+                }
+                checkLottieLoad();
+            }, 100);
+            
+            // Stop checking after 2 seconds and ensure spinner stays visible until data loads
+            setTimeout(() => {
+                clearInterval(lottieCheckInterval);
+                if (!lottieLoaded && lottiePlayer && primarySpinner) {
+                    lottiePlayer.style.display = 'none';
+                    primarySpinner.style.display = 'inline-block';
+                    console.log('Using fallback spinner for loading animation');
+                }
+            }, 2000);
+            
+            // Fetch cabinet info to show proper cabinet name/number in loading message
             fetch(`public_api.php?action=get_cabinet&cabinet_id=${cabinetId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         const cabinet = data.cabinet;
+                        const cabinetName = cabinet.name || `Cabinet ${cabinet.cabinet_number}`;
                         
-                        // Check if we need to highlight items based on search
-                        const shouldHighlight = searchType === 'item' && searchTerm;
+                        // Create personalized loading message based on search context
+                        let loadingMessage;
+                        if (searchType === 'item' && searchTerm) {
+                            loadingMessage = `Finding "${searchTerm}" in ${cabinetName}...`;
+                        } else {
+                            loadingMessage = `Viewing ${cabinetName}...`;
+                        }
                         
+                        // Update loading message without showing modal again - keep dual loading system
                         content.innerHTML = `
-                            <div class="row mb-4">
-                                <div class="col-md-8">
-                                    <h6 class="text-primary">Cabinet Information</h6>
-                                    <table class="table table-borderless table-sm">
-                                        <tr>
-                                            <td><strong>Cabinet Number:</strong></td>
-                                            <td>${cabinet.cabinet_number}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>Cabinet Name:</strong></td>
-                                            <td>${cabinet.name}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>Total Items:</strong></td>
-                                            <td>${cabinet.items ? cabinet.items.length : 0}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>Last Updated:</strong></td>
-                                            <td>${new Date(cabinet.updated_at).toLocaleDateString()}</td>
-                                        </tr>
-                                    </table>
+                            <div class="text-center py-4">
+                                <div class="loading-container position-relative">
+                                    <!-- Primary loading (Bootstrap spinner) - always visible -->
+                                    <div class="spinner-border text-primary primary-spinner" role="status" style="width: 3rem; height: 3rem;">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <!-- Secondary loading (Lottie) - overlay if available -->
+                                    <lottie-player
+                                        class="lottie-loader position-absolute top-0 start-50 translate-middle-x"
+                                        src="assets/images/Trail loading.json"
+                                        background="transparent"
+                                        speed="1"
+                                        style="width: 150px; height: 150px; z-index: 10; opacity: 0;"
+                                        loop
+                                        autoplay>
+                                    </lottie-player>
                                 </div>
-                                <div class="col-md-4">
-                                    ${cabinet.photo_path ? 
-                                        `<img src="${cabinet.photo_path}" alt="Cabinet Photo" class="img-fluid rounded shadow">` :
-                                        `<div class="bg-light rounded p-4 text-center">
-                                            <i class="fas fa-cabinet-filing fa-3x text-muted"></i>
-                                            <p class="mt-2 mb-0 small text-muted">No photo available</p>
-                                        </div>`
-                                    }
-                                </div>
+                                <h5 class="mt-3 text-muted">${loadingMessage}</h5>
                             </div>
-
-                            <h6 class="text-primary">Cabinet Contents</h6>
-                            ${shouldHighlight ? 
-                                `<div class="alert alert-info mb-3">
-                                    <i class="fas fa-search me-2"></i>
-                                    Items matching "<strong>${searchTerm}</strong>" are highlighted below.
-                                </div>` : ''
-                            }
-                            ${cabinet.items && cabinet.items.length > 0 ? 
-                                `<div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Item Name</th>
-                                                <th>Category</th>
-                                                <th>Quantity</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${cabinet.items.map(item => {
-                                                const isHighlighted = shouldHighlight && item.name.toLowerCase().includes(searchTerm.toLowerCase());
-                                                const rowClass = isHighlighted ? 'table-warning highlight-item' : '';
-                                                const highlightIcon = isHighlighted ? '<i class="fas fa-star text-warning me-1"></i>' : '';
-                                                
-                                                return `
-                                                    <tr class="${rowClass}">
-                                                        <td>${highlightIcon}${item.name}</td>
-                                                        <td><span class="badge bg-secondary">${item.category_name}</span></td>
-                                                        <td><span class="badge bg-primary">${item.quantity}</span></td>
-                                                    </tr>
-                                                `;
-                                            }).join('')}
-                                        </tbody>
-                                    </table>
-                                </div>` :
-                                `<div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    This cabinet contains no items.
-                                </div>`
-                            }
                         `;
+                        
+                        // Set up the same dual loading system for the second phase
+                        const secondLottiePlayer = content.querySelector('.lottie-loader');
+                        const secondSpinner = content.querySelector('.primary-spinner');
+                        let secondLottieLoaded = false;
+                        
+                        console.log('Starting second phase loading with personalized message:', loadingMessage);
+                        
+                        // Check for Lottie loading in second phase
+                        const checkSecondLottieLoad = () => {
+                            if (secondLottiePlayer && secondSpinner && !secondLottieLoaded) {
+                                const hasContent = secondLottiePlayer.shadowRoot && secondLottiePlayer.shadowRoot.children.length > 0;
+                                const hasSize = secondLottiePlayer.getBoundingClientRect().width > 0;
+                                const isPlaying = secondLottiePlayer.getCurrentFrame && secondLottiePlayer.getCurrentFrame() > 0;
+                                
+                                if ((hasContent && hasSize) || isPlaying) {
+                                    secondLottieLoaded = true;
+                                    secondLottiePlayer.style.opacity = '1';
+                                    secondSpinner.style.display = 'none';
+                                    console.log('Second phase Lottie animation loaded successfully');
+                                }
+                            }
+                        };
+                        
+                        // Check at intervals for second phase loading
+                        const secondLottieInterval = setInterval(checkSecondLottieLoad, 100);
+                        setTimeout(() => {
+                            clearInterval(secondLottieInterval);
+                            if (!secondLottieLoaded && secondLottiePlayer && secondSpinner) {
+                                secondLottiePlayer.style.display = 'none';
+                                secondSpinner.style.display = 'inline-block';
+                                console.log('Using fallback spinner for second phase loading');
+                            }
+                        }, 2000); // Give more time for Lottie to load
+                        
+                        // Add a delay to show the personalized loading message, then load final content
+                        setTimeout(() => {
+                            // Set flag that data loading is complete
+                            dataLoaded = true;
+                            
+                            // Check if we need to highlight items based on search
+                            const shouldHighlight = searchType === 'item' && searchTerm;
+                            
+                            content.innerHTML = `
+                                <div class="row mb-4">
+                                    <div class="col-md-8">
+                                        <h6 class="text-primary">Cabinet Information</h6>
+                                        <table class="table table-borderless table-sm">
+                                            <tr>
+                                                <td><strong>Cabinet Number:</strong></td>
+                                                <td>${cabinet.cabinet_number}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Cabinet Name:</strong></td>
+                                                <td>${cabinet.name}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Total Items:</strong></td>
+                                                <td>${cabinet.items ? cabinet.items.length : 0}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Last Updated:</strong></td>
+                                                <td>${new Date(cabinet.updated_at).toLocaleDateString()}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="col-md-4">
+                                        ${cabinet.photo_path ? 
+                                            `<img src="${cabinet.photo_path}" alt="Cabinet Photo" class="img-fluid rounded shadow">` :
+                                            `<div class="bg-light rounded p-4 text-center">
+                                                <i class="fas fa-cabinet-filing fa-3x text-muted"></i>
+                                                <p class="mt-2 mb-0 small text-muted">No photo available</p>
+                                            </div>`
+                                        }
+                                    </div>
+                                </div>
+
+                                <h6 class="text-primary">Cabinet Contents</h6>
+                                ${shouldHighlight ? 
+                                    `<div class="alert alert-info mb-3">
+                                        <i class="fas fa-search me-2"></i>
+                                        Items matching "<strong>${searchTerm}</strong>" are highlighted below.
+                                    </div>` : ''
+                                }
+                                ${cabinet.items && cabinet.items.length > 0 ? 
+                                    `<div class="cabinet-contents-container ${cabinet.items.length > 7 ? 'cabinet-contents-scrollable' : ''}">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Item Name</th>
+                                                        <th>Category</th>
+                                                        <th>Quantity</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${cabinet.items.map(item => {
+                                                        const isHighlighted = shouldHighlight && item.name.toLowerCase().includes(searchTerm.toLowerCase());
+                                                        const rowClass = isHighlighted ? 'table-warning highlight-item' : '';
+                                                        const highlightIcon = isHighlighted ? '<i class="fas fa-star text-warning me-1"></i>' : '';
+                                                        
+                                                        return `
+                                                            <tr class="${rowClass}">
+                                                                <td>${highlightIcon}${item.name}</td>
+                                                                <td><span class="badge bg-secondary">${item.category_name}</span></td>
+                                                                <td><span class="badge bg-primary">${item.quantity}</span></td>
+                                                            </tr>
+                                                        `;
+                                                    }).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>` :
+                                    `<div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        This cabinet contains no items.
+                                    </div>`
+                                }
+                            `;
+                        }, 3000); // 3 second delay to show loading animation properly
                     } else {
                         content.innerHTML = `
                             <div class="alert alert-warning">

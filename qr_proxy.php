@@ -12,17 +12,14 @@ $qrContent = $_GET['data'];
 $size = isset($_GET['size']) ? intval($_GET['size']) : 300;
 $size = max(100, min(1000, $size)); // Limit size between 100-1000px
 
-// Generate cache filename
 $cacheKey = md5($qrContent . $size);
 $cacheDir = __DIR__ . '/qrcodes/';
 $cacheFile = $cacheDir . 'proxy_' . $cacheKey . '.png';
 
-// Create cache directory if it doesn't exist
 if (!is_dir($cacheDir)) {
     mkdir($cacheDir, 0755, true);
 }
 
-// Check if cached version exists and is less than 24 hours old
 if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 86400) {
     // Serve cached version
     header('Content-Type: image/png');
@@ -31,7 +28,6 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 86400) {
     exit;
 }
 
-// Fetch from Google Charts API
 $googleUrl = 'https://chart.googleapis.com/chart?chs=' . $size . 'x' . $size . '&cht=qr&chl=' . urlencode($qrContent) . '&choe=UTF-8';
 
 $context = stream_context_create([
@@ -45,15 +41,12 @@ $context = stream_context_create([
 $qrData = @file_get_contents($googleUrl, false, $context);
 
 if ($qrData !== false && strlen($qrData) > 0) {
-    // Save to cache
     file_put_contents($cacheFile, $qrData);
-    
-    // Serve the image
+
     header('Content-Type: image/png');
     header('Cache-Control: public, max-age=86400');
     echo $qrData;
 } else {
-    // Fallback: Generate a simple placeholder image
     $img = imagecreate($size, $size);
     $white = imagecolorallocate($img, 255, 255, 255);
     $black = imagecolorallocate($img, 0, 0, 0);
@@ -65,11 +58,9 @@ if ($qrData !== false && strlen($qrData) > 0) {
     // Add text
     $text = "QR CODE";
     if (function_exists('imagettftext')) {
-        // Use built-in fonts when TTF not available
         imagestring($img, 4, $size/2 - 30, $size/2 - 10, $text, $black);
         imagestring($img, 3, $size/2 - 50, $size/2 + 10, "Generation Failed", $gray);
     } else {
-        // Use built-in fonts
         imagestring($img, 3, $size/2 - 30, $size/2 - 10, $text, $black);
         imagestring($img, 2, $size/2 - 50, $size/2 + 10, "Generation Failed", $gray);
     }

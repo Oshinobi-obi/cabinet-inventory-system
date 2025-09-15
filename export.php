@@ -92,16 +92,18 @@ if ($format === 'pdf') {
     <!-- PDF-optimized styles -->
     <style>
         @page {
-            size: letter;
-            margin: 0.75in;
+            size: letter landscape;
+            margin: 0.5in;
         }
         
         body {
             font-family: Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.4;
+            font-size: 10px;
+            line-height: 1.3;
             color: #000;
             background: white;
+            margin: 0;
+            padding: 0;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
@@ -113,137 +115,31 @@ if ($format === 'pdf') {
         }
         
         .card {
-            border: 2px solid #000;
-            margin-bottom: 0;
+            border: none;
+            margin: 0;
         }
         
         .card-header {
             background-color: white !important;
-            border-bottom: 2px solid #000;
-            padding: 15px;
+            border: none;
+            padding: 10px 0;
             text-align: center;
         }
         
         .card-body {
-            padding: 20px;
+            padding: 0;
         }
         
         .export-header h3 {
-            margin: 0 0 5px 0;
-            font-size: 20px;
+            margin: 0 0 3px 0;
+            font-size: 18px;
             font-weight: bold;
         }
         
         .export-header p {
             margin: 0;
-            font-size: 12px;
-        }
-        
-        .cabinet-info {
-            background-color: white;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .inventory-section {
-            background-color: white;
-            padding: 15px;
-            border-top: 1px solid #6b3939ff;
-            margin-top: 15px;
-        }
-        
-        .inventory-title {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #000;
-        }
-        
-        .inventory-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 11px;
-        }
-        
-        .inventory-table th,
-        .inventory-table td {
-            border: 1px solid #000;
-            padding: 4px 6px;
-            text-align: left;
-        }
-        
-        .inventory-table th {
-            background-color: #f0f0f0;
-            font-weight: bold;
             font-size: 10px;
-        }
-        
-        .inventory-table tbody tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        
-        .cabinet-title {
-            color: #0066cc;
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-        
-        .info-row {
-            display: flex;
-            margin-bottom: 8px;
-        }
-        
-        .info-label {
-            font-weight: bold;
-            min-width: 120px;
-        }
-        
-        .qr-section {
-            text-align: center;
-            border: 2px solid #000;
-            padding: 25px;
-            margin-top: 25px;
-        }
-        
-        .qr-section h5 {
-            font-size: 14px;
-            margin-bottom: 18px;
-            font-weight: bold;
-        }
-        
-        .cabinet-photo {
-            max-width: 300px;
-            max-height: 300px;
-            border: 2px solid #000;
-            display: block;
-            margin: 0 auto 20px auto;
-        }
-        
-        .row {
-            display: flex;
-            flex-wrap: wrap;
-            margin: -10px;
-        }
-        
-        .col-left {
-            flex: 0 0 50%;
-            padding: 10px;
-        }
-        
-        .col-right {
-            flex: 0 0 50%;
-            padding: 10px;
-            text-align: center;
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-        }
-        
-        .qr-instructions {
-            font-size: 11px;
             color: #666;
-            margin-top: 10px;
         }
         
         .no-print {
@@ -253,6 +149,54 @@ if ($format === 'pdf') {
         img {
             max-width: 100%;
             height: auto;
+        }
+        
+        /* Landscape layout styles */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 8px;
+        }
+        
+        th, td {
+            border: 1px solid #000;
+            padding: 1px 3px;
+            text-align: left;
+            line-height: 1.2;
+        }
+        
+        th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            font-size: 8px;
+            padding: 2px 3px;
+        }
+        
+        .main-layout {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .qr-section {
+            width: 140px;
+            flex-shrink: 0;
+        }
+        
+        .details-section {
+            flex-grow: 1;
+        }
+        
+        .multi-column-table {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .column {
+            flex: 1;
+        }
+        
+        .column table {
+            width: 100%;
         }
     </style>
     <?php else: ?>
@@ -344,46 +288,105 @@ if ($format === 'pdf') {
             </div>
             <div class="card-body">
                 <?php if ($format === 'pdf'): ?>
-                <!-- Simplified PDF Layout -->
-                <div class="row">
-                    <div class="col-left">
-                        <div class="cabinet-title"><?php echo htmlspecialchars($cabinet['name']); ?></div>
-                        <div class="info-row">
-                            <span class="info-label">Cabinet Number:</span>
-                            <span><?php echo htmlspecialchars($cabinet['cabinet_number']); ?></span>
+                <!-- PDF Landscape Layout with Multi-Column Table -->
+                <div class="main-layout" style="display: flex; gap: 15px; border: 2px solid #000; padding: 15px;">
+                    <!-- Left side: Cabinet Number and QR Code -->
+                    <div class="qr-section" style="width: 140px; text-align: center; border-right: 2px solid #000; padding-right: 10px;">
+                        <h2 style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">
+                            <?php echo htmlspecialchars($cabinet['name']); ?>
+                        </h2>
+                        <p style="margin: 0 0 8px 0; font-size: 11px; font-weight: bold;">
+                            (<?php echo htmlspecialchars($cabinet['cabinet_number']); ?>)
+                        </p>
+                        <div style="border: 2px solid #000; width: 120px; height: 120px; margin: 8px auto; display: flex; align-items: center; justify-content: center;">
+                            <?php if ($qrFile): ?>
+                                <img src="<?php echo $qrFile; ?>" alt="QR CODE" style="width: 110px; height: 110px;">
+                            <?php else: ?>
+                                <span style="font-size: 10px; font-weight: bold;">QR CODE</span>
+                            <?php endif; ?>
                         </div>
-                        <div class="info-row">
-                            <span class="info-label">Total Items:</span>
-                            <span><?php echo $cabinet['item_count']; ?></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Category:</span>
-                            <span><?php echo $cabinet['categories'] ?: 'Files'; ?></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Last Updated:</span>
-                            <span><?php echo date('F j, Y g:i A', strtotime($cabinet['updated_at'])); ?></span>
-                        </div>
+                        <p style="margin: 5px 0 0 0; font-size: 9px; line-height: 1.2;">
+                            Last Updated:<br>
+                            <?php echo date('M d, Y'); ?>
+                        </p>
                     </div>
-                    <div class="col-right">
-                        <?php if ($cabinet['photo_path'] && file_exists($cabinet['photo_path'])): ?>
-                            <img src="<?php echo $cabinet['photo_path']; ?>" 
-                                 class="cabinet-photo" 
-                                 alt="Cabinet Photo">
+                    
+                    <!-- Right side: Cabinet Details in Multiple Columns -->
+                    <div class="details-section" style="flex-grow: 1;">
+                        <h2 style="margin: 0 0 10px 0; font-size: 16px; font-weight: bold; text-align: center;">Cabinet Details - All Items</h2>
+                        
+                        <?php if ($items): 
+                            $itemCount = count($items);
+                            $itemsPerColumn = 8; // Only 8 items per column
+                            $columnCount = ceil($itemCount / $itemsPerColumn);
+                            $columnCount = min($columnCount, 4); // Maximum 4 columns
+                            $actualItemsPerColumn = $itemsPerColumn; // Fixed at 8 items per column
+                        ?>
+                        
+                        <div style="display: flex; gap: 5px; align-items: flex-start;">
+                            <?php for ($col = 0; $col < $columnCount; $col++): 
+                                $startIndex = $col * $itemsPerColumn;
+                                $endIndex = min(($col + 1) * $itemsPerColumn, $itemCount);
+                                $columnItems = array_slice($items, $startIndex, $endIndex - $startIndex);
+                            ?>
+                            <div style="flex: 1; height: auto;">
+                                <table style="width: 100%; border-collapse: collapse; margin: 0; table-layout: fixed; height: auto;">
+                                    <thead>
+                                        <tr style="background-color: #f0f0f0;">
+                                            <th style="border: 1px solid #000; padding: 2px 3px; font-size: 8px; width: 25%; min-width: 40px;">Category</th>
+                                            <th style="border: 1px solid #000; padding: 2px 3px; font-size: 8px; width: 60%; min-width: 80px;">Item Name</th>
+                                            <th style="border: 1px solid #000; padding: 2px 3px; text-align: center; font-size: 8px; width: 15%; min-width: 25px;">Qty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php 
+                                        // Always show exactly 8 rows for alignment
+                                        for ($i = 0; $i < $itemsPerColumn; $i++): 
+                                            if (isset($columnItems[$i])): 
+                                                $item = $columnItems[$i];
+                                        ?>
+                                        <tr>
+                                            <td style="border: 1px solid #000; padding: 1px 2px; font-size: 7px; line-height: 1.1; white-space: nowrap; height: 14px;"><?php echo htmlspecialchars($item['category']); ?></td>
+                                            <td style="border: 1px solid #000; padding: 1px 2px; font-size: 7px; line-height: 1.1; word-wrap: break-word; height: 14px;"><?php echo htmlspecialchars($item['name']); ?></td>
+                                            <td style="border: 1px solid #000; padding: 1px 2px; text-align: center; font-size: 7px; line-height: 1.1; white-space: nowrap; height: 14px;"><?php echo $item['quantity']; ?></td>
+                                        </tr>
+                                        <?php else: ?>
+                                        <tr>
+                                            <td style="border: 1px solid #000; padding: 1px 2px; font-size: 7px; height: 14px; white-space: nowrap;">&nbsp;</td>
+                                            <td style="border: 1px solid #000; padding: 1px 2px; font-size: 7px; height: 14px;">&nbsp;</td>
+                                            <td style="border: 1px solid #000; padding: 1px 2px; text-align: center; font-size: 7px; white-space: nowrap; height: 14px;">&nbsp;</td>
+                                        </tr>
+                                        <?php endif; endfor; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <?php endfor; ?>
+                        </div>
+                        
+                        <!-- Summary Row -->
+                        <?php 
+                        $totalQuantity = array_sum(array_column($items, 'quantity'));
+                        $categories = array_unique(array_column($items, 'category'));
+                        ?>
+                        <div style="margin-top: 8px; padding: 5px; border: 2px solid #000; background-color: #f8f9fa; text-align: center;">
+                            <strong style="font-size: 9px;">
+                                SUMMARY: <?php echo count($categories); ?> Categories | 
+                                <?php echo $itemCount; ?> Total Items | 
+                                <?php echo $totalQuantity; ?> Total Quantity
+                            </strong>
+                        </div>
+                        
+                        <?php else: ?>
+                        <div style="border: 2px solid #000; padding: 20px; text-align: center;">
+                            <p style="font-style: italic; font-size: 12px;">No items found in this cabinet</p>
+                        </div>
                         <?php endif; ?>
                     </div>
                 </div>
                 
-                <div class="qr-section">
-                    <h5>Scan QR Code for Online Access</h5>
-                    <?php if ($qrFile): ?>
-                        <img src="<?php echo $qrFile; ?>" alt="QR Code" style="max-width: 140px; max-height: 140px;">
-                        <div class="qr-instructions">
-                            Scan with your mobile device to view<br>cabinet details online
-                        </div>
-                    <?php else: ?>
-                        <p>QR code could not be generated</p>
-                    <?php endif; ?>
+                <!-- Footer -->
+                <div style="text-align: center; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 15px;">
+                    <p style="margin: 5px 0; font-size: 11px; color: #666;">Cabinet Information System - Cabinet Information System | Report Date: <?php echo date('Y-m-d'); ?> | Page:</p>
                 </div>
                 
                 <?php else: ?>

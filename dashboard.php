@@ -46,6 +46,54 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'recent_activity') {
     }
 }
 
+// Handle AJAX requests for categories data
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'categories_overview') {
+    header('Content-Type: application/json');
+    
+    $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+    $limit = 5;
+    $offset = ($page - 1) * $limit;
+    
+    try {
+        // Get total count
+        $countStmt = $pdo->query("SELECT COUNT(*) as total FROM categories");
+        $totalRecords = $countStmt->fetch()['total'];
+        $totalPages = ceil($totalRecords / $limit);
+        
+        // Get paginated categories data
+        $stmt = $pdo->prepare("
+            SELECT cat.name, COUNT(i.id) as item_count 
+            FROM categories cat 
+            LEFT JOIN items i ON cat.id = i.category_id 
+            GROUP BY cat.id, cat.name 
+            ORDER BY item_count DESC
+            LIMIT ? OFFSET ?
+        ");
+        $stmt->execute([$limit, $offset]);
+        $categories = $stmt->fetchAll();
+        
+        // Get total items for percentage calculation
+        $totalItemsStmt = $pdo->query("SELECT COUNT(*) as total_items FROM items");
+        $totalItems = $totalItemsStmt->fetch()['total_items'];
+        
+        echo json_encode([
+            'success' => true,
+            'categories' => $categories,
+            'total_items' => $totalItems,
+            'pagination' => [
+                'current_page' => $page,
+                'total_pages' => $totalPages,
+                'total_records' => $totalRecords
+            ]
+        ]);
+        exit;
+        
+    } catch(PDOException $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        exit;
+    }
+}
+
 // Handle AJAX request for adding category
 if (isset($_POST['add_category']) && $_SERVER['REQUEST_METHOD'] == 'POST') {
     header('Content-Type: application/json');
@@ -461,52 +509,9 @@ try {
                             </h5>
                         </div>
                         <div class="card-body">
-                            <?php
-                            $stmt = $pdo->query("
-                                SELECT cat.name, COUNT(i.id) as item_count 
-                                FROM categories cat 
-                                LEFT JOIN items i ON cat.id = i.category_id 
-                                GROUP BY cat.id 
-                                ORDER BY item_count DESC
-                                LIMIT 5
-                            ");
-                            $categoryItems = $stmt->fetchAll();
-                            
-                            if ($categoryItems):
-                            ?>
-                            <div class="category-list">
-                                <?php 
-                                $totalCategoryItems = array_sum(array_column($categoryItems, 'item_count'));
-                                foreach ($categoryItems as $category): 
-                                    $percentage = $totalCategoryItems > 0 ? ($category['item_count'] / $totalCategoryItems) * 100 : 0;
-                                ?>
-                                <div class="category-item mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="fw-semibold"><?php echo $category['name']; ?></span>
-                                        <span class="badge bg-secondary"><?php echo $category['item_count']; ?></span>
-                                    </div>
-                                    <div class="progress" style="height: 6px;">
-                                        <div class="progress-bar bg-primary" 
-                                             style="width: <?php echo $percentage; ?>%"
-                                             title="<?php echo round($percentage, 1); ?>%">
-                                        </div>
-                                    </div>
-                                </div>
-                                <?php endforeach; ?>
+                            <div id="categories-overview-container">
+                                <!-- Categories data will be loaded here -->
                             </div>
-                            
-                            <div class="text-center mt-3">
-                                <small class="text-muted">
-                                    Total: <?php echo $totalCategories; ?> categories, <?php echo $totalCategoryItems; ?> items
-                                </small>
-                            </div>
-                            
-                            <?php else: ?>
-                                <div class="text-center py-3">
-                                    <i class="fas fa-tags fa-2x text-muted mb-2"></i>
-                                    <p class="text-muted mb-0">No categories found</p>
-                                </div>
-                            <?php endif; ?>
                             
                             <!-- Add Categories Button -->
                             <?php if ($_SESSION['user_role'] === 'admin' || $_SESSION['user_role'] === 'encoder'): ?>
@@ -799,8 +804,47 @@ try {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger" id="deleteCabinetBtn" data-bs-toggle="modal" data-bs-target="#deleteCabinetModal">
+                        <i class="fas fa-trash me-1"></i> Delete Cabinet
+                    </button>
                     <button type="button" class="btn btn-primary" id="editCabinetBtn" data-bs-toggle="modal" data-bs-target="#editCabinetModal">
                         <i class="fas fa-edit me-1"></i> Edit Cabinet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Cabinet Confirmation Modal -->
+    <div class="modal fade" id="deleteCabinetModal" tabindex="-1" aria-labelledby="deleteCabinetModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteCabinetModalLabel">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Delete Cabinet
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> This action cannot be undone!
+                    </div>
+                    <p>Are you sure you want to delete this cabinet?</p>
+                    <div id="deleteCabinetDetails" class="border rounded p-3 bg-light">
+                        <!-- Cabinet details will be populated here -->
+                    </div>
+                    <p class="text-muted mt-3">
+                        <i class="fas fa-info-circle me-1"></i>
+                        All items inside this cabinet will also be deleted.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="fas fa-trash me-1"></i> Delete Cabinet
                     </button>
                 </div>
             </div>
@@ -1048,6 +1092,12 @@ try {
 
             // Initialize Recent Activity table
             loadRecentActivity();
+            
+            // Initialize Categories Overview
+            loadCategoriesOverview();
+            
+            // Setup delete cabinet functionality
+            setupDeleteCabinet();
         });
 
         // Recent Activity table functionality
@@ -1080,18 +1130,18 @@ try {
             if (!container) return;
 
             let tableHtml = `
-                <div class="table-responsive">
-                    <table class="table table-hover">
+                <div class="table-responsive" style="overflow-x: auto;">
+                    <table class="table table-hover" style="min-width: 600px;">
                         <thead class="table-light">
                             <tr>
-                                <th scope="col" class="sortable-header" data-sort="cabinet_number" style="cursor: pointer;">
+                                <th scope="col" class="sortable-header" data-sort="cabinet_number" style="cursor: pointer; white-space: nowrap;">
                                     Cabinet Number ${getSortArrow('cabinet_number', currentSort, currentOrder)}
                                 </th>
-                                <th scope="col" class="sortable-header" data-sort="name" style="cursor: pointer;">
+                                <th scope="col" class="sortable-header" data-sort="name" style="cursor: pointer; white-space: nowrap;">
                                     Name ${getSortArrow('name', currentSort, currentOrder)}
                                 </th>
-                                <th scope="col">Activity</th>
-                                <th scope="col" class="sortable-header" data-sort="updated_at" style="cursor: pointer;">
+                                <th scope="col" style="white-space: nowrap;">Activity</th>
+                                <th scope="col" class="sortable-header" data-sort="updated_at" style="cursor: pointer; white-space: nowrap;">
                                     Date Updated ${getSortArrow('updated_at', currentSort, currentOrder)}
                                 </th>
                             </tr>
@@ -1274,6 +1324,141 @@ try {
                 if (page >= 1 && page <= maxPages) {
                     loadRecentActivity(page, currentSort, currentOrder);
                 }
+            }
+        });
+
+        // Categories Overview functionality
+        let currentCategoriesPage = 1;
+
+        function loadCategoriesOverview(page = 1) {
+            const container = document.getElementById('categories-overview-container');
+            if (!container) return;
+
+            currentCategoriesPage = page;
+
+            // Show loading state
+            container.innerHTML = `
+                <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `;
+
+            fetch(`dashboard.php?ajax=categories_overview&page=${page}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderCategoriesOverview(data.categories, data.total_items);
+                        renderCategoriesPagination(data.pagination);
+                    } else {
+                        console.error('Failed to load categories overview:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading categories overview:', error);
+                });
+        }
+
+        function renderCategoriesOverview(categories, totalItems) {
+            const container = document.getElementById('categories-overview-container');
+            
+            if (categories.length > 0) {
+                let html = '<div class="category-list">';
+                
+                categories.forEach(category => {
+                    const percentage = totalItems > 0 ? (category.item_count / totalItems) * 100 : 0;
+                    html += `
+                        <div class="category-item mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-semibold">${category.name}</span>
+                                <span class="badge bg-secondary">${category.item_count}</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-primary" 
+                                     style="width: ${percentage}%"
+                                     title="${Math.round(percentage * 10) / 10}%">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            Total: ${totalItems} items across all categories
+                        </small>
+                    </div>`;
+                
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `
+                    <div class="text-center py-3">
+                        <i class="fas fa-tags fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No categories found</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderCategoriesPagination(pagination) {
+            const container = document.getElementById('categories-overview-container');
+            if (!container || pagination.total_pages <= 1) return;
+            
+            let paginationHtml = `
+                <nav aria-label="Categories pagination" class="mt-3">
+                    <div class="d-flex justify-content-center align-items-center">
+                        <!-- Previous button -->`;
+            
+            if (pagination.current_page > 1) {
+                paginationHtml += `
+                    <a class="btn btn-outline-secondary btn-sm me-3 categories-pagination-link" 
+                       href="#" data-page="${pagination.current_page - 1}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>`;
+            } else {
+                paginationHtml += `
+                    <button class="btn btn-outline-secondary btn-sm me-3" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>`;
+            }
+            
+            paginationHtml += `
+                        <!-- Current page indicator -->
+                        <span class="fw-bold">${pagination.current_page}</span>
+                        
+                        <!-- Next button -->`;
+            
+            if (pagination.current_page < pagination.total_pages) {
+                paginationHtml += `
+                    <a class="btn btn-outline-secondary btn-sm ms-3 categories-pagination-link" 
+                       href="#" data-page="${pagination.current_page + 1}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>`;
+            } else {
+                paginationHtml += `
+                    <button class="btn btn-outline-secondary btn-sm ms-3" disabled>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>`;
+            }
+            
+            paginationHtml += `
+                    </div>
+                </nav>`;
+            
+            container.innerHTML += paginationHtml;
+        }
+
+        // Handle categories pagination clicks using event delegation
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('categories-pagination-link')) {
+                e.preventDefault();
+                const page = parseInt(e.target.getAttribute('data-page'));
+                if (page) {
+                    loadCategoriesOverview(page);
+                }
+                return false;
             }
         });
 
@@ -1557,10 +1742,6 @@ try {
                                             <td>${cabinet.name}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Location:</strong></td>
-                                            <td>${cabinet.location || 'Not specified'}</td>
-                                        </tr>
-                                        <tr>
                                             <td><strong>Created:</strong></td>
                                             <td>${new Date(cabinet.created_at).toLocaleDateString()}</td>
                                         </tr>
@@ -1726,6 +1907,110 @@ try {
                 
                 editItemCount = index + 1;
             });
+        }
+
+        // Delete Cabinet functionality
+        function setupDeleteCabinet() {
+            const deleteCabinetBtn = document.getElementById('deleteCabinetBtn');
+            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+            
+            // Handle delete button click from view modal
+            if (deleteCabinetBtn) {
+                deleteCabinetBtn.addEventListener('click', function() {
+                    if (!currentCabinetData) {
+                        alert('No cabinet data available for deletion.');
+                        return;
+                    }
+                    
+                    // Populate delete confirmation modal
+                    const cabinet = currentCabinetData;
+                    const deleteDetails = document.getElementById('deleteCabinetDetails');
+                    
+                            deleteDetails.innerHTML = `
+                        <div class="row">
+                            <div class="col-12">
+                                <strong>Cabinet Number:</strong> ${cabinet.cabinet_number}<br>
+                                <strong>Cabinet Name:</strong> ${cabinet.name}<br>
+                                <strong>Total Items:</strong> ${cabinet.items.length} items<br>
+                                <strong>Created:</strong> ${new Date(cabinet.created_at).toLocaleDateString()}
+                            </div>
+                        </div>
+                    `;                    // Hide the view modal first
+                    const viewModal = bootstrap.Modal.getInstance(document.getElementById('viewCabinetModal'));
+                    if (viewModal) {
+                        viewModal.hide();
+                    }
+                });
+            }
+            
+            // Handle confirm delete button click
+            if (confirmDeleteBtn) {
+                confirmDeleteBtn.addEventListener('click', function() {
+                    if (!currentCabinetData) {
+                        alert('No cabinet data available for deletion.');
+                        return;
+                    }
+                    
+                    const cabinet = currentCabinetData;
+                    
+                    // Show loading state
+                    const originalBtnText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Deleting...';
+                    this.disabled = true;
+                    
+                    // Call delete API
+                    fetch('cabinet_api.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'delete_cabinet',
+                            cabinet_id: cabinet.id
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Reset button state
+                        this.innerHTML = originalBtnText;
+                        this.disabled = false;
+                        
+                        if (data.success) {
+                            // Hide delete confirmation modal
+                            const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteCabinetModal'));
+                            if (deleteModal) {
+                                deleteModal.hide();
+                            }
+                            
+                            // Show success message
+                            const successMessage = document.getElementById('successMessage');
+                            successMessage.textContent = `Cabinet "${cabinet.name}" has been successfully deleted!`;
+                            
+                            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                            successModal.show();
+                            
+                            // Refresh the activity list
+                            setTimeout(() => {
+                                loadRecentActivity(currentPage);
+                                // Reset current cabinet data
+                                currentCabinetData = null;
+                            }, 1500);
+                            
+                        } else {
+                            alert('Error deleting cabinet: ' + (data.message || 'Unknown error'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error deleting cabinet:', error);
+                        
+                        // Reset button state
+                        this.innerHTML = originalBtnText;
+                        this.disabled = false;
+                        
+                        alert('Error deleting cabinet. Please try again.');
+                    });
+                });
+            }
         }
 
         // Export function

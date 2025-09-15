@@ -72,6 +72,12 @@ function initializeEventListeners() {
         addItemBtn.addEventListener('click', addNewItem);
     }
     
+    // Edit add item button
+    const editAddItemBtn = document.getElementById('add-edit-item');
+    if (editAddItemBtn) {
+        editAddItemBtn.addEventListener('click', addNewItem);
+    }
+    
     // Form submission
     const editForm = document.getElementById('editCabinetForm');
     if (editForm) {
