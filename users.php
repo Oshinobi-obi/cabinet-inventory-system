@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/auth.php';
+require_once 'includes/email_service.php';
 authenticate();
 authorize(['admin']);
 
@@ -50,7 +51,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             ");
             $stmt->execute([$firstName, $lastName, $office, $division, $email, $mobile, $username, $hashedPassword, $role]);
             
-            $_SESSION['success'] = "User added successfully!";
+            // Prepare user data for email
+            $userData = [
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'email' => $email,
+                'username' => $username,
+                'password' => $password, // Send original password, not hashed
+                'role' => $role,
+                'office' => $office,
+                'division' => $division
+            ];
+            
+            // Send welcome email with credentials
+            $emailResult = EmailService::sendNewUserEmail($userData);
+            
+            // Log email activity
+            EmailService::logEmailActivity($userData, $emailResult['success'], $emailResult['message']);
+            
+            if ($emailResult['success']) {
+                $_SESSION['success'] = "User added successfully! Welcome email sent to " . $email;
+            } else {
+                $_SESSION['success'] = "User added successfully, but email failed to send: " . $emailResult['message'];
+                // Still consider this a success since user was created
+            }
+            
             redirect('users.php');
         } catch(PDOException $e) {
             $error = "Error adding user: " . $e->getMessage();

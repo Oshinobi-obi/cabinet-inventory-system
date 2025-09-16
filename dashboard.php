@@ -2,6 +2,14 @@
 require_once 'includes/auth.php';
 authenticate();
 
+// Generate CSP nonce for inline scripts
+if (!isset($GLOBALS['csp_nonce'])) {
+    $GLOBALS['csp_nonce'] = base64_encode(random_bytes(16));
+}
+
+// Set Content Security Policy header - Permissive for development
+header("Content-Security-Policy: script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; object-src 'none';");
+
 // Handle AJAX requests for activity data
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'recent_activity') {
     header('Content-Type: application/json');
@@ -169,6 +177,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo ucfirst($_SESSION['user_role']); ?> Dashboard - Cabinet Information System</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
@@ -361,11 +370,18 @@ try {
                                         </button>
                                     </div>
                                     <div class="col-md-3 mb-2">
+                                        <button type="button" class="btn btn-warning w-100" data-bs-toggle="modal" data-bs-target="#emailSettingsModal">
+                                            <i class="fas fa-envelope-open-text me-2"></i>Email Settings
+                                        </button>
+                                    </div>
+                                    <div class="col-md-3 mb-2">
                                         <a href="index.php" class="btn btn-info w-100" target="_blank">
                                             <i class="fas fa-search me-2"></i>Public Search
                                         </a>
                                     </div>
-                                    <div class="col-md-3 mb-2">
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
                                         <button type="button" class="btn btn-secondary w-100" data-bs-toggle="modal" data-bs-target="#exportModal">
                                             <i class="fas fa-download me-2"></i>Export Data
                                         </button>
@@ -973,7 +989,299 @@ try {
         </div>
     </div>
 
+    <!-- Email Settings Modal -->
+    <div class="modal fade" id="emailSettingsModal" tabindex="-1" aria-labelledby="emailSettingsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="emailSettingsModalLabel">
+                        <i class="fas fa-envelope-open-text me-2"></i>Email Configuration Settings
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Email Setup Instructions:</strong><br>
+                                Configure these settings to automatically send welcome emails to new users with their login credentials.
+                            </div>
+                            
+                            <form id="emailConfigForm">
+                                <h6 class="text-primary mb-3">📧 Basic Email Settings</h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="from_email" class="form-label">From Email Address</label>
+                                        <input type="email" class="form-control" id="from_email" placeholder="admin@yourcompany.com" required>
+                                        <small class="text-muted">The email address that sends welcome emails</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="from_name" class="form-label">From Name</label>
+                                        <input type="text" class="form-control" id="from_name" placeholder="Cabinet Inventory System" required>
+                                        <small class="text-muted">Display name for outgoing emails</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="reply_to" class="form-label">Reply-To Email</label>
+                                    <input type="email" class="form-control" id="reply_to" placeholder="support@yourcompany.com">
+                                    <small class="text-muted">Where replies will go (optional)</small>
+                                </div>
+                                
+                                <h6 class="text-primary mb-3 mt-4">🔧 SMTP Configuration (for reliable delivery)</h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="smtp_host" class="form-label">SMTP Server</label>
+                                        <select class="form-select" id="smtp_host">
+                                            <option value="">Select Email Provider</option>
+                                            <option value="smtp.gmail.com">Gmail (smtp.gmail.com)</option>
+                                            <option value="smtp-mail.outlook.com">Outlook (smtp-mail.outlook.com)</option>
+                                            <option value="smtp.yahoo.com">Yahoo (smtp.yahoo.com)</option>
+                                            <option value="custom">Custom SMTP Server</option>
+                                        </select>
+                                        <input type="text" class="form-control mt-2 d-none" id="custom_smtp" placeholder="Enter custom SMTP server">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="smtp_port" class="form-label">SMTP Port</label>
+                                        <select class="form-select" id="smtp_port">
+                                            <option value="587">587 (TLS - Recommended)</option>
+                                            <option value="465">465 (SSL)</option>
+                                            <option value="25">25 (No Encryption)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="smtp_username" class="form-label">SMTP Username</label>
+                                        <input type="email" class="form-control" id="smtp_username" placeholder="your-email@gmail.com">
+                                        <small class="text-muted">Usually same as your email address</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="smtp_password" class="form-label">SMTP Password/App Password</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="smtp_password" placeholder="Your app password">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()">
+                                                <i class="fas fa-eye" id="passwordToggle"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">Use App Password for Gmail, not your regular password</small>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="fas fa-question-circle me-1"></i>Quick Setup Guides</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="accordion" id="emailGuideAccordion">
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#gmailGuide">
+                                                    📧 Gmail Setup
+                                                </button>
+                                            </h2>
+                                            <div id="gmailGuide" class="accordion-collapse collapse" data-bs-parent="#emailGuideAccordion">
+                                                <div class="accordion-body">
+                                                    <small>
+                                                        <strong>Steps:</strong><br>
+                                                        1. Enable 2-factor authentication<br>
+                                                        2. Generate App Password<br>
+                                                        3. Use App Password here<br>
+                                                        4. Server: smtp.gmail.com<br>
+                                                        5. Port: 587
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#outlookGuide">
+                                                    📧 Outlook Setup
+                                                </button>
+                                            </h2>
+                                            <div id="outlookGuide" class="accordion-collapse collapse" data-bs-parent="#emailGuideAccordion">
+                                                <div class="accordion-body">
+                                                    <small>
+                                                        <strong>Steps:</strong><br>
+                                                        1. Server: smtp-mail.outlook.com<br>
+                                                        2. Port: 587<br>
+                                                        3. Use your email & password<br>
+                                                        4. Enable SMTP authentication
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-3">
+                                        <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="previewEmail()">
+                                            <i class="fas fa-eye me-1"></i>Preview Email Template
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" onclick="saveEmailConfig()">
+                        <i class="fas fa-save me-1"></i>Save Configuration
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
+        // Email Configuration Functions
+        function loadEmailConfig() {
+            // Load current email configuration when modal opens
+            $('#emailSettingsModal').on('shown.bs.modal', function () {
+                fetch('includes/email_service.php?action=get_config')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.config) {
+                            document.getElementById('from_email').value = data.config.from_email || '';
+                            document.getElementById('from_name').value = data.config.from_name || '';
+                            document.getElementById('reply_to').value = data.config.reply_to || '';
+                            document.getElementById('smtp_host').value = data.config.smtp_host || '';
+                            document.getElementById('smtp_port').value = data.config.smtp_port || '587';
+                            document.getElementById('smtp_username').value = data.config.smtp_username || '';
+                            
+                            // Handle custom SMTP
+                            if (data.config.smtp_host && !['smtp.gmail.com', 'smtp-mail.outlook.com', 'smtp.yahoo.com'].includes(data.config.smtp_host)) {
+                                document.getElementById('smtp_host').value = 'custom';
+                                document.getElementById('custom_smtp').value = data.config.smtp_host;
+                                document.getElementById('custom_smtp').classList.remove('d-none');
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Error loading config:', error));
+            });
+        }
+        
+        function saveEmailConfig() {
+            const form = document.getElementById('emailConfigForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            const config = {
+                from_email: document.getElementById('from_email').value,
+                from_name: document.getElementById('from_name').value,
+                reply_to: document.getElementById('reply_to').value,
+                smtp_host: document.getElementById('smtp_host').value === 'custom' 
+                    ? document.getElementById('custom_smtp').value 
+                    : document.getElementById('smtp_host').value,
+                smtp_port: document.getElementById('smtp_port').value,
+                smtp_username: document.getElementById('smtp_username').value,
+                smtp_password: document.getElementById('smtp_password').value
+            };
+            
+            const saveBtn = event.target;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+            
+            fetch('includes/email_service.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'save_config',
+                    config: config
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', '✅ Email Configuration Saved Successfully!<br><small>New users will now automatically receive welcome emails with their credentials.</small>');
+                    $('#emailSettingsModal').modal('hide');
+                } else {
+                    showAlert('error', 'Error saving configuration: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', 'Network error occurred while saving configuration.');
+            })
+            .finally(() => {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save me-1"></i>Save Configuration';
+            });
+        }
+        
+        function previewEmail() {
+            window.open('includes/email_service.php?action=preview', '_blank', 'width=800,height=600');
+        }
+        
+        function togglePassword() {
+            const passwordField = document.getElementById('smtp_password');
+            const toggleIcon = document.getElementById('passwordToggle');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                toggleIcon.className = 'fas fa-eye-slash';
+            } else {
+                passwordField.type = 'password';
+                toggleIcon.className = 'fas fa-eye';
+            }
+        }
+        
+        // Handle SMTP host selection
+        document.getElementById('smtp_host').addEventListener('change', function() {
+            const customInput = document.getElementById('custom_smtp');
+            if (this.value === 'custom') {
+                customInput.classList.remove('d-none');
+                customInput.required = true;
+            } else {
+                customInput.classList.add('d-none');
+                customInput.required = false;
+                customInput.value = '';
+            }
+        });
+        
+        function showAlert(type, message) {
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const alertHTML = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Add to top of modal body or page
+            const modalBody = document.querySelector('#emailSettingsModal .modal-body');
+            if (modalBody) {
+                modalBody.insertAdjacentHTML('afterbegin', alertHTML);
+            } else {
+                document.body.insertAdjacentHTML('afterbegin', alertHTML);
+            }
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                const alert = document.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+        
+        // Initialize email configuration loading
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEmailConfig();
+        });
+    </script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         // Toggle sidebar
         document.addEventListener('DOMContentLoaded', function() {
