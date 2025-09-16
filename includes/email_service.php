@@ -474,10 +474,8 @@ class EmailService {
      * Get the login URL for the system
      */
     private static function getLoginUrl() {
-        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'];
-        $path = dirname($_SERVER['REQUEST_URI']);
-        return $protocol . '://' . $host . $path . '/login.php';
+        // Use the specific IP address and port for your system
+        return 'http://192.168.102.230:8080/login.php';
     }
     
     /**

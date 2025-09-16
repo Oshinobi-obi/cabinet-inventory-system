@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/auth.php';
+require_once 'includes/email_service.php';
 authenticate();
 
 // Generate CSP nonce for inline scripts
@@ -137,6 +138,96 @@ if (isset($_POST['add_category']) && $_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
+// Handle AJAX request for adding user
+if (isset($_POST['add_user']) && $_SERVER['REQUEST_METHOD'] == 'POST') {
+    header('Content-Type: application/json');
+    
+    // Get and sanitize input data
+    $firstName = sanitizeInput($_POST['first_name']);
+    $lastName = sanitizeInput($_POST['last_name']);
+    $office = sanitizeInput($_POST['office']);
+    $division = sanitizeInput($_POST['division']);
+    $email = sanitizeInput($_POST['email']);
+    $mobile = sanitizeInput($_POST['mobile']);
+    $username = sanitizeInput($_POST['username']);
+    $password = sanitizeInput($_POST['password']);
+    $role = sanitizeInput($_POST['role']);
+    
+    // Validate required fields
+    if (empty($firstName) || empty($lastName) || empty($office) || empty($division) || 
+        empty($email) || empty($mobile) || empty($username) || empty($password) || empty($role)) {
+        echo json_encode(['success' => false, 'message' => 'All fields are required']);
+        exit;
+    }
+    
+    // Validate email format
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid email format']);
+        exit;
+    }
+    
+    try {
+        // Check if username already exists
+        $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM users WHERE username = ?");
+        $stmt->execute([$username]);
+        $usernameExists = $stmt->fetch()['count'] > 0;
+        
+        if ($usernameExists) {
+            echo json_encode(['success' => false, 'message' => 'Username already exists']);
+            exit;
+        }
+        
+        // Check if email already exists
+        $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $emailExists = $stmt->fetch()['count'] > 0;
+        
+        if ($emailExists) {
+            echo json_encode(['success' => false, 'message' => 'Email already exists']);
+            exit;
+        }
+        
+        // Hash the password
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        
+        // Insert new user
+        $stmt = $pdo->prepare("
+            INSERT INTO users (first_name, last_name, office, division, email, mobile, username, password, role) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([$firstName, $lastName, $office, $division, $email, $mobile, $username, $hashedPassword, $role]);
+        
+        // Prepare user data for email
+        $userData = [
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'email' => $email,
+            'username' => $username,
+            'password' => $password, // Send original password, not hashed
+            'role' => $role,
+            'office' => $office,
+            'division' => $division
+        ];
+        
+        // Send welcome email with credentials
+        $emailResult = EmailService::sendNewUserEmail($userData);
+        
+        // Log email activity
+        EmailService::logEmailActivity($userData, $emailResult['success'], $emailResult['message']);
+        
+        if ($emailResult['success']) {
+            echo json_encode(['success' => true, 'message' => 'User Added Successfully ✓', 'email_sent' => true]);
+        } else {
+            echo json_encode(['success' => true, 'message' => 'User Added Successfully ✓ (Email failed to send)', 'email_sent' => false]);
+        }
+        exit;
+        
+    } catch(PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        exit;
+    }
+}
+
 // Get dashboard statistics
 try {
     // Count cabinets
@@ -178,6 +269,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo ucfirst($_SESSION['user_role']); ?> Dashboard - Cabinet Information System</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
@@ -185,6 +277,33 @@ try {
     <link href="assets/css/dashboard.css" rel="stylesheet">
     <link href="assets/css/mobile-enhancements.css" rel="stylesheet">
     <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
+        /* Loading Modal Styling */
+        #loadingModal .modal-content {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        #loadingModal .modal-body {
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #loadingModal lottie-player {
+            margin: 0 auto;
+            display: block;
+        }
+        
+        #loadingMessage {
+            color: #6c757d;
+            font-weight: 500;
+            text-align: center;
+            margin-top: 15px;
+        }
+        
         /* Hide number input spinners/arrows */
         .page-input::-webkit-outer-spin-button,
         .page-input::-webkit-inner-spin-button {
@@ -656,7 +775,7 @@ try {
     <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <form method="POST" action="users.php">
+                <form id="addUserForm" method="POST" action="dashboard.php">
                     <div class="modal-header">
                         <h5 class="modal-title" id="addUserModalLabel">
                             <i class="fas fa-user-plus me-2"></i>Add New User
@@ -922,6 +1041,18 @@ try {
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <lottie-player src="assets/images/Trail loading.json" background="transparent" speed="1" style="width: 80px; height: 80px;" loop autoplay></lottie-player>
+                    <h5 id="loadingMessage">Processing...</h5>
+                </div>
             </div>
         </div>
     </div>
@@ -2384,6 +2515,75 @@ try {
                     }
                 }
             }
+        }
+
+        // Add User Form Handling
+        const addUserForm = document.getElementById('addUserForm');
+        if (addUserForm) {
+            addUserForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Hide the Add User modal first
+                const addUserModal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
+                addUserModal.hide();
+                
+                // Show loading modal with custom message
+                document.getElementById('loadingMessage').textContent = 'Adding User...';
+                const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+                loadingModal.show();
+                
+                const formData = new FormData();
+                formData.append('add_user', 'true');
+                formData.append('first_name', document.getElementById('modal_first_name').value);
+                formData.append('last_name', document.getElementById('modal_last_name').value);
+                formData.append('office', document.getElementById('modal_office').value);
+                formData.append('division', document.getElementById('modal_division').value);
+                formData.append('email', document.getElementById('modal_email').value);
+                formData.append('mobile', document.getElementById('modal_mobile').value);
+                formData.append('username', document.getElementById('modal_username').value);
+                formData.append('password', document.getElementById('modal_password').value);
+                formData.append('role', document.getElementById('modal_role').value);
+                
+                fetch('dashboard.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading modal
+                    loadingModal.hide();
+                    
+                    if (data.success) {
+                        // Reset form
+                        document.getElementById('addUserForm').reset();
+                        
+                        // Show success modal with custom message
+                        document.getElementById('successMessage').textContent = data.message;
+                        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                        successModal.show();
+                        
+                        // Refresh the page after success modal is closed
+                        const successModalElement = document.getElementById('successModal');
+                        const refreshHandler = function() {
+                            window.location.reload();
+                            successModalElement.removeEventListener('hidden.bs.modal', refreshHandler);
+                        };
+                        successModalElement.addEventListener('hidden.bs.modal', refreshHandler);
+                        
+                    } else {
+                        // Show error
+                        alert('Error: ' + (data.message || 'Failed to add user'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error adding user:', error);
+                    
+                    // Hide loading modal
+                    loadingModal.hide();
+                    
+                    alert('Error adding user. Please try again.');
+                });
+            });
         }
 
         // Add Category Form Handling

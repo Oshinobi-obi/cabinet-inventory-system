@@ -34,7 +34,20 @@ class EmailConfig {
                 .content { background: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }
                 .credentials { background: white; padding: 20px; border-radius: 8px; border-left: 5px solid #0d6efd; margin: 20px 0; }
                 .footer { text-align: center; margin-top: 20px; color: #6c757d; font-size: 0.9em; }
-                .btn { display: inline-block; background: #0d6efd; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 10px 0; }
+                .btn { 
+                    display: inline-block; 
+                    background: #0d6efd !important; 
+                    color: white !important; 
+                    padding: 12px 24px; 
+                    text-decoration: none !important; 
+                    border-radius: 5px; 
+                    margin: 10px 0; 
+                    font-weight: bold;
+                }
+                .btn:visited { color: white !important; }
+                .btn:hover { color: white !important; }
+                .btn:active { color: white !important; }
+                .btn:link { color: white !important; }
             </style>
         </head>
         <body>
@@ -67,7 +80,7 @@ class EmailConfig {
                     </ul>
                     
                     <div style='text-align: center; margin: 30px 0;'>
-                        <a href='#LOGIN_URL#' class='btn'>🔐 Login to System</a>
+                        <a href='#LOGIN_URL#' class='btn' style='display: inline-block; background: #0d6efd !important; color: white !important; padding: 12px 24px; text-decoration: none !important; border-radius: 5px; margin: 10px 0; font-weight: bold;'>🔐 Login to System</a>
                     </div>
                     
                     <p>⚠️ <strong>Important Security Notes:</strong></p>
