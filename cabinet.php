@@ -150,7 +150,7 @@ $categories = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cabinets - Cabinet Information System</title>
+    <title>Cabinets - Cabinet Management System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="assets/css/navbar.css" rel="stylesheet">
@@ -194,8 +194,9 @@ $categories = $stmt->fetchAll();
                     <button id="sidebarToggle" class="btn btn-outline-light me-2">
                         <i class="fas fa-bars"></i>
                     </button>
-                    <span class="navbar-brand">
-                        <i class="fas fa-archive me-2"></i>Cabinet Management
+                    <span class="navbar-brand d-flex align-items-center">
+                        <i class="fa fa-archive me-2"></i>
+                        Cabinet Management
                     </span>
                 </div>
             </div>
@@ -357,24 +358,16 @@ $categories = $stmt->fetchAll();
     </div>
 
     <!-- View Cabinet Modal -->
-    <div class="modal fade" id="viewCabinetModal" tabindex="-1" aria-labelledby="viewCabinetModalLabel" aria-hidden="true">
+    <div class="modal fade" id="viewCabinetModal" tabindex="-1" aria-labelledby="viewCabinetModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="viewCabinetModalLabel">Cabinet Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="viewCabinetContent">
                     <!-- Loading State -->
                     <div id="view-loading-state" class="text-center py-5">
-                        <lottie-player
-                            src="assets/images/Trail loading.json"
-                            background="transparent"
-                            speed="1"
-                            style="width: 150px; height: 150px; margin: 0 auto;"
-                            loop
-                            autoplay>
-                        </lottie-player>
+                        <video src="assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
                         <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
                     </div>
                     
@@ -396,14 +389,13 @@ $categories = $stmt->fetchAll();
     </div>
 
     <!-- Delete Cabinet Confirmation Modal -->
-    <div class="modal fade" id="deleteCabinetModal" tabindex="-1" aria-labelledby="deleteCabinetModalLabel" aria-hidden="true">
+    <div class="modal fade" id="deleteCabinetModal" tabindex="-1" aria-labelledby="deleteCabinetModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title" id="deleteCabinetModalLabel">
                         <i class="fas fa-exclamation-triangle me-2"></i>Delete Cabinet
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-warning" role="alert">
@@ -432,27 +424,19 @@ $categories = $stmt->fetchAll();
     </div>
 
     <!-- Export Data Modal -->
-    <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="exportModalLabel">
                         <i class="fas fa-download me-2"></i>Export Cabinet Data
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <!-- Loading Overlay -->
                     <div id="export-loading-overlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9); z-index: 1000; border-radius: 0.375rem;">
                         <div class="d-flex flex-column justify-content-center align-items-center h-100">
-                            <lottie-player
-                                src="assets/images/Trail loading.json"
-                                background="transparent"
-                                speed="1"
-                                style="width: 120px; height: 120px;"
-                                loop
-                                autoplay>
-                            </lottie-player>
+                            <video src="assets/images/Trail-Loading.webm" style="width: 120px; height: 120px; display:block;" autoplay muted loop playsinline></video>
                             <h6 class="mt-2 text-muted">Preparing Export...</h6>
                         </div>
                     </div>
@@ -506,7 +490,7 @@ $categories = $stmt->fetchAll();
     </div>
 
     <!-- Edit Cabinet Modal -->
-    <div class="modal fade" id="editCabinetModal" tabindex="-1" aria-labelledby="editCabinetModalLabel" aria-hidden="true">
+    <div class="modal fade" id="editCabinetModal" tabindex="-1" aria-labelledby="editCabinetModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form id="editCabinetForm" method="POST" action="cabinet.php" enctype="multipart/form-data">
@@ -514,19 +498,11 @@ $categories = $stmt->fetchAll();
                         <h5 class="modal-title" id="editCabinetModalLabel">
                             <i class="fas fa-edit me-2"></i>Edit Cabinet
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <!-- Loading State -->
                         <div id="edit-loading-state" class="text-center py-5">
-                            <lottie-player
-                                src="assets/images/Trail loading.json"
-                                background="transparent"
-                                speed="1"
-                                style="width: 150px; height: 150px; margin: 0 auto;"
-                                loop
-                                autoplay>
-                            </lottie-player>
+                            <video src="assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
                             <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
                         </div>
                         
@@ -580,38 +556,16 @@ $categories = $stmt->fetchAll();
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteCabinetModal" tabindex="-1" aria-labelledby="deleteCabinetModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="deleteCabinetModalLabel">Confirm Deletion</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete the cabinet "<strong id="deleteCabinetName"></strong>"?</p>
-                    <p class="text-danger"><i class="fas fa-exclamation-triangle"></i> This action cannot be undone and will delete all items in this cabinet.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <a href="#" id="confirmDeleteBtn" class="btn btn-danger">
-                        <i class="fas fa-trash me-1"></i> Delete Cabinet
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- QR Code Display Modal -->
     <?php if (isset($_SESSION['qr_file'])): ?>
-    <div class="modal fade" id="qrModal" tabindex="-1">
+    <div class="modal fade" id="qrModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title">
                         <i class="fas fa-qrcode me-2"></i>QR Code Generated Successfully
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row">
@@ -664,7 +618,7 @@ $categories = $stmt->fetchAll();
     endif; ?>
 
     <!-- Success Message Modal -->
-    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
                 <div class="modal-body text-center py-4">
@@ -681,7 +635,7 @@ $categories = $stmt->fetchAll();
     </div>
 
     <!-- QR Code Success Modal -->
-    <div class="modal fade" id="qrSuccessModal" tabindex="-1" aria-labelledby="qrSuccessModalLabel" aria-hidden="true">
+    <div class="modal fade" id="qrSuccessModal" tabindex="-1" aria-labelledby="qrSuccessModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-body text-center py-4">
@@ -698,7 +652,6 @@ $categories = $stmt->fetchAll();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         // Categories data for JavaScript
         window.cabinetCategories = <?php echo json_encode($categories); ?>;
@@ -1411,14 +1364,7 @@ $categories = $stmt->fetchAll();
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-body text-center py-5">
-                            <lottie-player
-                                src="assets/images/Trail loading.json"
-                                background="transparent"
-                                speed="1"
-                                style="width: 150px; height: 150px; margin: 0 auto;"
-                                loop
-                                autoplay>
-                            </lottie-player>
+                            <video src="assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline><\/video>
                             <h5 class="mt-3 text-muted">Generating QR Code...</h5>
                         </div>
                     </div>

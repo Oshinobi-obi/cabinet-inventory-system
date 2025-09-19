@@ -1,4 +1,13 @@
+
 <?php
+// Handle logout POST (AJAX) at the very top before any output
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
+    require_once 'includes/auth.php';
+    $_SESSION = array();
+    session_destroy();
+    exit;
+}
+
 require_once 'includes/auth.php';
 require_once 'includes/email_service.php';
 authenticate();
@@ -267,15 +276,15 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo ucfirst($_SESSION['user_role']); ?> Dashboard - Cabinet Information System</title>
+    <title><?php echo ucfirst($_SESSION['user_role']); ?> Dashboard - Cabinet Management System</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="assets/css/navbar.css" rel="stylesheet">
     <link href="assets/css/dashboard.css" rel="stylesheet">
     <link href="assets/css/mobile-enhancements.css" rel="stylesheet">
+    <link rel="preload" as="video" href="assets/images/Trail-Loading.webm">
     <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         /* Loading Modal Styling */
         #loadingModal .modal-content {
@@ -292,7 +301,7 @@ try {
             justify-content: center;
         }
         
-        #loadingModal lottie-player {
+        #loadingModal video {
             margin: 0 auto;
             display: block;
         }
@@ -343,26 +352,78 @@ try {
             justify-content: center;
         }
     </style>
+    <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
+    /* Glassmorphism overlay for logout modal */
+    #logoutConfirmModal {
+        background: rgba(255,255,255,0.25) !important;
+        backdrop-filter: blur(8px) saturate(1.2);
+        -webkit-backdrop-filter: blur(8px) saturate(1.2);
+        transition: background 0.2s;
+        z-index: 2000;
+    }
+    #logoutConfirmModal .modal-content, #logoutConfirmModal .modal-title, #logoutConfirmModal .modal-body, #logoutConfirmModal .modal-footer, #logoutConfirmModal .modal-content p, #logoutConfirmModal .modal-content h5 {
+        color: #222 !important;
+        background: #fff !important;
+        user-select: none;
+    }
+    #logoutConfirmModal .modal-content {
+        box-shadow: 0 4px 32px rgba(0,0,0,0.18);
+    }
+    #logoutConfirmModal .modal-title {
+        font-weight: 600;
+    }
+    #logoutConfirmModal .modal-footer {
+        background: #fff !important;
+    }
+    #logoutConfirmModal .btn-danger, #logoutConfirmModal .btn-secondary { user-select: none; }
+    </style>
 </head>
 <body>
-    <?php include 'includes/sidebar.php'; ?>
+
+        <?php include 'includes/sidebar.php'; ?>
+
+        <!-- Logout Confirmation Modal (hidden by default) -->
+        <div class="modal" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" style="display:none;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="border-radius:12px;">
+                    <div class="modal-header" style="border-bottom:none;">
+                        <h5 class="modal-title">Confirm Logout</h5>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p>Are you sure you want to log out?</p>
+                    </div>
+                    <div class="modal-footer" style="border-top:none; justify-content:center;">
+                        <button id="confirmLogoutBtn" class="btn btn-danger">Yes, Log Out</button>
+                        <button id="cancelLogoutBtn" class="btn btn-secondary ms-2">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Logout Loading Modal (hidden by default) -->
+        <div class="modal" id="logoutLoadingModal" tabindex="-1" aria-hidden="true" style="display:none; background:rgba(255,255,255,0.25); backdrop-filter: blur(8px) saturate(1.2); -webkit-backdrop-filter: blur(8px) saturate(1.2); z-index:2100;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background:transparent; border:none; box-shadow:none; align-items:center;">
+                    <div class="modal-body text-center">
+                        <video src="assets/images/Trail-Loading.webm" autoplay loop muted style="width:120px; border-radius:50%; background:#fff;"></video>
+                        <div class="mt-3 text-dark fw-bold" style="font-size:1.2rem; text-shadow:0 1px 4px #fff;">Logging Out! Thank you...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     <!-- Content -->
     <div id="content">
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary admin-navbar">
             <div class="container-fluid">
-                <button id="sidebarToggle" class="btn btn-outline-light">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <span class="navbar-brand">
-                    <i class="bi bi-archive-fill me-2"></i>
-                    <i class="fas fa-<?php echo $_SESSION['user_role'] === 'admin' ? 'crown' : 'edit'; ?>"></i>
-                    <?php echo ucfirst($_SESSION['user_role']); ?> Dashboard
-                </span>
-                <div class="ms-auto">
-                    <a href="index.php" class="btn btn-outline-light" target="_blank">
-                        <i class="fas fa-external-link-alt"></i> Public View
-                    </a>
+                <div class="d-flex align-items-center">
+                    <button id="sidebarToggle" class="btn btn-outline-light me-2">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <span class="navbar-brand d-flex align-items-center mb-0">
+                        <i class="bi bi-archive-fill me-2"></i>
+                        <i class="fas fa-<?php echo $_SESSION['user_role'] === 'admin' ? 'crown' : 'edit'; ?>"></i>
+                        <span class="ms-2"><?php echo ucfirst($_SESSION['user_role']); ?> Dashboard</span>
+                    </span>
                 </div>
             </div>
         </nav>
@@ -397,11 +458,7 @@ try {
                                     </div>
                                 </div>
                             </div>
-                            <div class="card-footer">
-                                <a href="cabinet.php" class="text-white text-decoration-none">
-                                    <small>Manage Cabinets <i class="fas fa-arrow-right"></i></small>
-                                </a>
-                            </div>
+                            <!-- Card footer removed -->
                         </div>
                     </div>
                     
@@ -418,11 +475,7 @@ try {
                                     </div>
                                 </div>
                             </div>
-                            <div class="card-footer">
-                                <a href="cabinet.php" class="text-white text-decoration-none">
-                                    <small>View Items <i class="fas fa-arrow-right"></i></small>
-                                </a>
-                            </div>
+                            <!-- Card footer removed -->
                         </div>
                     </div>
                     
@@ -439,11 +492,7 @@ try {
                                     </div>
                                 </div>
                             </div>
-                            <div class="card-footer">
-                                <a href="cabinet.php" class="text-white text-decoration-none">
-                                    <small>Generate More <i class="fas fa-arrow-right"></i></small>
-                                </a>
-                            </div>
+                            <!-- Card footer removed -->
                         </div>
                     </div>
                     
@@ -460,11 +509,7 @@ try {
                                     </div>
                                 </div>
                             </div>
-                            <div class="card-footer">
-                                <a href="users.php" class="text-white text-decoration-none">
-                                    <small>Manage Users <i class="fas fa-arrow-right"></i></small>
-                                </a>
-                            </div>
+                            <!-- Card footer removed -->
                         </div>
                     </div>
                 </div>
@@ -479,7 +524,7 @@ try {
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-3 mb-2">
-                                        <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#addCabinetModal">
+                                        <button type="button" class="btn btn-primary w-100 open-add-cabinet">
                                             <i class="fas fa-plus me-2"></i>Add Cabinet
                                         </button>
                                     </div>
@@ -494,18 +539,12 @@ try {
                                         </button>
                                     </div>
                                     <div class="col-md-3 mb-2">
-                                        <a href="index.php" class="btn btn-info w-100" target="_blank">
-                                            <i class="fas fa-search me-2"></i>Public Search
-                                        </a>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-2">
                                         <button type="button" class="btn btn-secondary w-100" data-bs-toggle="modal" data-bs-target="#exportModal">
                                             <i class="fas fa-download me-2"></i>Export Data
                                         </button>
                                     </div>
                                 </div>
+                                <!-- Export Data row removed, now in main row above -->
                             </div>
                         </div>
                     </div>
@@ -513,6 +552,23 @@ try {
                 
             <?php else: ?>
                 <!-- ENCODER DASHBOARD -->
+                <!-- Password Reminder Modal (Encoder only) -->
+                <div class="modal fade" id="encoderPasswordReminderModal" tabindex="-1" aria-labelledby="encoderPasswordReminderLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-warning text-dark">
+                                <h5 class="modal-title" id="encoderPasswordReminderLabel"><i class="fas fa-exclamation-circle me-2"></i>Action Recommended</h5>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-0">For your account security, please update your password. You can change it anytime in your Profile page.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <a href="profile.php" class="btn btn-primary">Go to Profile</a>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>
                         Welcome, <?php echo $_SESSION['first_name'] . ' ' . $_SESSION['last_name']; ?>!
@@ -596,14 +652,14 @@ try {
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-4 mb-2">
-                                        <a href="cabinet.php" class="btn btn-primary w-100">
+                                        <button type="button" class="btn btn-primary w-100 open-add-cabinet">
                                             <i class="fas fa-plus me-2"></i>Add New Cabinet
-                                        </a>
+                                        </button>
                                     </div>
                                     <div class="col-md-4 mb-2">
-                                        <a href="cabinet.php" class="btn btn-success w-100">
+                                        <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#selectCabinetModal">
                                             <i class="fas fa-edit me-2"></i>Edit Cabinets
-                                        </a>
+                                        </button>
                                     </div>
                                     <div class="col-md-4 mb-2">
                                         <a href="index.php" class="btn btn-info w-100" target="_blank">
@@ -679,8 +735,50 @@ try {
         </div>
     </div>
 
+    <!-- Select Cabinet Modal (for Encoders) -->
+    <div class="modal fade" id="selectCabinetModal" tabindex="-1" aria-labelledby="selectCabinetModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="selectCabinetModalLabel">
+                        <i class="fas fa-edit me-2"></i>Select Cabinet to Edit
+                    </h5>
+                    
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_select_cabinet" class="form-label">Cabinet</label>
+                        <select class="form-select" id="edit_select_cabinet">
+                            <option value="">Choose a cabinet...</option>
+                            <?php 
+                            try {
+                                $stmt = $pdo->query("SELECT id, cabinet_number, name FROM cabinets ORDER BY cabinet_number");
+                                $cabinets = $stmt->fetchAll();
+                                foreach ($cabinets as $cabinet): ?>
+                                    <option value="<?php echo $cabinet['id']; ?>">
+                                        <?php echo $cabinet['cabinet_number'] . ' - ' . $cabinet['name']; ?>
+                                    </option>
+                                <?php endforeach; 
+                            } catch(Exception $e) { /* ignore */ } 
+                            ?>
+                        </select>
+                    </div>
+                    <div class="small text-muted">
+                        You can also click any cabinet number in the Recent Activity table to view and edit it directly.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="selectCabinetEditBtn">
+                        <i class="fas fa-arrow-right me-1"></i> Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Cabinet Modal -->
-    <div class="modal fade" id="addCabinetModal" tabindex="-1" aria-labelledby="addCabinetModalLabel" aria-hidden="true">
+    <div class="modal fade" id="addCabinetModal" tabindex="-1" aria-labelledby="addCabinetModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form method="POST" action="cabinet.php" enctype="multipart/form-data">
@@ -688,7 +786,7 @@ try {
                         <h5 class="modal-title" id="addCabinetModalLabel">
                             <i class="fas fa-plus me-2"></i>Add New Cabinet
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        
                     </div>
                     <div class="modal-body">
                         <div class="row mb-3">
@@ -772,7 +870,7 @@ try {
     </div>
 
     <!-- Add User Modal -->
-    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form id="addUserForm" method="POST" action="dashboard.php">
@@ -780,7 +878,7 @@ try {
                         <h5 class="modal-title" id="addUserModalLabel">
                             <i class="fas fa-user-plus me-2"></i>Add New User
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        
                     </div>
                     <div class="modal-body">
                         <div class="row mb-3">
@@ -861,14 +959,14 @@ try {
     </div>
 
     <!-- Export Data Modal -->
-    <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="exportModalLabel">
                         <i class="fas fa-download me-2"></i>Export Cabinet Data
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    
                 </div>
                 <div class="modal-body">
                     <form id="exportForm">
@@ -919,14 +1017,13 @@ try {
     </div>
 
     <!-- View Cabinet Modal -->
-    <div class="modal fade" id="viewCabinetModal" tabindex="-1" aria-labelledby="viewCabinetModalLabel" aria-hidden="true">
+    <div class="modal fade" id="viewCabinetModal" tabindex="-1" aria-labelledby="viewCabinetModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="viewCabinetModalLabel">
                         <i class="fas fa-eye me-2"></i>Cabinet Details
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div id="viewCabinetContent">
@@ -939,10 +1036,10 @@ try {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-danger" id="deleteCabinetBtn" data-bs-toggle="modal" data-bs-target="#deleteCabinetModal">
+                    <button type="button" class="btn btn-danger d-none" id="deleteCabinetBtn" data-bs-toggle="modal" data-bs-target="#deleteCabinetModal">
                         <i class="fas fa-trash me-1"></i> Delete Cabinet
                     </button>
-                    <button type="button" class="btn btn-primary" id="editCabinetBtn" data-bs-toggle="modal" data-bs-target="#editCabinetModal">
+                    <button type="button" class="btn btn-primary d-none" id="editCabinetBtn" data-bs-toggle="modal" data-bs-target="#editCabinetModal">
                         <i class="fas fa-edit me-1"></i> Edit Cabinet
                     </button>
                 </div>
@@ -951,14 +1048,14 @@ try {
     </div>
 
     <!-- Delete Cabinet Confirmation Modal -->
-    <div class="modal fade" id="deleteCabinetModal" tabindex="-1" aria-labelledby="deleteCabinetModalLabel" aria-hidden="true">
+    <div class="modal fade" id="deleteCabinetModal" tabindex="-1" aria-labelledby="deleteCabinetModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title" id="deleteCabinetModalLabel">
                         <i class="fas fa-exclamation-triangle me-2"></i>Delete Cabinet
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-warning" role="alert">
@@ -987,7 +1084,7 @@ try {
     </div>
 
     <!-- Edit Cabinet Modal -->
-    <div class="modal fade" id="editCabinetModal" tabindex="-1" aria-labelledby="editCabinetModalLabel" aria-hidden="true">
+    <div class="modal fade" id="editCabinetModal" tabindex="-1" aria-labelledby="editCabinetModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form id="editCabinetForm" method="POST" action="cabinet.php" enctype="multipart/form-data">
@@ -995,7 +1092,7 @@ try {
                         <h5 class="modal-title" id="editCabinetModalLabel">
                             <i class="fas fa-edit me-2"></i>Edit Cabinet
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        
                     </div>
                     <div class="modal-body">
                         <input type="hidden" id="edit_cabinet_id" name="cabinet_id">
@@ -1050,7 +1147,7 @@ try {
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
                 <div class="modal-body">
-                    <lottie-player src="assets/images/Trail loading.json" background="transparent" speed="1" style="width: 80px; height: 80px;" loop autoplay></lottie-player>
+                    <video src="assets/images/Trail-Loading.webm" style="width: 80px; height: 80px;" autoplay muted loop playsinline></video>
                     <h5 id="loadingMessage">Processing...</h5>
                 </div>
             </div>
@@ -1058,7 +1155,7 @@ try {
     </div>
 
     <!-- Success Message Modal -->
-    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
                 <div class="modal-body text-center py-4">
@@ -1075,7 +1172,7 @@ try {
     </div>
 
     <!-- Error Message Modal -->
-    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
                 <div class="modal-body text-center py-4">
@@ -1093,7 +1190,7 @@ try {
     </div>
 
     <!-- Add Category Modal -->
-    <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+    <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <form id="addCategoryForm">
@@ -1101,7 +1198,7 @@ try {
                         <h5 class="modal-title" id="addCategoryModalLabel">
                             <i class="fas fa-tags me-2"></i>Add New Category
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
@@ -1121,14 +1218,14 @@ try {
     </div>
 
     <!-- Email Settings Modal -->
-    <div class="modal fade" id="emailSettingsModal" tabindex="-1" aria-labelledby="emailSettingsModalLabel" aria-hidden="true">
+    <div class="modal fade" id="emailSettingsModal" tabindex="-1" aria-labelledby="emailSettingsModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header bg-warning text-dark">
                     <h5 class="modal-title" id="emailSettingsModalLabel">
                         <i class="fas fa-envelope-open-text me-2"></i>Email Configuration Settings
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    
                 </div>
                 <div class="modal-body">
                     <div class="row">
@@ -1272,6 +1369,47 @@ try {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
+    // Logout modal logic
+    document.addEventListener('DOMContentLoaded', function() {
+        var logoutBtn = document.getElementById('logoutSidebarBtn');
+        var confirmModal = new bootstrap.Modal(document.getElementById('logoutConfirmModal'), {backdrop:'static', keyboard:false});
+        var loadingModal = new bootstrap.Modal(document.getElementById('logoutLoadingModal'), {backdrop:'static', keyboard:false});
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('logoutConfirmModal').style.display = 'block';
+                confirmModal.show();
+            });
+        }
+        document.getElementById('confirmLogoutBtn').onclick = function() {
+            confirmModal.hide();
+            setTimeout(function() {
+                document.getElementById('logoutLoadingModal').style.display = 'block';
+                loadingModal.show();
+                // AJAX POST to logout (destroy session)
+                fetch('dashboard.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'logout=1',
+                    cache: 'no-store',
+                    credentials: 'same-origin'
+                }).then(function() {
+                    setTimeout(function() {
+                        window.location.replace('login.php');
+                    }, 1200);
+                });
+            }, 300);
+        };
+        document.getElementById('cancelLogoutBtn').onclick = function() {
+            confirmModal.hide();
+            setTimeout(function() {
+                document.getElementById('logoutConfirmModal').style.display = 'none';
+            }, 300);
+        };
+    });
+    </script>
+
+    <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         // Email Configuration Functions
         function loadEmailConfig() {
             // Load current email configuration when modal opens
@@ -1414,6 +1552,99 @@ try {
         });
     </script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
+        <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'encoder'):
+            // Check DB if password was ever changed; if column missing, default to showing reminder
+            $shouldShowReminder = true;
+            try {
+                $stmtPwd = $pdo->prepare('SELECT password_changed_at FROM users WHERE id = ?');
+                $stmtPwd->execute([$_SESSION['user_id']]);
+                if ($row = $stmtPwd->fetch()) {
+                    $shouldShowReminder = empty($row['password_changed_at']);
+                }
+            } catch (Exception $e) {
+                $shouldShowReminder = true;
+            }
+            if ($shouldShowReminder): ?>
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const changed = localStorage.getItem('cis_password_changed') === '1';
+                if (changed) return; // Client-side extra guard
+            } catch (e) { /* ignore storage errors */ }
+            const el = document.getElementById('encoderPasswordReminderModal');
+            if (el) {
+                const modal = new bootstrap.Modal(el);
+                setTimeout(() => modal.show(), 200);
+            }
+        });
+        <?php endif; endif; ?>
+        // Loading helpers (3s minimum)
+        const LOADING_MIN_MS = 3000;
+        function showLoading(message) {
+            const msg = document.getElementById('loadingMessage');
+            if (msg) msg.textContent = message || 'Processing...';
+            const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
+            modal.show();
+            return modal;
+        }
+        async function withLoading(action, message, minMs = LOADING_MIN_MS) {
+            const modal = showLoading(message);
+            const start = Date.now();
+            try {
+                const res = await action();
+                const elapsed = Date.now() - start;
+                if (elapsed < minMs) {
+                    await new Promise(r => setTimeout(r, minMs - elapsed));
+                }
+                return res;
+            } finally {
+                modal.hide();
+            }
+        }
+
+        // Inline (in-card) loader for sections
+        function sectionLoaderHTML(message) {
+            return `
+                <div class=\"text-center py-3\">
+                    <div class=\"loader-fallback mb-2\" style=\"display:none;\">\
+                        <div class=\"spinner-border\" role=\"status\">\
+                            <span class=\"visually-hidden\">Loading...<\/span>\
+                        <\/div>\
+                    <\/div>\
+                    <video class=\"loader-video\" src=\"assets/images/Trail-Loading.webm\" preload=\"auto\" style=\"width: 80px; height: 80px; display:block; margin:0 auto;\" autoplay muted loop playsinline><\/video>
+                    <div class=\"text-muted mt-2 small\">${message || 'Loading...'}<\/div>
+                <\/div>
+            `;
+        }
+
+        function setupSectionLoader(container) {
+            try {
+                const player = container.querySelector('video.loader-video');
+                const fallback = container.querySelector('.loader-fallback');
+                if (!player) return;
+                const onReady = () => {
+                    if (fallback) fallback.style.display = 'none';
+                    player.style.display = 'block';
+                };
+                const onError = () => {
+                    if (fallback) fallback.style.display = 'block';
+                    if (player) player.style.display = 'none';
+                };
+                // Show immediately; keep listeners just in case we want to react when fully loaded
+                if (player.readyState >= 2) {
+                    onReady();
+                } else {
+                    player.addEventListener('loadeddata', onReady, { once: true });
+                    player.addEventListener('canplaythrough', onReady, { once: true });
+                }
+                player.addEventListener('error', onError, { once: true });
+                // Ensure autoplay begins (some browsers require play() call even when muted)
+                try { player.play().catch(() => {}); } catch (_) {}
+            } catch (e) {
+                // Fallback stays visible
+                console.warn('Loader setup failed', e);
+            }
+        }
+
         // Toggle sidebar
         document.addEventListener('DOMContentLoaded', function() {
             const sidebarToggle = document.getElementById('sidebarToggle');
@@ -1529,14 +1760,25 @@ try {
                 downloadExportBtn.addEventListener('click', downloadExport);
             }
 
-            // Initialize Recent Activity table
+            // Initialize Recent Activity table (with loading)
             loadRecentActivity();
             
-            // Initialize Categories Overview
+            // Initialize Categories Overview (with loading)
             loadCategoriesOverview();
             
             // Setup delete cabinet functionality
             setupDeleteCabinet();
+
+            // Hook Add Cabinet buttons to show loading animation first (3 seconds)
+            const addCabinetButtons = document.querySelectorAll('.open-add-cabinet');
+            addCabinetButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    withLoading(async () => {}, 'Loading Cabinet Creator...').then(() => {
+                        const addModal = new bootstrap.Modal(document.getElementById('addCabinetModal'));
+                        addModal.show();
+                    });
+                });
+            });
         });
 
         // Recent Activity table functionality
@@ -1549,18 +1791,34 @@ try {
             currentSort = sort;
             currentOrder = order;
 
+            const container = document.getElementById('recent-activity-container');
+            if (!container) return;
+            container.innerHTML = sectionLoaderHTML('Loading Recent Activity...');
+            setupSectionLoader(container);
+            const start = Date.now();
+
             fetch(`dashboard.php?ajax=recent_activity&page=${page}&sort=${sort}&order=${order}`)
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
-                        renderRecentActivityTable(data.activities, sort, order);
-                        renderPaginationControls(data.pagination);
-                    } else {
-                        console.error('Failed to load recent activity:', data.message);
-                    }
+                    const elapsed = Date.now() - start;
+                    const wait = Math.max(0, LOADING_MIN_MS - elapsed);
+                    setTimeout(() => {
+                        if (data.success) {
+                            renderRecentActivityTable(data.activities, sort, order);
+                            renderPaginationControls(data.pagination);
+                        } else {
+                            container.innerHTML = `<div class="alert alert-warning mb-0">Failed to load recent activity.</div>`;
+                            console.error('Failed to load recent activity:', data.message);
+                        }
+                    }, wait);
                 })
                 .catch(error => {
-                    console.error('Error loading recent activity:', error);
+                    const elapsed = Date.now() - start;
+                    const wait = Math.max(0, LOADING_MIN_MS - elapsed);
+                    setTimeout(() => {
+                        container.innerHTML = `<div class=\"alert alert-danger mb-0\">Error loading recent activity.</div>`;
+                        console.error('Error loading recent activity:', error);
+                    }, wait);
                 });
         }
 
@@ -1719,6 +1977,49 @@ try {
             }
         });
 
+        // Handle select-cabinet modal action (for Encoders)
+        const selectCabinetEditBtn = document.getElementById('selectCabinetEditBtn');
+        if (selectCabinetEditBtn) {
+            selectCabinetEditBtn.addEventListener('click', function() {
+                const select = document.getElementById('edit_select_cabinet');
+                const id = select.value;
+                if (!id) {
+                    alert('Please select a cabinet first.');
+                    return;
+                }
+                // Close selector modal
+                const selectorModal = bootstrap.Modal.getInstance(document.getElementById('selectCabinetModal'));
+                if (selectorModal) selectorModal.hide();
+                withLoading(async () => {
+                    const r = await fetch(`cabinet_api.php?action=get_cabinet&id=${id}`);
+                    const data = await r.json();
+                    if (data.success) {
+                        // Map API shape to currentCabinetData expected by editor
+                        const cab = data.cabinet || {};
+                        const items = (data.items || []).map(it => ({
+                            id: it.id,
+                            name: it.name,
+                            quantity: it.quantity,
+                            category_id: it.category_id,
+                            category_name: it.category || it.category_name || ''
+                        }));
+                        cab.items = items;
+                        currentCabinetData = cab;
+                        return true;
+                    } else {
+                        alert('Failed to load cabinet details.');
+                        return false;
+                    }
+                }, 'Loading Cabinet Editor...').then((ok) => {
+                    if (ok) {
+                        loadEditCabinet();
+                        const editModal = new bootstrap.Modal(document.getElementById('editCabinetModal'));
+                        editModal.show();
+                    }
+                });
+            });
+        }
+
         // Handle sorting header clicks using event delegation
         document.addEventListener('click', function(e) {
             if (e.target.classList.contains('sortable-header') || e.target.closest('.sortable-header')) {
@@ -1774,28 +2075,32 @@ try {
             if (!container) return;
 
             currentCategoriesPage = page;
-
-            // Show loading state
-            container.innerHTML = `
-                <div class="text-center py-3">
-                    <div class="spinner-border spinner-border-sm" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </div>
-            `;
+            container.innerHTML = sectionLoaderHTML('Loading Categories...');
+            setupSectionLoader(container);
+            const start = Date.now();
 
             fetch(`dashboard.php?ajax=categories_overview&page=${page}`)
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
-                        renderCategoriesOverview(data.categories, data.total_items);
-                        renderCategoriesPagination(data.pagination);
-                    } else {
-                        console.error('Failed to load categories overview:', data.message);
-                    }
+                    const elapsed = Date.now() - start;
+                    const wait = Math.max(0, LOADING_MIN_MS - elapsed);
+                    setTimeout(() => {
+                        if (data.success) {
+                            renderCategoriesOverview(data.categories, data.total_items);
+                            renderCategoriesPagination(data.pagination);
+                        } else {
+                            container.innerHTML = `<div class="alert alert-warning mb-0">Failed to load categories.</div>`;
+                            console.error('Failed to load categories overview:', data.message);
+                        }
+                    }, wait);
                 })
                 .catch(error => {
-                    console.error('Error loading categories overview:', error);
+                    const elapsed = Date.now() - start;
+                    const wait = Math.max(0, LOADING_MIN_MS - elapsed);
+                    setTimeout(() => {
+                        container.innerHTML = `<div class=\"alert alert-danger mb-0\">Error loading categories.</div>`;
+                        console.error('Error loading categories overview:', error);
+                    }, wait);
                 });
         }
 
@@ -2150,24 +2455,38 @@ try {
 
         function viewCabinet(cabinetNumber) {
             const content = document.getElementById('viewCabinetContent');
-            
+            const deleteBtn = document.getElementById('deleteCabinetBtn');
+            const editBtn = document.getElementById('editCabinetBtn');
+            // Hide action buttons during loading
+            if (deleteBtn) deleteBtn.classList.add('d-none');
+            if (editBtn) editBtn.classList.add('d-none');
+
+            // Show WebM loader with spinner fallback
             content.innerHTML = `
-                <div class="text-center">
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                <div class="text-center py-4">
+                    <div class="loader-fallback mb-2" style="display:none;">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
                     </div>
+                    <video class="loader-video" src="assets/images/Trail-Loading.webm" preload="auto" style="width: 120px; height: 120px; display:block; margin:0 auto;" autoplay muted loop playsinline></video>
+                    <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
                 </div>
             `;
+            setupSectionLoader(content);
 
+            const start = Date.now();
             // Fetch cabinet data
             fetch(`cabinet_api.php?action=get_cabinet_by_number&cabinet_number=${cabinetNumber}`)
                 .then(response => response.json())
                 .then(data => {
+                    const elapsed = Date.now() - start;
+                    const wait = Math.max(0, LOADING_MIN_MS - elapsed);
                     if (data.success) {
                         const cabinet = data.cabinet;
                         currentCabinetData = cabinet; // Store for editing
-                        
-                        content.innerHTML = `
+                        setTimeout(() => {
+                            content.innerHTML = `
                             <div class="row mb-4">
                                 <div class="col-md-8">
                                     <h6 class="text-primary">Cabinet Information</h6>
@@ -2225,24 +2544,36 @@ try {
                                     <img src="${cabinet.qr_path}" alt="QR Code" class="img-fluid" style="max-width: 150px;">
                                 </div>
                             ` : ''}
-                        `;
+                            `;
+                            // Reveal action buttons after details are shown
+                            if (deleteBtn) deleteBtn.classList.remove('d-none');
+                            if (editBtn) editBtn.classList.remove('d-none');
+                        }, wait);
                     } else {
-                        content.innerHTML = `
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                Cabinet not found or error loading data.
-                            </div>
-                        `;
+                        setTimeout(() => {
+                            content.innerHTML = `
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Cabinet not found or error loading data.
+                                </div>
+                            `;
+                            // Keep actions hidden on failure
+                        }, wait);
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching cabinet data:', error);
-                    content.innerHTML = `
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            Error loading cabinet data. Please try again.
-                        </div>
-                    `;
+                    const elapsed = Date.now() - start;
+                    const wait = Math.max(0, LOADING_MIN_MS - elapsed);
+                    setTimeout(() => {
+                        content.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Error loading cabinet data. Please try again.
+                            </div>
+                        `;
+                        // Keep actions hidden on error
+                    }, wait);
                 });
         }
 
@@ -2601,13 +2932,13 @@ try {
                 
                 const formData = new FormData();
                 formData.append('add_category', 'true');
-                formData.append('category_name', document.getElementById('category_name').value);
-                
-                fetch('dashboard.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
+                const newCategoryName = document.getElementById('category_name').value;
+                formData.append('category_name', newCategoryName);
+
+                withLoading(async () => {
+                    const response = await fetch('dashboard.php', { method: 'POST', body: formData });
+                    return await response.json();
+                }, 'Adding Category...')
                 .then(data => {
                     // Reset button
                     submitBtn.innerHTML = originalBtnText;
@@ -2621,8 +2952,8 @@ try {
                         // Reset form
                         document.getElementById('category_name').value = '';
                         
-                        // Show success modal with custom message
-                        document.getElementById('successMessage').textContent = data.message;
+                        // Show success modal with custom message including the added category name
+                        document.getElementById('successMessage').textContent = `Category "${newCategoryName}" Added Successfully ✔`;
                         const successModal = new bootstrap.Modal(document.getElementById('successModal'));
                         successModal.show();
                         

@@ -124,8 +124,19 @@ if (isset($_GET['edit']) && isset($_GET['id'])) {
     $editUser = $stmt->fetch();
 }
 
-// Get all users
-$stmt = $pdo->query("SELECT * FROM users ORDER BY created_at DESC");
+// Pagination for users
+$usersPerPage = 5;
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$offset = ($page - 1) * $usersPerPage;
+// Get total user count
+$countStmt = $pdo->query("SELECT COUNT(*) as total FROM users");
+$totalUsers = $countStmt->fetch()['total'];
+$totalPages = ceil($totalUsers / $usersPerPage);
+// Get paginated users
+$stmt = $pdo->prepare("SELECT * FROM users ORDER BY created_at DESC LIMIT :limit OFFSET :offset");
+$stmt->bindValue(':limit', $usersPerPage, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
 $users = $stmt->fetchAll();
 ?>
 
@@ -134,7 +145,7 @@ $users = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Users - Cabinet Information System</title>
+    <title>Users - Cabinet Management System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="assets/css/navbar.css" rel="stylesheet">
@@ -202,87 +213,6 @@ $users = $stmt->fetchAll();
                 <div class="alert alert-success"><?php echo $_SESSION['success']; unset($_SESSION['success']); ?></div>
             <?php endif; ?>
             
-            <!-- Add User Form -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title">Add New User</h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="first_name" class="form-label">First Name <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
-                                <input type="text" class="form-control" id="first_name" name="first_name" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="last_name" class="form-label">Last Name <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
-                                <input type="text" class="form-control" id="last_name" name="last_name" required>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="office" class="form-label">Office <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
-                                <input type="text" class="form-control" id="office" name="office">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="division" class="form-label">Division <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
-                                <input type="text" class="form-control" id="division" name="division">
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="email" class="form-label">Email Address <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
-                                <input type="email" class="form-control" id="email" name="email" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="mobile" class="form-label">Mobile Number <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
-                                <input type="tel" class="form-control" id="mobile" name="mobile">
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="username" class="form-label">Username <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
-                                <input type="text" class="form-control" id="username" name="username" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="role" class="form-label">Role <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
-                                <select class="form-select" id="role" name="role" required>
-                                    <option value="encoder">Encoder</option>
-                                    <option value="admin">Admin</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <label for="password" class="form-label">Password <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
-                                <div class="row g-2">
-                                    <div class="col-md-8">
-                                        <div class="input-group">
-                                            <input type="password" class="form-control" id="password" name="password" required>
-                                            <button type="button" class="btn btn-outline-secondary" id="togglePassword">Show</button>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <button type="button" id="generatePassword" class="btn btn-secondary w-100">
-                                            <i class="fas fa-key me-1"></i> Generate Password
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-3">
-                            <button type="submit" name="add_user" class="btn btn-primary">
-                                <i class="fas fa-user-plus me-1"></i> Add User
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
             
             <!-- Users List -->
             <div class="card">
@@ -316,11 +246,11 @@ $users = $stmt->fetchAll();
                                         </td>
                                         <td><?php echo date('M j, Y', strtotime($user['created_at'])); ?></td>
                                         <td>
-                                            <button class="btn btn-sm btn-info" onclick="editUser(<?php echo htmlspecialchars(json_encode($user)); ?>)">
+                                            <button class="btn btn-sm btn-info edit-user-btn" data-user='<?php echo htmlspecialchars(json_encode($user), ENT_QUOTES, 'UTF-8'); ?>'>
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <?php if ($user['id'] != $_SESSION['user_id']): ?>
-                                            <button class="btn btn-sm btn-danger" onclick="deleteUser(<?php echo $user['id']; ?>, '<?php echo addslashes($user['first_name'] . ' ' . $user['last_name']); ?>')">
+                                            <button class="btn btn-sm btn-danger delete-user-btn" data-user-id="<?php echo $user['id']; ?>" data-user-name="<?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name'], ENT_QUOTES, 'UTF-8'); ?>">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                             <?php endif; ?>
@@ -331,20 +261,56 @@ $users = $stmt->fetchAll();
                             </table>
                         </div>
                     <?php else: ?>
-                        <p class="text-muted">No users found.</p>
+                <p class="text-muted">No users found.</p>
+                    <?php endif; ?>
+                    <!-- Pagination Controls -->
+                    <?php if ($totalPages > 1): ?>
+                    <nav aria-label="Users pagination">
+                        <ul class="pagination justify-content-center mt-3">
+                            <li class="page-item<?php if ($page <= 1) echo ' disabled'; ?>">
+                                <a class="page-link" href="?page=<?php echo $page-1; ?>" tabindex="-1">Previous</a>
+                            </li>
+                            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                                <li class="page-item<?php if ($i == $page) echo ' active'; ?>">
+                                    <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            <li class="page-item<?php if ($page >= $totalPages) echo ' disabled'; ?>">
+                                <a class="page-link" href="?page=<?php echo $page+1; ?>">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Edit User Modal -->
-    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <!-- Loading Modal (reusable, matches login.php style) -->
+        <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" style="background:rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background:transparent; border:none; box-shadow:none; align-items:center;">
+                    <div class="modal-body text-center">
+                        <div class="position-relative" style="width:120px; height:120px; margin:0 auto;">
+                            <video id="loadingVideo" style="width:120px; height:120px; border-radius:50%; background:#fff; display:none;" autoplay loop muted playsinline>
+                                <source src="assets/images/Trail-Loading.webm" type="video/webm">
+                            </video>
+                            <div id="loadingSpinner" class="spinner-border text-primary" style="width:120px; height:120px;" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <div id="loadingMessage" class="mt-3 text-white fw-bold" style="font-size:1.2rem; text-shadow:0 1px 4px #000;">Loading Details...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Edit User</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form method="POST" action="">
                     <div class="modal-body">
@@ -412,12 +378,11 @@ $users = $stmt->fetchAll();
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal fade" id="deleteUserModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Confirm Delete</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <p>Are you sure you want to delete user <strong id="deleteUserName"></strong>?</p>
@@ -434,11 +399,15 @@ $users = $stmt->fetchAll();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
 document.addEventListener('DOMContentLoaded', function() {
-    // Generate random password
-    document.getElementById('generatePassword').addEventListener('click', function() {
-        const password = generateRandomPassword(12);
-        document.getElementById('password').value = password;
-    });
+    // Generate random password (only if button exists)
+    var genBtn = document.getElementById('generatePassword');
+    if (genBtn) {
+        genBtn.addEventListener('click', function() {
+            const password = generateRandomPassword(12);
+            var pwInput = document.getElementById('password');
+            if (pwInput) pwInput.value = password;
+        });
+    }
 
     function generateRandomPassword(length) {
         const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
@@ -449,30 +418,78 @@ document.addEventListener('DOMContentLoaded', function() {
         return password;
     }
 
-    // Toggle password visibility
-    document.getElementById('togglePassword').addEventListener('click', function() {
-        const passwordInput = document.getElementById('password');
-        if (passwordInput.type === "password") {
-            passwordInput.type = "text";
-            this.textContent = "Hide";
-        } else {
-            passwordInput.type = "password";
-            this.textContent = "Show";
+    // Toggle password visibility (only if button exists)
+    var toggleBtn = document.getElementById('togglePassword');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            var passwordInput = document.getElementById('password');
+            if (!passwordInput) return;
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                this.textContent = "Hide";
+            } else {
+                passwordInput.type = "password";
+                this.textContent = "Show";
+            }
+        });
+    }
+    // Edit and Delete button event delegation for CSP compliance
+    document.querySelector('tbody').addEventListener('click', function(e) {
+        // Edit
+        if (e.target.closest('.edit-user-btn')) {
+            var btn = e.target.closest('.edit-user-btn');
+            var user = JSON.parse(btn.getAttribute('data-user'));
+            editUser(user);
+        }
+        // Delete
+        if (e.target.closest('.delete-user-btn')) {
+            var btn = e.target.closest('.delete-user-btn');
+            var userId = btn.getAttribute('data-user-id');
+            var userName = btn.getAttribute('data-user-name');
+            deleteUser(userId, userName);
         }
     });
 });
 
 function editUser(user) {
-    document.getElementById('edit_user_id').value = user.id;
-    document.getElementById('edit_first_name').value = user.first_name;
-    document.getElementById('edit_last_name').value = user.last_name;
-    document.getElementById('edit_office').value = user.office || '';
-    document.getElementById('edit_division').value = user.division || '';
-    document.getElementById('edit_email').value = user.email;
-    document.getElementById('edit_mobile').value = user.mobile || '';
-    document.getElementById('edit_username').value = user.username;
-    document.getElementById('edit_role').value = user.role;
-    new bootstrap.Modal(document.getElementById('editUserModal')).show();
+    // Show loading modal with role-specific message
+    var loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'), {backdrop:'static', keyboard:false});
+    var loadingMessage = document.getElementById('loadingMessage');
+    var loadingVideo = document.getElementById('loadingVideo');
+    var loadingSpinner = document.getElementById('loadingSpinner');
+    var roleLabel = user.role === 'admin' ? 'Admin' : 'Encoder';
+    loadingMessage.textContent = `Loading ${roleLabel} Details...`;
+    if (loadingVideo) {
+        loadingVideo.style.display = 'block';
+        loadingSpinner.style.display = 'none';
+        loadingVideo.src = 'assets/images/Trail-Loading.webm';
+        loadingVideo.load();
+        loadingVideo.onerror = function() {
+            loadingVideo.style.display = 'none';
+            loadingSpinner.style.display = 'block';
+        };
+        setTimeout(function() {
+            if (loadingVideo.readyState < 2) {
+                loadingVideo.style.display = 'none';
+                loadingSpinner.style.display = 'block';
+            }
+        }, 500);
+    }
+    loadingModal.show();
+    setTimeout(function() {
+        loadingModal.hide();
+        // Fill form fields
+        document.getElementById('edit_user_id').value = user.id;
+        document.getElementById('edit_first_name').value = user.first_name;
+        document.getElementById('edit_last_name').value = user.last_name;
+        document.getElementById('edit_office').value = user.office || '';
+        document.getElementById('edit_division').value = user.division || '';
+        document.getElementById('edit_email').value = user.email;
+        document.getElementById('edit_mobile').value = user.mobile || '';
+        document.getElementById('edit_username').value = user.username;
+        document.getElementById('edit_role').value = user.role;
+        new bootstrap.Modal(document.getElementById('editUserModal')).show();
+    }, 900);
 }
 
 function deleteUser(userId, userName) {

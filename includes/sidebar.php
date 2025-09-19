@@ -119,12 +119,13 @@
             </li>
             <li class="nav-item">
                 <a href="cabinet.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'cabinet.php' ? 'active' : ''; ?>">
-                    <i class="bi bi-archive-fill me-2"></i> Cabinet Management
+                    <i class="fa fa-archive me-2"></i> Cabinet Management
                 </a>
             </li>
+            <!-- Search Cabinets button removed -->
             <li class="nav-item">
-                <a href="index.php" class="nav-link sidebar-link" target="_blank">
-                    <i class="fas fa-search me-2"></i> Search Cabinets
+                <a href="profile.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'profile.php' ? 'active' : ''; ?>">
+                    <i class="fas fa-user-cog me-2"></i> Profile
                 </a>
             </li>
             
@@ -138,11 +139,6 @@
                 <li class="nav-item">
                     <a href="users.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'users.php' ? 'active' : ''; ?>">
                         <i class="fas fa-users me-2"></i> User Management
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="export.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'export.php' ? 'active' : ''; ?>">
-                        <i class="fas fa-download me-2"></i> Export Data
                     </a>
                 </li>
             <?php endif; ?>
@@ -163,7 +159,7 @@
             
             <!-- Common Footer Navigation -->
             <li class="nav-item mt-4">
-                <a href="logout.php" class="nav-link sidebar-link">
+                <a href="#" id="logoutSidebarBtn" class="nav-link sidebar-link">
                     <i class="fas fa-sign-out-alt me-2"></i> Logout
                 </a>
             </li>

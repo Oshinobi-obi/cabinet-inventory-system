@@ -132,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cabinet Viewer - Cabinet Information System</title>
+    <title>Cabinet Viewer - Cabinet Management System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="assets/css/navbar.css" rel="stylesheet">
@@ -143,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark public-navbar">
         <div class="container">
             <a class="navbar-brand" href="#">
-                <i class="fas fa-cabinet-filing me-2"></i>Cabinet Inventory System
+                <i class="fas fa-cabinet-filing me-2"></i>Cabinet Management System
             </a>
             <div class="ms-auto">
                 <a href="login.php" class="btn btn-outline-light">
@@ -347,26 +347,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
     </div>
 
     <!-- View Cabinet Modal -->
-    <div class="modal fade" id="viewCabinetModal" tabindex="-1">
+    <div class="modal fade" id="viewCabinetModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title">
                         <i class="fas fa-cabinet-filing me-2"></i>Cabinet Details
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div id="viewCabinetContent">
                         <div class="text-center py-4">
-                            <lottie-player
-                                src="assets/images/Trail loading.json"
-                                background="transparent"
-                                speed="1"
-                                style="width: 150px; height: 150px; margin: 0 auto;"
-                                loop
-                                autoplay>
-                            </lottie-player>
+                            <video src="assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
                             <h5 class="mt-3 text-muted" id="viewLoadingMessage">Loading Cabinet Details...</h5>
                         </div>
                     </div>
@@ -379,25 +371,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
     </div>
 
     <!-- QR Display Modal -->
-    <div class="modal fade" id="qrDisplayModal" tabindex="-1">
+    <div class="modal fade" id="qrDisplayModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title">
                         <i class="fas fa-qrcode me-2"></i><span id="qrModalTitle">QR Code for Cabinet</span>
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center" id="qrModalBody">
                     <div class="text-center py-4">
-                        <lottie-player
-                            src="assets/images/Trail loading.json"
-                            background="transparent"
-                            speed="1"
-                            style="width: 150px; height: 150px; margin: 0 auto;"
-                            loop
-                            autoplay>
-                        </lottie-player>
+                        <video src="assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
                         <h5 class="mt-3 text-muted">Loading QR Code...</h5>
                     </div>
                 </div>
@@ -409,14 +393,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
     </div>
 
     <!-- QR Scanner Modal -->
-    <div class="modal fade" id="qrScannerModal" tabindex="-1">
+    <div class="modal fade" id="qrScannerModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title">
                         <i class="fas fa-camera me-2"></i>Scan QR Code
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0" id="qrScannerBody">
                     <div class="text-center py-4">
@@ -433,7 +416,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <script src="assets/js/index.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         // Handle view cabinet button clicks
@@ -900,16 +882,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     if (content) {
                         content.innerHTML = `
                             <div class="text-center py-4">
-                                <lottie-player
-                                    src="assets/images/Trail loading.json"
-                                    background="transparent"
-                                    speed="1"
-                                    style="width: 150px; height: 150px; margin: 0 auto;"
-                                    loop
-                                    autoplay>
-                                </lottie-player>
-                                <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
-                            </div>
+                                <video src="assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline><\/video>
+                                <h5 class="mt-3 text-muted">Loading Cabinet Details...<\/h5>
+                            <\/div>
                         `;
                     }
                 });
@@ -930,15 +905,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     // Show loading animation on search button
                     searchButton.innerHTML = `
                         <div class="d-inline-block me-2" style="width: 20px; height: 20px;">
-                            <lottie-player
-                                src="assets/images/Trail loading.json"
-                                background="transparent"
-                                speed="1"
-                                style="width: 100%; height: 100%;"
-                                loop
-                                autoplay>
-                            </lottie-player>
-                        </div>
+                            <video src="assets/images/Trail-Loading.webm" style="width: 100%; height: 100%; display:block;" autoplay muted loop playsinline><\/video>
+                        <\/div>
                         Searching...
                     `;
                     searchButton.disabled = true;
@@ -967,18 +935,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                         <div class="modal-dialog">
                             <div class="modal-content">
                                 <div class="modal-body text-center py-5">
-                                    <lottie-player
-                                        src="assets/images/Trail loading.json"
-                                        background="transparent"
-                                        speed="1"
-                                        style="width: 150px; height: 150px; margin: 0 auto;"
-                                        loop
-                                        autoplay>
-                                    </lottie-player>
-                                    <h5 class="mt-3 text-muted">${searchMessage}</h5>
-                                </div>
-                            </div>
-                        </div>
+                                    <video src="assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline><\/video>
+                                    <h5 class="mt-3 text-muted">${searchMessage}<\/h5>
+                                <\/div>
+                            <\/div>
+                        <\/div>
                     `;
                     
                     document.body.appendChild(overlay);
@@ -1073,14 +1034,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             // Show loading initially
             modalBody.innerHTML = `
                 <div class="text-center py-4">
-                    <lottie-player
-                        src="assets/images/Trail loading.json"
-                        background="transparent"
-                        speed="1"
-                        style="width: 150px; height: 150px; margin: 0 auto;"
-                        loop
-                        autoplay>
-                    </lottie-player>
+                    <video src="assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline><\/video>
                     <h5 class="mt-3 text-muted">Loading QR Code...</h5>
                 </div>
             `;
@@ -1134,16 +1088,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                         <div class="spinner-border text-primary primary-spinner" role="status" style="width: 3rem; height: 3rem;">
                             <span class="visually-hidden">Loading...</span>
                         </div>
-                        <!-- Secondary loading (Lottie) - overlay if available -->
-                        <lottie-player
-                            class="lottie-loader position-absolute top-0 start-50 translate-middle-x"
-                            src="assets/images/Trail loading.json"
-                            background="transparent"
-                            speed="1"
-                            style="width: 150px; height: 150px; z-index: 10; opacity: 0;"
-                            loop
-                            autoplay>
-                        </lottie-player>
+                        <!-- Secondary loading (Video) - overlay if available -->
+                        <video
+                            class="video-loader position-absolute top-0 start-50 translate-middle-x"
+                            src="assets/images/Trail-Loading.webm"
+                            style="width: 150px; height: 150px; z-index: 10; opacity: 0; display:block;"
+                            autoplay muted loop playsinline>
+                        </video>
                     </div>
                     <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
                 </div>
@@ -1152,50 +1103,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             console.log('Cabinet modal opened with dual loading system');
             
             // Enhanced fallback mechanism - keep spinner visible during entire loading process
-            let lottieLoaded = false;
+            let videoLoaded = false;
             let dataLoaded = false;
-            const lottiePlayer = content.querySelector('.lottie-loader');
+            const videoPlayer = content.querySelector('.video-loader');
             const primarySpinner = content.querySelector('.primary-spinner');
             
             // Function to hide loading animations when data is ready
             const hideLoadingAnimations = () => {
-                if (dataLoaded && lottiePlayer && primarySpinner) {
-                    lottiePlayer.style.display = 'none';
+                if (dataLoaded && videoPlayer && primarySpinner) {
+                    videoPlayer.style.display = 'none';
                     primarySpinner.style.display = 'none';
                 }
             };
             
             // Try to detect when Lottie loads successfully
-            const checkLottieLoad = () => {
-                if (lottiePlayer && primarySpinner && !lottieLoaded) {
-                    // More thorough checks for Lottie success
-                    const hasContent = lottiePlayer.shadowRoot && lottiePlayer.shadowRoot.children.length > 0;
-                    const hasSize = lottiePlayer.getBoundingClientRect().width > 0;
-                    const isPlaying = lottiePlayer.getCurrentFrame && lottiePlayer.getCurrentFrame() > 0;
-                    
-                    if ((hasContent && hasSize) || isPlaying) {
-                        lottieLoaded = true;
-                        lottiePlayer.style.opacity = '1';
-                        primarySpinner.style.display = 'none';
-                        console.log('Lottie animation loaded successfully');
-                    }
+            const onVideoReady = () => {
+                if (videoPlayer && primarySpinner && !videoLoaded) {
+                    videoLoaded = true;
+                    videoPlayer.style.opacity = '1';
+                    primarySpinner.style.display = 'none';
+                    console.log('Video animation loaded successfully');
                 }
             };
             
             // Check for Lottie loading at multiple intervals
-            const lottieCheckInterval = setInterval(() => {
-                if (lottieLoaded) {
-                    clearInterval(lottieCheckInterval);
-                    return;
-                }
-                checkLottieLoad();
-            }, 100);
+            if (videoPlayer) {
+                videoPlayer.addEventListener('loadeddata', onVideoReady, { once: true });
+                videoPlayer.addEventListener('canplaythrough', onVideoReady, { once: true });
+            }
             
             // Stop checking after 2 seconds and ensure spinner stays visible until data loads
             setTimeout(() => {
-                clearInterval(lottieCheckInterval);
-                if (!lottieLoaded && lottiePlayer && primarySpinner) {
-                    lottiePlayer.style.display = 'none';
+                if (!videoLoaded && videoPlayer && primarySpinner) {
+                    videoPlayer.style.display = 'none';
                     primarySpinner.style.display = 'inline-block';
                     console.log('Using fallback spinner for loading animation');
                 }
@@ -1225,54 +1165,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                                     <div class="spinner-border text-primary primary-spinner" role="status" style="width: 3rem; height: 3rem;">
                                         <span class="visually-hidden">Loading...</span>
                                     </div>
-                                    <!-- Secondary loading (Lottie) - overlay if available -->
-                                    <lottie-player
-                                        class="lottie-loader position-absolute top-0 start-50 translate-middle-x"
-                                        src="assets/images/Trail loading.json"
-                                        background="transparent"
-                                        speed="1"
-                                        style="width: 150px; height: 150px; z-index: 10; opacity: 0;"
-                                        loop
-                                        autoplay>
-                                    </lottie-player>
+                                    <!-- Secondary loading (Video) - overlay if available -->
+                                    <video
+                                        class="video-loader position-absolute top-0 start-50 translate-middle-x"
+                                        src="assets/images/Trail-Loading.webm"
+                                        style="width: 150px; height: 150px; z-index: 10; opacity: 0; display:block;"
+                                        autoplay muted loop playsinline>
+                                    </video>
                                 </div>
                                 <h5 class="mt-3 text-muted">${loadingMessage}</h5>
                             </div>
                         `;
                         
                         // Set up the same dual loading system for the second phase
-                        const secondLottiePlayer = content.querySelector('.lottie-loader');
+                        const secondVideoPlayer = content.querySelector('.video-loader');
                         const secondSpinner = content.querySelector('.primary-spinner');
-                        let secondLottieLoaded = false;
+                        let secondVideoLoaded = false;
                         
                         console.log('Starting second phase loading with personalized message:', loadingMessage);
                         
                         // Check for Lottie loading in second phase
-                        const checkSecondLottieLoad = () => {
-                            if (secondLottiePlayer && secondSpinner && !secondLottieLoaded) {
-                                const hasContent = secondLottiePlayer.shadowRoot && secondLottiePlayer.shadowRoot.children.length > 0;
-                                const hasSize = secondLottiePlayer.getBoundingClientRect().width > 0;
-                                const isPlaying = secondLottiePlayer.getCurrentFrame && secondLottiePlayer.getCurrentFrame() > 0;
-                                
-                                if ((hasContent && hasSize) || isPlaying) {
-                                    secondLottieLoaded = true;
-                                    secondLottiePlayer.style.opacity = '1';
-                                    secondSpinner.style.display = 'none';
-                                    console.log('Second phase Lottie animation loaded successfully');
-                                }
+                        const onSecondVideoReady = () => {
+                            if (secondVideoPlayer && secondSpinner && !secondVideoLoaded) {
+                                secondVideoLoaded = true;
+                                secondVideoPlayer.style.opacity = '1';
+                                secondSpinner.style.display = 'none';
+                                console.log('Second phase video animation loaded successfully');
                             }
                         };
                         
                         // Check at intervals for second phase loading
-                        const secondLottieInterval = setInterval(checkSecondLottieLoad, 100);
+                        if (secondVideoPlayer) {
+                            secondVideoPlayer.addEventListener('loadeddata', onSecondVideoReady, { once: true });
+                            secondVideoPlayer.addEventListener('canplaythrough', onSecondVideoReady, { once: true });
+                        }
                         setTimeout(() => {
-                            clearInterval(secondLottieInterval);
-                            if (!secondLottieLoaded && secondLottiePlayer && secondSpinner) {
-                                secondLottiePlayer.style.display = 'none';
+                            if (!secondVideoLoaded && secondVideoPlayer && secondSpinner) {
+                                secondVideoPlayer.style.display = 'none';
                                 secondSpinner.style.display = 'inline-block';
                                 console.log('Using fallback spinner for second phase loading');
                             }
-                        }, 2000); // Give more time for Lottie to load
+                        }, 2000);
                         
                         // Add a delay to show the personalized loading message, then load final content
                         setTimeout(() => {
@@ -1379,5 +1312,126 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                 });
         }
     </script>
+        <!-- What's New Button and Modal -->
+        <button id="whatsNewBtn" type="button" class="btn btn-primary rounded-circle shadow-lg" style="position:fixed;bottom:24px;right:24px;z-index:1055;width:56px;height:56px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;">
+                <i class="fas fa-question"></i>
+        </button>
+            <div class="modal fade" id="whatsNewModal" tabindex="-1" aria-labelledby="whatsNewModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" style="max-width:400px; width:90vw;">
+                    <div class="modal-content" style="border-radius:16px;">
+                        <div class="modal-header py-2">
+                            <h5 class="modal-title" id="whatsNewModalLabel"><i class="fas fa-bolt text-warning me-2"></i>What's New?</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body py-2 px-2">
+                            <ul class="list-group list-group-flush whats-new-list" style="max-height:180px;overflow-y:auto;" id="whatsNewAccordion">
+                                <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v14" style="cursor:pointer;user-select:none;">
+                                    <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
+                                        <svg width="16" height="16" viewBox="0 0 16 16"><polygon points="5,3 13,8 5,13" fill="#555"/></svg>
+                                    </span>
+                                    <span class="toggle-label"><strong>v1.4</strong> - Added QR code scanning for cabinets</span>
+                                    <div class="collapse mt-1" id="wn-v14" data-parent="#whatsNewAccordion">
+                                        <div class="text-secondary small ms-4">You can now scan QR codes to quickly access cabinet details using your device camera.</div>
+                                    </div>
+                                </li>
+                                <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v13" style="cursor:pointer;user-select:none;">
+                                    <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
+                                        <svg width="16" height="16" viewBox="0 0 16 16"><polygon points="5,3 13,8 5,13" fill="#555"/></svg>
+                                    </span>
+                                    <span class="toggle-label"><strong>v1.3</strong> - Improved mobile responsiveness</span>
+                                    <div class="collapse mt-1" id="wn-v13" data-parent="#whatsNewAccordion">
+                                        <div class="text-secondary small ms-4">The interface now adapts better to phones and tablets for easier use on the go.</div>
+                                    </div>
+                                </li>
+                                <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v12" style="cursor:pointer;user-select:none;">
+                                    <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
+                                        <svg width="16" height="16" viewBox="0 0 16 16"><polygon points="5,3 13,8 5,13" fill="#555"/></svg>
+                                    </span>
+                                    <span class="toggle-label"><strong>v1.2</strong> - User-friendly error messages</span>
+                                    <div class="collapse mt-1" id="wn-v12" data-parent="#whatsNewAccordion">
+                                        <div class="text-secondary small ms-4">Clearer error messages help you understand and fix issues faster.</div>
+                                    </div>
+                                </li>
+                                <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v11" style="cursor:pointer;user-select:none;">
+                                    <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
+                                        <svg width="16" height="16" viewBox="0 0 16 16"><polygon points="5,3 13,8 5,13" fill="#555"/></svg>
+                                    </span>
+                                    <span class="toggle-label"><strong>v1.1</strong> - Initial public viewer release</span>
+                                    <div class="collapse mt-1" id="wn-v11" data-parent="#whatsNewAccordion">
+                                        <div class="text-secondary small ms-4">First release of the public cabinet viewer for easy access to cabinet information.</div>
+                                    </div>
+                                </li>
+                                <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v10" style="cursor:pointer;user-select:none;">
+                                    <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
+                                        <svg width="16" height="16" viewBox="0 0 16 16"><polygon points="5,3 13,8 5,13" fill="#555"/></svg>
+                                    </span>
+                                    <span class="toggle-label"><strong>v1.0</strong> - Project launched 🚀</span>
+                                    <div class="collapse mt-1" id="wn-v10" data-parent="#whatsNewAccordion">
+                                        <div class="text-secondary small ms-4">The Cabinet Inventory System project is live!</div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <style>
+        #whatsNewBtn {
+                box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+                transition: background 0.2s;
+        }
+        #whatsNewBtn:active { background: #0b5ed7; }
+        .whats-new-list { min-width:200px; }
+        @media (max-width: 600px) {
+            #whatsNewBtn { right: 12px; bottom: 12px; width:48px; height:48px; font-size:1.2rem; }
+            .modal-dialog { margin: 0 auto; }
+            .whats-new-list { max-height: 120px; font-size:0.98rem; }
+        }
+            </style>
+            <style>
+            .toggle-arrow svg {
+                transition: transform 0.2s;
+            }
+            .toggle-arrow[aria-expanded="true"] svg {
+                transform: rotate(90deg);
+            }
+            </style>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script nonce="<?php echo isset($GLOBALS['csp_nonce']) ? $GLOBALS['csp_nonce'] : ''; ?>">
+        document.getElementById('whatsNewBtn').addEventListener('click', function() {
+            var modal = new bootstrap.Modal(document.getElementById('whatsNewModal'));
+            modal.show();
+        });
+        // Accordion toggle: make entire row clickable, not just triangle
+        document.querySelectorAll('.whats-new-toggle').forEach(function(row) {
+            var versionId = row.getAttribute('data-version');
+            var target = document.getElementById(versionId);
+            var arrow = row.querySelector('.toggle-arrow');
+            row.setAttribute('aria-expanded', 'false');
+            if(target) {
+                row.addEventListener('click', function(e) {
+                    // Prevent double toggle if clicking arrow or label
+                    if(e.target.closest('.collapse')) return;
+                    var isOpen = target.classList.contains('show');
+                    // Close all
+                    document.querySelectorAll('.collapse[id^="wn-v"]').forEach(function(el) {
+                        if(el !== target) {
+                            el.classList.remove('show');
+                            var otherRow = document.querySelector('.whats-new-toggle[data-version="'+el.id+'"]');
+                            if(otherRow) otherRow.setAttribute('aria-expanded', 'false');
+                        }
+                    });
+                    // Toggle this one
+                    if(isOpen) {
+                        target.classList.remove('show');
+                        row.setAttribute('aria-expanded', 'false');
+                    } else {
+                        target.classList.add('show');
+                        row.setAttribute('aria-expanded', 'true');
+                    }
+                });
+            }
+        });
+        </script>
 </body>
 </html>
