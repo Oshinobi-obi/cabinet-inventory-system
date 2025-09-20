@@ -76,7 +76,7 @@ $host = '0.0.0.0'; // Bind to all interfaces
 $localIP = getLocalIP();
 
 // Display startup information
-echo "🚀 Starting Cabinet Information System Server...\n";
+echo "🚀 Starting Cabinet Management System Server...\n";
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
 echo "📱 Mobile Access URLs:\n";
 echo "   Local:    http://localhost:$port\n";
