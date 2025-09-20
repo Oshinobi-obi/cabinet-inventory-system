@@ -48,13 +48,13 @@ echo "<h3>QR Code Library & Generation</h3>";
 $qrLibPath = __DIR__ . '/phpqrcode/qrlib.php';
 if (file_exists($qrLibPath)) {
     echo "✅ PHP QR Code library is installed<br>";
-    
+
     // Test if it can be included
     try {
         require_once $qrLibPath;
         if (class_exists('QRcode')) {
             echo "✅ QRcode class is available<br>";
-            
+
             // Test QR generation
             try {
                 require_once 'includes/functions.php';
@@ -81,7 +81,7 @@ if (file_exists($qrLibPath)) {
 } else {
     echo "❌ PHP QR Code library not found<br>";
     echo "ℹ️ System will use Google Charts API as fallback<br>";
-    
+
     // Test Google Charts fallback
     try {
         require_once 'includes/functions.php';
@@ -94,7 +94,7 @@ if (file_exists($qrLibPath)) {
     } catch (Exception $e) {
         echo "❌ QR generation error: " . $e->getMessage() . "<br>";
     }
-    
+
     echo "📥 <strong>To install PHP QR Code library:</strong><br>";
     echo "1. Visit: <a href='http://phpqrcode.sourceforge.net/' target='_blank'>http://phpqrcode.sourceforge.net/</a><br>";
     echo "2. Download the latest version<br>";
@@ -107,17 +107,17 @@ if (file_exists($qrLibPath)) {
 echo "<h3>Database Connection</h3>";
 if (file_exists('includes/config.php')) {
     echo "✅ Config file exists<br>";
-    
+
     try {
         require_once 'includes/config.php';
         if (isset($pdo)) {
             echo "✅ Database connection successful<br>";
-            
+
             // Check tables
             $tables = ['cabinets', 'categories', 'items', 'users'];
             $stmt = $pdo->query("SHOW TABLES");
             $existingTables = $stmt->fetchAll(PDO::FETCH_COLUMN);
-            
+
             foreach ($tables as $table) {
                 if (in_array($table, $existingTables)) {
                     echo "✅ Table '$table' exists<br>";
@@ -141,7 +141,17 @@ echo "If you see ❌ items, please address them before using the system.<br>";
 ?>
 
 <style>
-body { font-family: Arial, sans-serif; margin: 20px; }
-h2 { color: #2c3e50; }
-h3 { color: #34495e; margin-top: 20px; }
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+    }
+
+    h2 {
+        color: #2c3e50;
+    }
+
+    h3 {
+        color: #34495e;
+        margin-top: 20px;
+    }
 </style>

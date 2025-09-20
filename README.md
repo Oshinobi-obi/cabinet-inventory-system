@@ -21,12 +21,12 @@ A comprehensive web-based inventory management system designed for tracking and 
 
 ## 🛠️ Technology Stack
 
-| Technology | Usage | Files |
-|------------|-------|--------|
-| ![PHP](https://img.shields.io/badge/PHP-777BB4?style=flat&logo=php&logoColor=white) | Server-side logic, API endpoints, authentication | `*.php` files |
-| ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat&logo=css3&logoColor=white) | Styling and responsive design | `assets/css/*.css` |
-| ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black) | Client-side interactivity, AJAX requests | `assets/js/*.js` |
-| ![MySQL](https://img.shields.io/badge/MySQL-005C84?style=flat&logo=mysql&logoColor=white) | Database management | `cabinet_info_system.sql` |
+| Technology                                                                                               | Usage                                            | Files                     |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------- |
+| ![PHP](https://img.shields.io/badge/PHP-777BB4?style=flat&logo=php&logoColor=white)                      | Server-side logic, API endpoints, authentication | `*.php` files             |
+| ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat&logo=css3&logoColor=white)                   | Styling and responsive design                    | `assets/css/*.css`        |
+| ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black) | Client-side interactivity, AJAX requests         | `assets/js/*.js`          |
+| ![MySQL](https://img.shields.io/badge/MySQL-005C84?style=flat&logo=mysql&logoColor=white)                | Database management                              | `cabinet_info_system.sql` |
 
 ## 🚀 Installation
 
@@ -40,21 +40,26 @@ A comprehensive web-based inventory management system designed for tracking and 
 ### Setup Instructions
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/Oshinobi-obi/cabinet-inventory-system.git
    cd cabinet-inventory-system
    ```
 
 2. **Database Setup**
+
    - Create a new MySQL database
    - Import the database schema:
+
    ```bash
    mysql -u username -p database_name < cabinet_info_system.sql
    ```
 
 3. **Configuration**
+
    - Navigate to `includes/config.php`
    - Update database connection settings:
+
    ```php
    $host = 'your_host';
    $dbname = 'your_database_name';
@@ -63,6 +68,7 @@ A comprehensive web-based inventory management system designed for tracking and 
    ```
 
 4. **Web Server Setup**
+
    - Point your web server document root to the project directory
    - Ensure PHP has write permissions to `uploads/` and `qrcodes/` directories
 
@@ -129,7 +135,9 @@ cabinet-inventory-system/
 ## 🔧 Configuration
 
 ### Database Configuration
+
 Edit `includes/config.php` to configure database connection:
+
 ```php
 $host = 'localhost';        // Database host
 $dbname = 'cabinet_system'; // Database name
@@ -138,6 +146,7 @@ $password = '';             // Database password
 ```
 
 ### QR Code Settings
+
 QR codes are automatically generated and stored in the `qrcodes/` directory. Ensure this directory has write permissions.
 
 ## 🤝 Contributing
@@ -160,11 +169,13 @@ QR codes are automatically generated and stored in the `qrcodes/` directory. Ens
 ### Common Issues
 
 1. **Database Connection Errors**
+
    - Verify database credentials in `includes/config.php`
    - Ensure MySQL service is running
    - Check database exists and schema is imported
 
 2. **Permission Issues**
+
    - Ensure web server has write permissions to `uploads/` and `qrcodes/`
    - Check file ownership and permissions
 
@@ -179,6 +190,7 @@ This project is open source. Please check the repository for specific license te
 ## 👥 Support
 
 For support, bug reports, or feature requests:
+
 - Open an issue on GitHub
 - Review existing documentation
 - Check troubleshooting section above

@@ -1,13 +1,15 @@
 <?php
+
 /**
  * Simple PHP Development Server for Network Access (Windows Compatible)
  * No socket dependencies - uses Windows commands for IP detection
  */
 
 // Simple IP detection without socket functions
-function getWindowsLocalIP() {
+function getWindowsLocalIP()
+{
     echo "🔍 Detecting network IP address...\n";
-    
+
     // Method 1: Use ipconfig on Windows
     if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
         $output = shell_exec('ipconfig');
@@ -15,7 +17,7 @@ function getWindowsLocalIP() {
             echo "📋 Network interfaces found:\n";
             // Look for IPv4 addresses
             preg_match_all('/IPv4 Address[.\s]*:\s*(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $output, $matches);
-            
+
             if (isset($matches[1])) {
                 $possibleIPs = [];
                 foreach ($matches[1] as $ip) {
@@ -24,17 +26,19 @@ function getWindowsLocalIP() {
                         echo "   • $ip\n";
                     }
                 }
-                
+
                 // Prefer private network IPs
                 foreach ($possibleIPs as $ip) {
-                    if (strpos($ip, '192.168.') === 0 || 
-                        strpos($ip, '10.') === 0 || 
-                        strpos($ip, '172.') === 0) {
+                    if (
+                        strpos($ip, '192.168.') === 0 ||
+                        strpos($ip, '10.') === 0 ||
+                        strpos($ip, '172.') === 0
+                    ) {
                         echo "✅ Selected network IP: $ip\n";
                         return $ip;
                     }
                 }
-                
+
                 // If no private IP found, use the first non-localhost IP
                 if (!empty($possibleIPs)) {
                     echo "✅ Selected network IP: {$possibleIPs[0]}\n";
@@ -43,16 +47,16 @@ function getWindowsLocalIP() {
             }
         }
     }
-    
+
     // Fallback: Use hostname resolution
     $hostname = gethostname();
     $ip = gethostbyname($hostname);
-    
+
     if ($ip && $ip !== $hostname && $ip !== '127.0.0.1') {
         echo "✅ Using hostname resolution: $ip\n";
         return $ip;
     }
-    
+
     // Final fallback
     echo "⚠️  Could not detect network IP automatically.\n";
     echo "   Using localhost. You can manually check your IP with 'ipconfig'\n";
@@ -100,4 +104,3 @@ echo "🌐 Server running...\n\n";
 
 // Execute the server command
 passthru($command);
-?>

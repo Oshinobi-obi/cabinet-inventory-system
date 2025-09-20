@@ -1,13 +1,15 @@
 <?php
+
 /**
  * PHP Development Server for Network Access
  * This script starts a PHP server that can be accessed from mobile devices on the same network
  */
 
 // Get the local IP address (Windows-compatible)
-function getLocalIP() {
+function getLocalIP()
+{
     $localIP = null;
-    
+
     // Method 1: Try using shell command (Windows)
     if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
         // Windows method using ipconfig
@@ -18,10 +20,12 @@ function getLocalIP() {
             if (isset($matches[1])) {
                 foreach ($matches[1] as $ip) {
                     // Skip localhost and look for private network IPs
-                    if ($ip !== '127.0.0.1' && 
-                        (strpos($ip, '192.168.') === 0 || 
-                         strpos($ip, '10.') === 0 || 
-                         strpos($ip, '172.') === 0)) {
+                    if (
+                        $ip !== '127.0.0.1' &&
+                        (strpos($ip, '192.168.') === 0 ||
+                            strpos($ip, '10.') === 0 ||
+                            strpos($ip, '172.') === 0)
+                    ) {
                         $localIP = $ip;
                         break;
                     }
@@ -35,18 +39,18 @@ function getLocalIP() {
             $localIP = trim($output);
         }
     }
-    
+
     // Method 2: Try using hostname (fallback)
     if (!$localIP) {
         $hostname = gethostname();
         $localIP = gethostbyname($hostname);
-        
+
         // If it returns the same as hostname or localhost, it didn't work
         if ($localIP === $hostname || $localIP === '127.0.0.1') {
             $localIP = null;
         }
     }
-    
+
     // Method 3: Try to get from $_SERVER if available (when running in web context)
     if (!$localIP && isset($_SERVER['SERVER_ADDR'])) {
         $serverAddr = $_SERVER['SERVER_ADDR'];
@@ -54,7 +58,7 @@ function getLocalIP() {
             $localIP = $serverAddr;
         }
     }
-    
+
     // Final fallback
     if (!$localIP || $localIP === '127.0.0.1') {
         $localIP = '127.0.0.1';
@@ -62,7 +66,7 @@ function getLocalIP() {
         echo "   Make sure you're connected to a network to access from mobile devices.\n";
         echo "   Try running: ipconfig (Windows) or ifconfig (Mac/Linux) to see your IP.\n\n";
     }
-    
+
     return $localIP;
 }
 
@@ -104,4 +108,3 @@ echo "📊 Server Status: Starting...\n\n";
 
 // Execute the server command
 passthru($command);
-?>

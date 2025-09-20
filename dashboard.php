@@ -1,4 +1,3 @@
-
 <?php
 // Handle logout POST (AJAX) at the very top before any output
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
@@ -23,30 +22,30 @@ header("Content-Security-Policy: script-src 'self' 'unsafe-inline' 'unsafe-eval'
 // Handle AJAX requests for activity data
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'recent_activity') {
     header('Content-Type: application/json');
-    
+
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
     $limit = 5;
     $offset = ($page - 1) * $limit;
     $sortBy = isset($_GET['sort']) ? $_GET['sort'] : 'updated_at';
     $sortOrder = isset($_GET['order']) && $_GET['order'] === 'asc' ? 'ASC' : 'DESC';
-    
+
     // Validate sort column
     $allowedSorts = ['cabinet_number', 'name', 'updated_at'];
     if (!in_array($sortBy, $allowedSorts)) {
         $sortBy = 'updated_at';
     }
-    
+
     try {
         // Get total count
         $countStmt = $pdo->query("SELECT COUNT(*) as total FROM cabinets");
         $totalRecords = $countStmt->fetch()['total'];
         $totalPages = ceil($totalRecords / $limit);
-        
+
         // Get paginated and sorted data
         $stmt = $pdo->prepare("SELECT cabinet_number, name, created_at, updated_at FROM cabinets ORDER BY {$sortBy} {$sortOrder} LIMIT ? OFFSET ?");
         $stmt->execute([$limit, $offset]);
         $activities = $stmt->fetchAll();
-        
+
         echo json_encode([
             'success' => true,
             'activities' => $activities,
@@ -57,8 +56,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'recent_activity') {
             ]
         ]);
         exit;
-        
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
         exit;
     }
@@ -67,17 +65,17 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'recent_activity') {
 // Handle AJAX requests for categories data
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'categories_overview') {
     header('Content-Type: application/json');
-    
+
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
     $limit = 5;
     $offset = ($page - 1) * $limit;
-    
+
     try {
         // Get total count
         $countStmt = $pdo->query("SELECT COUNT(*) as total FROM categories");
         $totalRecords = $countStmt->fetch()['total'];
         $totalPages = ceil($totalRecords / $limit);
-        
+
         // Get paginated categories data
         $stmt = $pdo->prepare("
             SELECT cat.name, COUNT(i.id) as item_count 
@@ -89,11 +87,11 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'categories_overview') {
         ");
         $stmt->execute([$limit, $offset]);
         $categories = $stmt->fetchAll();
-        
+
         // Get total items for percentage calculation
         $totalItemsStmt = $pdo->query("SELECT COUNT(*) as total_items FROM items");
         $totalItems = $totalItemsStmt->fetch()['total_items'];
-        
+
         echo json_encode([
             'success' => true,
             'categories' => $categories,
@@ -105,8 +103,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'categories_overview') {
             ]
         ]);
         exit;
-        
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
         exit;
     }
@@ -115,33 +112,32 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'categories_overview') {
 // Handle AJAX request for adding category
 if (isset($_POST['add_category']) && $_SERVER['REQUEST_METHOD'] == 'POST') {
     header('Content-Type: application/json');
-    
+
     $categoryName = sanitizeInput($_POST['category_name']);
-    
+
     if (empty($categoryName)) {
         echo json_encode(['success' => false, 'message' => 'Category name is required']);
         exit;
     }
-    
+
     try {
         // Check if category already exists
         $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM categories WHERE name = ?");
         $stmt->execute([$categoryName]);
         $exists = $stmt->fetch()['count'] > 0;
-        
+
         if ($exists) {
             echo json_encode(['success' => false, 'message' => 'Category already exists']);
             exit;
         }
-        
+
         // Insert new category
         $stmt = $pdo->prepare("INSERT INTO categories (name) VALUES (?)");
         $stmt->execute([$categoryName]);
-        
+
         echo json_encode(['success' => true, 'message' => 'Category Added Successfully ✓']);
         exit;
-        
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
         exit;
     }
@@ -150,7 +146,7 @@ if (isset($_POST['add_category']) && $_SERVER['REQUEST_METHOD'] == 'POST') {
 // Handle AJAX request for adding user
 if (isset($_POST['add_user']) && $_SERVER['REQUEST_METHOD'] == 'POST') {
     header('Content-Type: application/json');
-    
+
     // Get and sanitize input data
     $firstName = sanitizeInput($_POST['first_name']);
     $lastName = sanitizeInput($_POST['last_name']);
@@ -161,51 +157,53 @@ if (isset($_POST['add_user']) && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = sanitizeInput($_POST['username']);
     $password = sanitizeInput($_POST['password']);
     $role = sanitizeInput($_POST['role']);
-    
+
     // Validate required fields
-    if (empty($firstName) || empty($lastName) || empty($office) || empty($division) || 
-        empty($email) || empty($mobile) || empty($username) || empty($password) || empty($role)) {
+    if (
+        empty($firstName) || empty($lastName) || empty($office) || empty($division) ||
+        empty($email) || empty($mobile) || empty($username) || empty($password) || empty($role)
+    ) {
         echo json_encode(['success' => false, 'message' => 'All fields are required']);
         exit;
     }
-    
+
     // Validate email format
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         echo json_encode(['success' => false, 'message' => 'Invalid email format']);
         exit;
     }
-    
+
     try {
         // Check if username already exists
         $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM users WHERE username = ?");
         $stmt->execute([$username]);
         $usernameExists = $stmt->fetch()['count'] > 0;
-        
+
         if ($usernameExists) {
             echo json_encode(['success' => false, 'message' => 'Username already exists']);
             exit;
         }
-        
+
         // Check if email already exists
         $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $emailExists = $stmt->fetch()['count'] > 0;
-        
+
         if ($emailExists) {
             echo json_encode(['success' => false, 'message' => 'Email already exists']);
             exit;
         }
-        
+
         // Hash the password
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        
+
         // Insert new user
         $stmt = $pdo->prepare("
             INSERT INTO users (first_name, last_name, office, division, email, mobile, username, password, role) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([$firstName, $lastName, $office, $division, $email, $mobile, $username, $hashedPassword, $role]);
-        
+
         // Prepare user data for email
         $userData = [
             'first_name' => $firstName,
@@ -217,21 +215,20 @@ if (isset($_POST['add_user']) && $_SERVER['REQUEST_METHOD'] == 'POST') {
             'office' => $office,
             'division' => $division
         ];
-        
+
         // Send welcome email with credentials
         $emailResult = EmailService::sendNewUserEmail($userData);
-        
+
         // Log email activity
         EmailService::logEmailActivity($userData, $emailResult['success'], $emailResult['message']);
-        
+
         if ($emailResult['success']) {
             echo json_encode(['success' => true, 'message' => 'User Added Successfully ✓', 'email_sent' => true]);
         } else {
             echo json_encode(['success' => true, 'message' => 'User Added Successfully ✓ (Email failed to send)', 'email_sent' => false]);
         }
         exit;
-        
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
         exit;
     }
@@ -242,37 +239,37 @@ try {
     // Count cabinets
     $stmt = $pdo->query("SELECT COUNT(*) as total_cabinets FROM cabinets");
     $totalCabinets = $stmt->fetch()['total_cabinets'];
-    
+
     // Count items
     $stmt = $pdo->query("SELECT COUNT(*) as total_items FROM items");
     $totalItems = $stmt->fetch()['total_items'];
-    
+
     // Count categories
     $stmt = $pdo->query("SELECT COUNT(*) as total_categories FROM categories");
     $totalCategories = $stmt->fetch()['total_categories'];
-    
+
     // Count QR codes generated
     $stmt = $pdo->query("SELECT COUNT(*) as qr_generated FROM cabinets WHERE qr_path IS NOT NULL AND qr_path != ''");
     $qrGenerated = $stmt->fetch()['qr_generated'];
-    
+
     // Admin-only statistics
     if ($_SESSION['user_role'] === 'admin') {
         // Count users
         $stmt = $pdo->query("SELECT COUNT(*) as total_users FROM users");
         $totalUsers = $stmt->fetch()['total_users'];
     }
-    
+
     // Recent activity (last 10 cabinets updated)
     $stmt = $pdo->query("SELECT cabinet_number, name, updated_at FROM cabinets ORDER BY updated_at DESC LIMIT 5");
     $recentActivity = $stmt->fetchAll();
-    
-} catch(PDOException $e) {
+} catch (PDOException $e) {
     $error = "Error loading dashboard data: " . $e->getMessage();
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -290,9 +287,9 @@ try {
         #loadingModal .modal-content {
             border: none;
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
-        
+
         #loadingModal .modal-body {
             padding: 30px 20px;
             display: flex;
@@ -300,32 +297,32 @@ try {
             align-items: center;
             justify-content: center;
         }
-        
+
         #loadingModal video {
             margin: 0 auto;
             display: block;
         }
-        
+
         #loadingMessage {
             color: #6c757d;
             font-weight: 500;
             text-align: center;
             margin-top: 15px;
         }
-        
+
         /* Hide number input spinners/arrows */
         .page-input::-webkit-outer-spin-button,
         .page-input::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-        
+
         /* Firefox */
         .page-input[type=number] {
             -moz-appearance: textfield;
             appearance: textfield;
         }
-        
+
         /* Make page input smaller and improve spacing */
         .page-input {
             width: 40px !important;
@@ -334,16 +331,16 @@ try {
             padding: 2px 4px !important;
             border-radius: 4px !important;
         }
-        
+
         /* Adjust pagination spacing */
         .pagination .page-item:not(:first-child) .page-link {
             margin-left: 3px;
         }
-        
+
         .pagination .page-item.active {
             margin: 0 5px;
         }
-        
+
         /* Ensure consistent height for all pagination elements */
         .pagination .page-link {
             height: 30px;
@@ -353,63 +350,77 @@ try {
         }
     </style>
     <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
-    /* Glassmorphism overlay for logout modal */
-    #logoutConfirmModal {
-        background: rgba(255,255,255,0.25) !important;
-        backdrop-filter: blur(8px) saturate(1.2);
-        -webkit-backdrop-filter: blur(8px) saturate(1.2);
-        transition: background 0.2s;
-        z-index: 2000;
-    }
-    #logoutConfirmModal .modal-content, #logoutConfirmModal .modal-title, #logoutConfirmModal .modal-body, #logoutConfirmModal .modal-footer, #logoutConfirmModal .modal-content p, #logoutConfirmModal .modal-content h5 {
-        color: #222 !important;
-        background: #fff !important;
-        user-select: none;
-    }
-    #logoutConfirmModal .modal-content {
-        box-shadow: 0 4px 32px rgba(0,0,0,0.18);
-    }
-    #logoutConfirmModal .modal-title {
-        font-weight: 600;
-    }
-    #logoutConfirmModal .modal-footer {
-        background: #fff !important;
-    }
-    #logoutConfirmModal .btn-danger, #logoutConfirmModal .btn-secondary { user-select: none; }
+        /* Glassmorphism overlay for logout modal */
+        #logoutConfirmModal {
+            background: rgba(255, 255, 255, 0.25) !important;
+            backdrop-filter: blur(8px) saturate(1.2);
+            -webkit-backdrop-filter: blur(8px) saturate(1.2);
+            transition: background 0.2s;
+            z-index: 2000;
+        }
+
+        #logoutConfirmModal .modal-content,
+        #logoutConfirmModal .modal-title,
+        #logoutConfirmModal .modal-body,
+        #logoutConfirmModal .modal-footer,
+        #logoutConfirmModal .modal-content p,
+        #logoutConfirmModal .modal-content h5 {
+            color: #222 !important;
+            background: #fff !important;
+            user-select: none;
+        }
+
+        #logoutConfirmModal .modal-content {
+            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.18);
+        }
+
+        #logoutConfirmModal .modal-title {
+            font-weight: 600;
+        }
+
+        #logoutConfirmModal .modal-footer {
+            background: #fff !important;
+        }
+
+        #logoutConfirmModal .btn-danger,
+        #logoutConfirmModal .btn-secondary {
+            user-select: none;
+        }
     </style>
 </head>
+
 <body>
 
-        <?php include 'includes/sidebar.php'; ?>
+    <?php include 'includes/sidebar.php'; ?>
 
-        <!-- Logout Confirmation Modal (hidden by default) -->
-        <div class="modal" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" style="display:none;">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content" style="border-radius:12px;">
-                    <div class="modal-header" style="border-bottom:none;">
-                        <h5 class="modal-title">Confirm Logout</h5>
-                    </div>
-                    <div class="modal-body text-center">
-                        <p>Are you sure you want to log out?</p>
-                    </div>
-                    <div class="modal-footer" style="border-top:none; justify-content:center;">
-                        <button id="confirmLogoutBtn" class="btn btn-danger">Yes, Log Out</button>
-                        <button id="cancelLogoutBtn" class="btn btn-secondary ms-2">Cancel</button>
-                    </div>
+    <!-- Logout Confirmation Modal (hidden by default) -->
+    <div class="modal" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" style="display:none;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius:12px;">
+                <div class="modal-header" style="border-bottom:none;">
+                    <h5 class="modal-title">Confirm Logout</h5>
+                </div>
+                <div class="modal-body text-center">
+                    <p>Are you sure you want to log out?</p>
+                </div>
+                <div class="modal-footer" style="border-top:none; justify-content:center;">
+                    <button id="confirmLogoutBtn" class="btn btn-danger">Yes, Log Out</button>
+                    <button id="cancelLogoutBtn" class="btn btn-secondary ms-2">Cancel</button>
                 </div>
             </div>
         </div>
-        <!-- Logout Loading Modal (hidden by default) -->
-        <div class="modal" id="logoutLoadingModal" tabindex="-1" aria-hidden="true" style="display:none; background:rgba(255,255,255,0.25); backdrop-filter: blur(8px) saturate(1.2); -webkit-backdrop-filter: blur(8px) saturate(1.2); z-index:2100;">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content" style="background:transparent; border:none; box-shadow:none; align-items:center;">
-                    <div class="modal-body text-center">
-                        <video src="assets/images/Trail-Loading.webm" autoplay loop muted style="width:120px; border-radius:50%; background:#fff;"></video>
-                        <div class="mt-3 text-dark fw-bold" style="font-size:1.2rem; text-shadow:0 1px 4px #fff;">Logging Out! Thank you...</div>
-                    </div>
+    </div>
+    <!-- Logout Loading Modal (hidden by default) -->
+    <div class="modal" id="logoutLoadingModal" tabindex="-1" aria-hidden="true" style="display:none; background:rgba(255,255,255,0.25); backdrop-filter: blur(8px) saturate(1.2); -webkit-backdrop-filter: blur(8px) saturate(1.2); z-index:2100;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background:transparent; border:none; box-shadow:none; align-items:center;">
+                <div class="modal-body text-center">
+                    <video src="assets/images/Trail-Loading.webm" autoplay loop muted style="width:120px; border-radius:50%; background:#fff;"></video>
+                    <div class="mt-3 text-dark fw-bold" style="font-size:1.2rem; text-shadow:0 1px 4px #fff;">Logging Out! Thank you...</div>
                 </div>
             </div>
         </div>
+    </div>
 
     <!-- Content -->
     <div id="content">
@@ -427,12 +438,12 @@ try {
                 </div>
             </div>
         </nav>
-        
+
         <div class="container-fluid p-4">
             <?php if (isset($error)): ?>
                 <div class="alert alert-danger"><?php echo $error; ?></div>
             <?php endif; ?>
-            
+
             <!-- Role-based Dashboard Content -->
             <?php if ($_SESSION['user_role'] === 'admin'): ?>
                 <!-- ADMIN DASHBOARD -->
@@ -442,7 +453,7 @@ try {
                     </h2>
                     <div class="badge bg-danger fs-6">Admin Access</div>
                 </div>
-                
+
                 <!-- Admin Statistics -->
                 <div class="row mb-4">
                     <div class="col-lg-3 col-md-6 mb-3">
@@ -461,7 +472,7 @@ try {
                             <!-- Card footer removed -->
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-3 col-md-6 mb-3">
                         <div class="card bg-success text-white h-100">
                             <div class="card-body">
@@ -478,7 +489,7 @@ try {
                             <!-- Card footer removed -->
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-3 col-md-6 mb-3">
                         <div class="card bg-info text-white h-100">
                             <div class="card-body">
@@ -495,7 +506,7 @@ try {
                             <!-- Card footer removed -->
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-3 col-md-6 mb-3">
                         <div class="card bg-warning text-white h-100">
                             <div class="card-body">
@@ -513,7 +524,7 @@ try {
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Admin Quick Actions -->
                 <div class="row mb-4">
                     <div class="col-12">
@@ -549,7 +560,7 @@ try {
                         </div>
                     </div>
                 </div>
-                
+
             <?php else: ?>
                 <!-- ENCODER DASHBOARD -->
                 <!-- Password Reminder Modal (Encoder only) -->
@@ -575,7 +586,7 @@ try {
                     </h2>
                     <div class="badge bg-primary fs-6">Encoder Access</div>
                 </div>
-                
+
                 <!-- Encoder Statistics -->
                 <div class="row mb-4">
                     <div class="col-lg-4 col-md-6 mb-3">
@@ -598,7 +609,7 @@ try {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-4 col-md-6 mb-3">
                         <div class="card bg-success text-white h-100">
                             <div class="card-body">
@@ -619,7 +630,7 @@ try {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-4 col-md-6 mb-3">
                         <div class="card bg-info text-white h-100">
                             <div class="card-body">
@@ -641,7 +652,7 @@ try {
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Encoder Quick Actions -->
                 <div class="row mb-4">
                     <div class="col-12">
@@ -672,7 +683,7 @@ try {
                     </div>
                 </div>
             <?php endif; ?>
-            
+
             <!-- Recent Activity Section -->
             <div class="row">
                 <div class="col-md-8 mb-4">
@@ -690,7 +701,7 @@ try {
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Categories Overview -->
                 <div class="col-md-4 mb-4">
                     <div class="card">
@@ -703,32 +714,34 @@ try {
                             <div id="categories-overview-container">
                                 <!-- Categories data will be loaded here -->
                             </div>
-                            
+
                             <!-- Add Categories Button -->
                             <?php if ($_SESSION['user_role'] === 'admin' || $_SESSION['user_role'] === 'encoder'): ?>
-                            <div class="text-center mt-3">
-                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
-                                    <i class="fas fa-plus me-1"></i>Add Categories
-                                </button>
-                            </div>
+                                <div class="text-center mt-3">
+                                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                                        <i class="fas fa-plus me-1"></i>Add Categories
+                                    </button>
+                                </div>
                             <?php endif; ?>
                         </div>
                     </div>
                 </div>
             </div>
-            
+
             <?php if (isset($_SESSION['success'])): ?>
                 <div class="alert alert-success alert-dismissible fade show">
                     <i class="fas fa-check-circle me-2"></i>
-                    <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
+                    <?php echo $_SESSION['success'];
+                    unset($_SESSION['success']); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
-            
+
             <?php if (isset($_SESSION['error'])): ?>
                 <div class="alert alert-danger alert-dismissible fade show">
                     <i class="fas fa-exclamation-triangle me-2"></i>
-                    <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
+                    <?php echo $_SESSION['error'];
+                    unset($_SESSION['error']); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
@@ -743,14 +756,14 @@ try {
                     <h5 class="modal-title" id="selectCabinetModalLabel">
                         <i class="fas fa-edit me-2"></i>Select Cabinet to Edit
                     </h5>
-                    
+
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="edit_select_cabinet" class="form-label">Cabinet</label>
                         <select class="form-select" id="edit_select_cabinet">
                             <option value="">Choose a cabinet...</option>
-                            <?php 
+                            <?php
                             try {
                                 $stmt = $pdo->query("SELECT id, cabinet_number, name FROM cabinets ORDER BY cabinet_number");
                                 $cabinets = $stmt->fetchAll();
@@ -758,8 +771,9 @@ try {
                                     <option value="<?php echo $cabinet['id']; ?>">
                                         <?php echo $cabinet['cabinet_number'] . ' - ' . $cabinet['name']; ?>
                                     </option>
-                                <?php endforeach; 
-                            } catch(Exception $e) { /* ignore */ } 
+                            <?php endforeach;
+                            } catch (Exception $e) { /* ignore */
+                            }
                             ?>
                         </select>
                     </div>
@@ -786,39 +800,39 @@ try {
                         <h5 class="modal-title" id="addCabinetModalLabel">
                             <i class="fas fa-plus me-2"></i>Add New Cabinet
                         </h5>
-                        
+
                     </div>
                     <div class="modal-body">
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="modal_cabinet_number" class="form-label">Cabinet Number <span class="text-muted">(Auto Generated)</span></label>
-                                <input type="text" class="form-control" id="modal_cabinet_number" name="cabinet_number" value="<?php 
-                                    // Generate cabinet number
-                                    try {
-                                        $currentYear = date('Y');
-                                        $stmt = $pdo->prepare("SELECT MAX(CAST(SUBSTRING(cabinet_number, 8) AS UNSIGNED)) as max_number FROM cabinets WHERE cabinet_number LIKE ?");
-                                        $stmt->execute(['CAB' . $currentYear . '%']);
-                                        $result = $stmt->fetch();
-                                        $nextNumber = ($result['max_number'] ?? 0) + 1;
-                                        echo 'CAB' . $currentYear . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-                                    } catch(Exception $e) {
-                                        echo 'CAB' . date('Y') . '0001';
-                                    }
-                                ?>" readonly>
+                                <input type="text" class="form-control" id="modal_cabinet_number" name="cabinet_number" value="<?php
+                                                                                                                                // Generate cabinet number
+                                                                                                                                try {
+                                                                                                                                    $currentYear = date('Y');
+                                                                                                                                    $stmt = $pdo->prepare("SELECT MAX(CAST(SUBSTRING(cabinet_number, 8) AS UNSIGNED)) as max_number FROM cabinets WHERE cabinet_number LIKE ?");
+                                                                                                                                    $stmt->execute(['CAB' . $currentYear . '%']);
+                                                                                                                                    $result = $stmt->fetch();
+                                                                                                                                    $nextNumber = ($result['max_number'] ?? 0) + 1;
+                                                                                                                                    echo 'CAB' . $currentYear . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+                                                                                                                                } catch (Exception $e) {
+                                                                                                                                    echo 'CAB' . date('Y') . '0001';
+                                                                                                                                }
+                                                                                                                                ?>" readonly>
                             </div>
                             <div class="col-md-6">
                                 <label for="modal_name" class="form-label">Cabinet Name <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
                                 <input type="text" class="form-control" id="modal_name" name="name" required>
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="modal_photo" class="form-label">Cabinet Photo</label>
                             <input type="file" class="form-control" id="modal_photo" name="photo" accept="image/*">
                         </div>
-                        
+
                         <h6 class="mt-4 mb-3">Cabinet Contents</h6>
-                        
+
                         <div id="modal-items-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 15px; background-color: #f8f9fa;">
                             <div class="item-row">
                                 <div class="row g-2 mb-2">
@@ -830,14 +844,15 @@ try {
                                         <label class="form-label">Category</label>
                                         <select class="form-select" name="items[0][category]" required>
                                             <option value="">Select Category</option>
-                                            <?php 
+                                            <?php
                                             try {
                                                 $stmt = $pdo->query("SELECT * FROM categories ORDER BY name");
                                                 $categories = $stmt->fetchAll();
                                                 foreach ($categories as $category): ?>
                                                     <option value="<?php echo $category['id']; ?>"><?php echo $category['name']; ?></option>
-                                                <?php endforeach; 
-                                            } catch(Exception $e) { /* ignore */ } 
+                                            <?php endforeach;
+                                            } catch (Exception $e) { /* ignore */
+                                            }
                                             ?>
                                         </select>
                                     </div>
@@ -853,7 +868,7 @@ try {
                                 </div>
                             </div>
                         </div>
-                        
+
                         <button type="button" id="add-modal-item" class="btn btn-secondary btn-sm mt-2">
                             <i class="fas fa-plus me-1"></i> Add Another Item
                         </button>
@@ -878,7 +893,7 @@ try {
                         <h5 class="modal-title" id="addUserModalLabel">
                             <i class="fas fa-user-plus me-2"></i>Add New User
                         </h5>
-                        
+
                     </div>
                     <div class="modal-body">
                         <div class="row mb-3">
@@ -891,7 +906,7 @@ try {
                                 <input type="text" class="form-control" id="modal_last_name" name="last_name" required>
                             </div>
                         </div>
-                        
+
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="modal_office" class="form-label">Office <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
@@ -902,7 +917,7 @@ try {
                                 <input type="text" class="form-control" id="modal_division" name="division" required>
                             </div>
                         </div>
-                        
+
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="modal_email" class="form-label">Email Address <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
@@ -913,7 +928,7 @@ try {
                                 <input type="tel" class="form-control" id="modal_mobile" name="mobile" required>
                             </div>
                         </div>
-                        
+
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="modal_username" class="form-label">Username <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
@@ -927,7 +942,7 @@ try {
                                 </select>
                             </div>
                         </div>
-                        
+
                         <div class="row mb-3">
                             <div class="col-12">
                                 <label for="modal_password" class="form-label">Password <span class="text-danger" style="font-size: 0.85em;">*Required</span></label>
@@ -966,7 +981,7 @@ try {
                     <h5 class="modal-title" id="exportModalLabel">
                         <i class="fas fa-download me-2"></i>Export Cabinet Data
                     </h5>
-                    
+
                 </div>
                 <div class="modal-body">
                     <form id="exportForm">
@@ -975,7 +990,7 @@ try {
                             <select class="form-select" id="export_cabinet" name="cabinet_id" required>
                                 <option value="">Choose a cabinet...</option>
                                 <option value="all" id="all-cabinets-option">All Cabinets</option>
-                                <?php 
+                                <?php
                                 try {
                                     $stmt = $pdo->query("SELECT id, cabinet_number, name FROM cabinets ORDER BY cabinet_number");
                                     $cabinets = $stmt->fetchAll();
@@ -983,12 +998,13 @@ try {
                                         <option value="<?php echo $cabinet['id']; ?>">
                                             <?php echo $cabinet['cabinet_number'] . ' - ' . $cabinet['name']; ?>
                                         </option>
-                                    <?php endforeach; 
-                                } catch(Exception $e) { /* ignore */ } 
+                                <?php endforeach;
+                                } catch (Exception $e) { /* ignore */
+                                }
                                 ?>
                             </select>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Export Format</label>
                             <div class="form-check">
@@ -1055,7 +1071,7 @@ try {
                     <h5 class="modal-title" id="deleteCabinetModalLabel">
                         <i class="fas fa-exclamation-triangle me-2"></i>Delete Cabinet
                     </h5>
-                    
+
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-warning" role="alert">
@@ -1092,7 +1108,7 @@ try {
                         <h5 class="modal-title" id="editCabinetModalLabel">
                             <i class="fas fa-edit me-2"></i>Edit Cabinet
                         </h5>
-                        
+
                     </div>
                     <div class="modal-body">
                         <input type="hidden" id="edit_cabinet_id" name="cabinet_id">
@@ -1106,7 +1122,7 @@ try {
                                 <input type="text" class="form-control" id="edit_name" name="name" required>
                             </div>
                         </div>
-                        
+
                         <div class="row mb-3">
                             <div class="col-md-8">
                                 <label for="edit_photo" class="form-label">Cabinet Photo</label>
@@ -1120,13 +1136,13 @@ try {
                                 <!-- Current photo preview will be shown here -->
                             </div>
                         </div>
-                        
+
                         <h6 class="mt-4 mb-3">Cabinet Contents</h6>
-                        
+
                         <div id="edit-items-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 15px; background-color: #f8f9fa;">
                             <!-- Items will be loaded dynamically -->
                         </div>
-                        
+
                         <button type="button" id="add-edit-item" class="btn btn-secondary btn-sm mt-2">
                             <i class="fas fa-plus me-1"></i> Add Another Item
                         </button>
@@ -1198,7 +1214,7 @@ try {
                         <h5 class="modal-title" id="addCategoryModalLabel">
                             <i class="fas fa-tags me-2"></i>Add New Category
                         </h5>
-                        
+
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
@@ -1225,7 +1241,7 @@ try {
                     <h5 class="modal-title" id="emailSettingsModalLabel">
                         <i class="fas fa-envelope-open-text me-2"></i>Email Configuration Settings
                     </h5>
-                    
+
                 </div>
                 <div class="modal-body">
                     <div class="row">
@@ -1235,7 +1251,7 @@ try {
                                 <strong>Email Setup Instructions:</strong><br>
                                 Configure these settings to automatically send welcome emails to new users with their login credentials.
                             </div>
-                            
+
                             <form id="emailConfigForm">
                                 <h6 class="text-primary mb-3">📧 Basic Email Settings</h6>
                                 <div class="row">
@@ -1250,13 +1266,13 @@ try {
                                         <small class="text-muted">Display name for outgoing emails</small>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label for="reply_to" class="form-label">Reply-To Email</label>
                                     <input type="email" class="form-control" id="reply_to" placeholder="support@yourcompany.com">
                                     <small class="text-muted">Where replies will go (optional)</small>
                                 </div>
-                                
+
                                 <h6 class="text-primary mb-3 mt-4">🔧 SMTP Configuration (for reliable delivery)</h6>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
@@ -1279,7 +1295,7 @@ try {
                                         </select>
                                     </div>
                                 </div>
-                                
+
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="smtp_username" class="form-label">SMTP Username</label>
@@ -1299,7 +1315,7 @@ try {
                                 </div>
                             </form>
                         </div>
-                        
+
                         <div class="col-md-4">
                             <div class="card bg-light">
                                 <div class="card-header">
@@ -1326,7 +1342,7 @@ try {
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <div class="accordion-item">
                                             <h2 class="accordion-header">
                                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#outlookGuide">
@@ -1346,7 +1362,7 @@ try {
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="mt-3">
                                         <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="previewEmail()">
                                             <i class="fas fa-eye me-1"></i>Preview Email Template
@@ -1369,51 +1385,59 @@ try {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
-    // Logout modal logic
-    document.addEventListener('DOMContentLoaded', function() {
-        var logoutBtn = document.getElementById('logoutSidebarBtn');
-        var confirmModal = new bootstrap.Modal(document.getElementById('logoutConfirmModal'), {backdrop:'static', keyboard:false});
-        var loadingModal = new bootstrap.Modal(document.getElementById('logoutLoadingModal'), {backdrop:'static', keyboard:false});
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                document.getElementById('logoutConfirmModal').style.display = 'block';
-                confirmModal.show();
+        // Logout modal logic
+        document.addEventListener('DOMContentLoaded', function() {
+            var logoutBtn = document.getElementById('logoutSidebarBtn');
+            var confirmModal = new bootstrap.Modal(document.getElementById('logoutConfirmModal'), {
+                backdrop: 'static',
+                keyboard: false
             });
-        }
-        document.getElementById('confirmLogoutBtn').onclick = function() {
-            confirmModal.hide();
-            setTimeout(function() {
-                document.getElementById('logoutLoadingModal').style.display = 'block';
-                loadingModal.show();
-                // AJAX POST to logout (destroy session)
-                fetch('dashboard.php', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: 'logout=1',
-                    cache: 'no-store',
-                    credentials: 'same-origin'
-                }).then(function() {
-                    setTimeout(function() {
-                        window.location.replace('login.php');
-                    }, 1200);
+            var loadingModal = new bootstrap.Modal(document.getElementById('logoutLoadingModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.getElementById('logoutConfirmModal').style.display = 'block';
+                    confirmModal.show();
                 });
-            }, 300);
-        };
-        document.getElementById('cancelLogoutBtn').onclick = function() {
-            confirmModal.hide();
-            setTimeout(function() {
-                document.getElementById('logoutConfirmModal').style.display = 'none';
-            }, 300);
-        };
-    });
+            }
+            document.getElementById('confirmLogoutBtn').onclick = function() {
+                confirmModal.hide();
+                setTimeout(function() {
+                    document.getElementById('logoutLoadingModal').style.display = 'block';
+                    loadingModal.show();
+                    // AJAX POST to logout (destroy session)
+                    fetch('dashboard.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'logout=1',
+                        cache: 'no-store',
+                        credentials: 'same-origin'
+                    }).then(function() {
+                        setTimeout(function() {
+                            window.location.replace('login.php');
+                        }, 1200);
+                    });
+                }, 300);
+            };
+            document.getElementById('cancelLogoutBtn').onclick = function() {
+                confirmModal.hide();
+                setTimeout(function() {
+                    document.getElementById('logoutConfirmModal').style.display = 'none';
+                }, 300);
+            };
+        });
     </script>
 
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         // Email Configuration Functions
         function loadEmailConfig() {
             // Load current email configuration when modal opens
-            $('#emailSettingsModal').on('shown.bs.modal', function () {
+            $('#emailSettingsModal').on('shown.bs.modal', function() {
                 fetch('includes/email_service.php?action=get_config')
                     .then(response => response.json())
                     .then(data => {
@@ -1424,7 +1448,7 @@ try {
                             document.getElementById('smtp_host').value = data.config.smtp_host || '';
                             document.getElementById('smtp_port').value = data.config.smtp_port || '587';
                             document.getElementById('smtp_username').value = data.config.smtp_username || '';
-                            
+
                             // Handle custom SMTP
                             if (data.config.smtp_host && !['smtp.gmail.com', 'smtp-mail.outlook.com', 'smtp.yahoo.com'].includes(data.config.smtp_host)) {
                                 document.getElementById('smtp_host').value = 'custom';
@@ -1436,67 +1460,67 @@ try {
                     .catch(error => console.error('Error loading config:', error));
             });
         }
-        
+
         function saveEmailConfig() {
             const form = document.getElementById('emailConfigForm');
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
-            
+
             const config = {
                 from_email: document.getElementById('from_email').value,
                 from_name: document.getElementById('from_name').value,
                 reply_to: document.getElementById('reply_to').value,
-                smtp_host: document.getElementById('smtp_host').value === 'custom' 
-                    ? document.getElementById('custom_smtp').value 
-                    : document.getElementById('smtp_host').value,
+                smtp_host: document.getElementById('smtp_host').value === 'custom' ?
+                    document.getElementById('custom_smtp').value :
+                    document.getElementById('smtp_host').value,
                 smtp_port: document.getElementById('smtp_port').value,
                 smtp_username: document.getElementById('smtp_username').value,
                 smtp_password: document.getElementById('smtp_password').value
             };
-            
+
             const saveBtn = event.target;
             saveBtn.disabled = true;
             saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
-            
+
             fetch('includes/email_service.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'save_config',
-                    config: config
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'save_config',
+                        config: config
+                    })
                 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showAlert('success', '✅ Email Configuration Saved Successfully!<br><small>New users will now automatically receive welcome emails with their credentials.</small>');
-                    $('#emailSettingsModal').modal('hide');
-                } else {
-                    showAlert('error', 'Error saving configuration: ' + (data.message || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showAlert('error', 'Network error occurred while saving configuration.');
-            })
-            .finally(() => {
-                saveBtn.disabled = false;
-                saveBtn.innerHTML = '<i class="fas fa-save me-1"></i>Save Configuration';
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('success', '✅ Email Configuration Saved Successfully!<br><small>New users will now automatically receive welcome emails with their credentials.</small>');
+                        $('#emailSettingsModal').modal('hide');
+                    } else {
+                        showAlert('error', 'Error saving configuration: ' + (data.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('error', 'Network error occurred while saving configuration.');
+                })
+                .finally(() => {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="fas fa-save me-1"></i>Save Configuration';
+                });
         }
-        
+
         function previewEmail() {
             window.open('includes/email_service.php?action=preview', '_blank', 'width=800,height=600');
         }
-        
+
         function togglePassword() {
             const passwordField = document.getElementById('smtp_password');
             const toggleIcon = document.getElementById('passwordToggle');
-            
+
             if (passwordField.type === 'password') {
                 passwordField.type = 'text';
                 toggleIcon.className = 'fas fa-eye-slash';
@@ -1505,7 +1529,7 @@ try {
                 toggleIcon.className = 'fas fa-eye';
             }
         }
-        
+
         // Handle SMTP host selection
         document.getElementById('smtp_host').addEventListener('change', function() {
             const customInput = document.getElementById('custom_smtp');
@@ -1518,7 +1542,7 @@ try {
                 customInput.value = '';
             }
         });
-        
+
         function showAlert(type, message) {
             const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
             const alertHTML = `
@@ -1528,7 +1552,7 @@ try {
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `;
-            
+
             // Add to top of modal body or page
             const modalBody = document.querySelector('#emailSettingsModal .modal-body');
             if (modalBody) {
@@ -1536,7 +1560,7 @@ try {
             } else {
                 document.body.insertAdjacentHTML('afterbegin', alertHTML);
             }
-            
+
             // Auto remove after 5 seconds
             setTimeout(() => {
                 const alert = document.querySelector('.alert');
@@ -1545,7 +1569,7 @@ try {
                 }
             }, 5000);
         }
-        
+
         // Initialize email configuration loading
         document.addEventListener('DOMContentLoaded', function() {
             loadEmailConfig();
@@ -1565,20 +1589,23 @@ try {
                 $shouldShowReminder = true;
             }
             if ($shouldShowReminder): ?>
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                const changed = localStorage.getItem('cis_password_changed') === '1';
-                if (changed) return; // Client-side extra guard
-            } catch (e) { /* ignore storage errors */ }
-            const el = document.getElementById('encoderPasswordReminderModal');
-            if (el) {
-                const modal = new bootstrap.Modal(el);
-                setTimeout(() => modal.show(), 200);
-            }
-        });
-        <?php endif; endif; ?>
+                document.addEventListener('DOMContentLoaded', function() {
+                    try {
+                        const changed = localStorage.getItem('cis_password_changed') === '1';
+                        if (changed) return; // Client-side extra guard
+                    } catch (e) {
+                        /* ignore storage errors */ }
+                    const el = document.getElementById('encoderPasswordReminderModal');
+                    if (el) {
+                        const modal = new bootstrap.Modal(el);
+                        setTimeout(() => modal.show(), 200);
+                    }
+                });
+        <?php endif;
+        endif; ?>
         // Loading helpers (3s minimum)
         const LOADING_MIN_MS = 3000;
+
         function showLoading(message) {
             const msg = document.getElementById('loadingMessage');
             if (msg) msg.textContent = message || 'Processing...';
@@ -1633,12 +1660,20 @@ try {
                 if (player.readyState >= 2) {
                     onReady();
                 } else {
-                    player.addEventListener('loadeddata', onReady, { once: true });
-                    player.addEventListener('canplaythrough', onReady, { once: true });
+                    player.addEventListener('loadeddata', onReady, {
+                        once: true
+                    });
+                    player.addEventListener('canplaythrough', onReady, {
+                        once: true
+                    });
                 }
-                player.addEventListener('error', onError, { once: true });
+                player.addEventListener('error', onError, {
+                    once: true
+                });
                 // Ensure autoplay begins (some browsers require play() call even when muted)
-                try { player.play().catch(() => {}); } catch (_) {}
+                try {
+                    player.play().catch(() => {});
+                } catch (_) {}
             } catch (e) {
                 // Fallback stays visible
                 console.warn('Loader setup failed', e);
@@ -1650,7 +1685,7 @@ try {
             const sidebarToggle = document.getElementById('sidebarToggle');
             const sidebar = document.getElementById('sidebar');
             const content = document.getElementById('content');
-            
+
             if (sidebarToggle && sidebar && content) {
                 sidebarToggle.addEventListener('click', function() {
                     sidebar.classList.toggle('collapsed');
@@ -1677,15 +1712,16 @@ try {
                             <label class="form-label">Category</label>
                             <select class="form-select" name="items[${modalItemCount}][category]" required>
                                 <option value="">Select Category</option>
-                                <?php 
+                                <?php
                                 try {
                                     $stmt = $pdo->query("SELECT * FROM categories ORDER BY name");
                                     $modalCategories = $stmt->fetchAll();
                                     foreach ($modalCategories as $category): ?>
                                         <option value="<?php echo $category['id']; ?>"><?php echo $category['name']; ?></option>
-                                    <?php endforeach; 
-                                } catch(Exception $e) { /* ignore */ } 
-                                ?>
+                                    <?php endforeach;
+                                } catch (Exception $e) { /* ignore */
+                                }
+                                    ?>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -1718,7 +1754,7 @@ try {
             // Add User Modal - Password functionality
             const modalTogglePassword = document.getElementById('modalTogglePassword');
             const modalPasswordField = document.getElementById('modal_password');
-            
+
             if (modalTogglePassword && modalPasswordField) {
                 modalTogglePassword.addEventListener('click', function() {
                     const type = modalPasswordField.type === 'password' ? 'text' : 'password';
@@ -1745,11 +1781,11 @@ try {
             // Export modal format change handlers
             const formatPdf = document.getElementById('format_pdf');
             const formatExcel = document.getElementById('format_excel');
-            
+
             if (formatPdf && formatExcel) {
                 formatPdf.addEventListener('change', toggleAllCabinetsOption);
                 formatExcel.addEventListener('change', toggleAllCabinetsOption);
-                
+
                 // Initialize on page load
                 toggleAllCabinetsOption();
             }
@@ -1762,10 +1798,10 @@ try {
 
             // Initialize Recent Activity table (with loading)
             loadRecentActivity();
-            
+
             // Initialize Categories Overview (with loading)
             loadCategoriesOverview();
-            
+
             // Setup delete cabinet functionality
             setupDeleteCabinet();
 
@@ -1884,9 +1920,9 @@ try {
             if (currentSort !== column) {
                 return '<i class="bi bi-arrow-up-down text-muted"></i>';
             }
-            return currentOrder === 'asc' 
-                ? '<i class="bi bi-arrow-up text-primary"></i>' 
-                : '<i class="bi bi-arrow-down text-primary"></i>';
+            return currentOrder === 'asc' ?
+                '<i class="bi bi-arrow-up text-primary"></i>' :
+                '<i class="bi bi-arrow-down text-primary"></i>';
         }
 
         function toggleSort(column) {
@@ -2106,10 +2142,10 @@ try {
 
         function renderCategoriesOverview(categories, totalItems) {
             const container = document.getElementById('categories-overview-container');
-            
+
             if (categories.length > 0) {
                 let html = '<div class="category-list">';
-                
+
                 categories.forEach(category => {
                     const percentage = totalItems > 0 ? (category.item_count / totalItems) * 100 : 0;
                     html += `
@@ -2127,14 +2163,14 @@ try {
                         </div>
                     `;
                 });
-                
+
                 html += `</div>
                     <div class="text-center mt-3">
                         <small class="text-muted">
                             Total: ${totalItems} items across all categories
                         </small>
                     </div>`;
-                
+
                 container.innerHTML = html;
             } else {
                 container.innerHTML = `
@@ -2149,12 +2185,12 @@ try {
         function renderCategoriesPagination(pagination) {
             const container = document.getElementById('categories-overview-container');
             if (!container || pagination.total_pages <= 1) return;
-            
+
             let paginationHtml = `
                 <nav aria-label="Categories pagination" class="mt-3">
                     <div class="d-flex justify-content-center align-items-center">
                         <!-- Previous button -->`;
-            
+
             if (pagination.current_page > 1) {
                 paginationHtml += `
                     <a class="btn btn-outline-secondary btn-sm me-3 categories-pagination-link" 
@@ -2167,13 +2203,13 @@ try {
                         <i class="fas fa-chevron-left"></i>
                     </button>`;
             }
-            
+
             paginationHtml += `
                         <!-- Current page indicator -->
                         <span class="fw-bold">${pagination.current_page}</span>
                         
                         <!-- Next button -->`;
-            
+
             if (pagination.current_page < pagination.total_pages) {
                 paginationHtml += `
                     <a class="btn btn-outline-secondary btn-sm ms-3 categories-pagination-link" 
@@ -2186,11 +2222,11 @@ try {
                         <i class="fas fa-chevron-right"></i>
                     </button>`;
             }
-            
+
             paginationHtml += `
                     </div>
                 </nav>`;
-            
+
             container.innerHTML += paginationHtml;
         }
 
@@ -2213,15 +2249,15 @@ try {
 
         // Handle photo file selection in edit modal
         document.getElementById('edit_photo').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                const photoPreview = document.getElementById('current-photo-preview');
-                const currentPhotoText = document.getElementById('current-photo-text');
-                
-                if (file) {
-                    // Show preview of new selected file
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        photoPreview.innerHTML = `
+            const file = e.target.files[0];
+            const photoPreview = document.getElementById('current-photo-preview');
+            const currentPhotoText = document.getElementById('current-photo-text');
+
+            if (file) {
+                // Show preview of new selected file
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    photoPreview.innerHTML = `
                             <div class="text-center">
                                 <small class="text-info d-block mb-2">New photo selected:</small>
                                 <img src="${e.target.result}" alt="New Photo Preview" style="max-height: 100px;" class="img-thumbnail mb-2">
@@ -2231,19 +2267,19 @@ try {
                                 </div>
                             </div>
                         `;
-                    };
-                    reader.readAsDataURL(file);
-                    
-                    currentPhotoText.innerHTML = `
+                };
+                reader.readAsDataURL(file);
+
+                currentPhotoText.innerHTML = `
                         <i class="fas fa-check-circle text-success me-1"></i>
                         New photo selected: <strong>${file.name}</strong> - This will replace the current photo
                     `;
-                } else {
-                    // Reset to show current photo if file selection is cleared
-                    if (currentCabinetData && currentCabinetData.photo_path) {
-                        const photoPath = currentCabinetData.photo_path;
-                        const photoFileName = photoPath.split('/').pop();
-                        photoPreview.innerHTML = `
+            } else {
+                // Reset to show current photo if file selection is cleared
+                if (currentCabinetData && currentCabinetData.photo_path) {
+                    const photoPath = currentCabinetData.photo_path;
+                    const photoFileName = photoPath.split('/').pop();
+                    photoPreview.innerHTML = `
                             <div class="text-center">
                                 <small class="text-muted d-block mb-2">Current photo:</small>
                                 <img src="${photoPath}" alt="Current Photo" style="max-height: 100px;" class="img-thumbnail mb-2">
@@ -2253,29 +2289,29 @@ try {
                                 </div>
                             </div>
                         `;
-                        currentPhotoText.innerHTML = `
+                    currentPhotoText.innerHTML = `
                             <i class="fas fa-info-circle me-1"></i>
                             Current: <strong>${photoFileName}</strong> - Leave empty to keep current photo
                         `;
-                    }
                 }
-            });
+            }
+        });
 
         // Handle edit cabinet form submission
         document.getElementById('editCabinetForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const formData = new FormData(this);
-                formData.append('edit_cabinet', '1'); // Ensure the edit_cabinet flag is set
-                
-                const submitBtn = this.querySelector('button[type="submit"]');
-                const originalBtnText = submitBtn.innerHTML;
-                
-                // Show loading state
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
-                submitBtn.disabled = true;
-                
-                fetch('cabinet.php', {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            formData.append('edit_cabinet', '1'); // Ensure the edit_cabinet flag is set
+
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+            submitBtn.disabled = true;
+
+            fetch('cabinet.php', {
                     method: 'POST',
                     body: formData
                 })
@@ -2283,19 +2319,19 @@ try {
                     // Reset button first
                     submitBtn.innerHTML = originalBtnText;
                     submitBtn.disabled = false;
-                    
+
                     if (response.ok) {
                         // Close edit modal
                         const editModal = bootstrap.Modal.getInstance(document.getElementById('editCabinetModal'));
                         editModal.hide();
-                        
+
                         // Show success modal with edit message
                         const successMessage = document.getElementById('successMessage');
                         successMessage.textContent = 'Cabinet Updated Successfully ✔';
-                        
+
                         const successModal = new bootstrap.Modal(document.getElementById('successModal'));
                         successModal.show();
-                        
+
                         // Refresh the page after success modal is closed
                         const successModalElement = document.getElementById('successModal');
                         const refreshHandler = function() {
@@ -2303,39 +2339,39 @@ try {
                             successModalElement.removeEventListener('hidden.bs.modal', refreshHandler);
                         };
                         successModalElement.addEventListener('hidden.bs.modal', refreshHandler);
-                        
+
                     } else {
                         throw new Error('HTTP error! status: ' + response.status);
                     }
                 })
                 .catch(error => {
                     console.error('Error updating cabinet:', error);
-                    
+
                     // Reset button
                     submitBtn.innerHTML = originalBtnText;
                     submitBtn.disabled = false;
-                    
+
                     // Show error modal
                     const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
                     errorModal.show();
                 });
-            });
+        });
 
         // Handle add cabinet form submission
         document.getElementById('addCabinetModal').querySelector('form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const formData = new FormData(this);
-                formData.append('add_cabinet', '1'); // Ensure the add_cabinet flag is set
-                
-                const submitBtn = this.querySelector('button[type="submit"]');
-                const originalBtnText = submitBtn.innerHTML;
-                
-                // Show loading state
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
-                submitBtn.disabled = true;
-                
-                fetch('cabinet.php', {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            formData.append('add_cabinet', '1'); // Ensure the add_cabinet flag is set
+
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+            submitBtn.disabled = true;
+
+            fetch('cabinet.php', {
                     method: 'POST',
                     body: formData
                 })
@@ -2343,19 +2379,19 @@ try {
                     // Reset button first
                     submitBtn.innerHTML = originalBtnText;
                     submitBtn.disabled = false;
-                    
+
                     if (response.ok) {
                         // Close add modal
                         const addModal = bootstrap.Modal.getInstance(document.getElementById('addCabinetModal'));
                         addModal.hide();
-                        
+
                         // Show success modal with add message
                         const successMessage = document.getElementById('successMessage');
                         successMessage.textContent = 'Cabinet Added Successfully ✔';
-                        
+
                         const successModal = new bootstrap.Modal(document.getElementById('successModal'));
                         successModal.show();
-                        
+
                         // Reset the form
                         this.reset();
                         // Reset items container to one item
@@ -2367,7 +2403,7 @@ try {
                         firstItem.querySelector('select[name*="[category]"]').value = '';
                         firstItem.querySelector('input[name*="[quantity]"]').value = '1';
                         modalItemCount = 0;
-                        
+
                         // Refresh the page after success modal is closed
                         const successModalElement = document.getElementById('successModal');
                         const refreshHandler = function() {
@@ -2375,34 +2411,34 @@ try {
                             successModalElement.removeEventListener('hidden.bs.modal', refreshHandler);
                         };
                         successModalElement.addEventListener('hidden.bs.modal', refreshHandler);
-                        
+
                     } else {
                         throw new Error('HTTP error! status: ' + response.status);
                     }
                 })
                 .catch(error => {
                     console.error('Error adding cabinet:', error);
-                    
+
                     // Reset button
                     submitBtn.innerHTML = originalBtnText;
                     submitBtn.disabled = false;
-                    
+
                     // Show error modal
                     const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
                     errorModal.show();
                 });
-            });
+        });
 
         // Edit Cabinet Modal - Add/Remove items functionality
         let editItemCount = 0;
 
         // Add new item in edit modal
         document.getElementById('add-edit-item').addEventListener('click', function() {
-                editItemCount++;
-                const container = document.getElementById('edit-items-container');
-                const newRow = document.createElement('div');
-                newRow.className = 'item-row';
-                newRow.innerHTML = `
+            editItemCount++;
+            const container = document.getElementById('edit-items-container');
+            const newRow = document.createElement('div');
+            newRow.className = 'item-row';
+            newRow.innerHTML = `
                     <div class="row g-2 mb-2">
                         <div class="col-md-4">
                             <label class="form-label">Item Name</label>
@@ -2412,15 +2448,16 @@ try {
                             <label class="form-label">Category</label>
                             <select class="form-select" name="items[${editItemCount}][category]" required>
                                 <option value="">Select Category</option>
-                                <?php 
+                                <?php
                                 try {
                                     $stmt = $pdo->query("SELECT * FROM categories ORDER BY name");
                                     $editCategories = $stmt->fetchAll();
                                     foreach ($editCategories as $category): ?>
                                         <option value="<?php echo $category['id']; ?>"><?php echo $category['name']; ?></option>
-                                    <?php endforeach; 
-                                } catch(Exception $e) { /* ignore */ } 
-                                ?>
+                                    <?php endforeach;
+                                } catch (Exception $e) { /* ignore */
+                                }
+                                    ?>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -2434,8 +2471,8 @@ try {
                         </div>
                     </div>
                 `;
-                container.appendChild(newRow);
-            });
+            container.appendChild(newRow);
+        });
 
         // Remove item in edit modal
         document.addEventListener('click', function(e) {
@@ -2585,16 +2622,16 @@ try {
             }
 
             const cabinet = currentCabinetData;
-            
+
             // Populate edit form
             document.getElementById('edit_cabinet_id').value = cabinet.id;
             document.getElementById('edit_cabinet_number').value = cabinet.cabinet_number;
             document.getElementById('edit_name').value = cabinet.name;
-            
+
             // Handle photo preview
             const photoPreview = document.getElementById('current-photo-preview');
             const currentPhotoText = document.getElementById('current-photo-text');
-            
+
             if (cabinet.photo_path) {
                 // Extract filename from path
                 const photoPath = cabinet.photo_path;
@@ -2627,12 +2664,12 @@ try {
                     No current photo - Select a file to add one
                 `;
             }
-            
+
             // Clear and populate items
             const container = document.getElementById('edit-items-container');
             container.innerHTML = '';
             editItemCount = 0;
-            
+
             cabinet.items.forEach((item, index) => {
                 const newRow = document.createElement('div');
                 newRow.className = 'item-row';
@@ -2647,15 +2684,16 @@ try {
                             <label class="form-label">Category</label>
                             <select class="form-select" name="items[${index}][category]" required>
                                 <option value="">Select Category</option>
-                                <?php 
+                                <?php
                                 try {
                                     $stmt = $pdo->query("SELECT * FROM categories ORDER BY name");
                                     $allCategories = $stmt->fetchAll();
                                     foreach ($allCategories as $category): ?>
                                         <option value="<?php echo $category['id']; ?>">${item.category_id == <?php echo $category['id']; ?> ? 'selected' : ''}><?php echo $category['name']; ?></option>
-                                    <?php endforeach; 
-                                } catch(Exception $e) { /* ignore */ } 
-                                ?>
+                                    <?php endforeach;
+                                } catch (Exception $e) { /* ignore */
+                                }
+                                    ?>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -2670,11 +2708,11 @@ try {
                     </div>
                 `;
                 container.appendChild(newRow);
-                
+
                 // Set the selected category
                 const categorySelect = newRow.querySelector('select[name*="[category]"]');
                 categorySelect.value = item.category_id;
-                
+
                 editItemCount = index + 1;
             });
         }
@@ -2683,7 +2721,7 @@ try {
         function setupDeleteCabinet() {
             const deleteCabinetBtn = document.getElementById('deleteCabinetBtn');
             const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-            
+
             // Handle delete button click from view modal
             if (deleteCabinetBtn) {
                 deleteCabinetBtn.addEventListener('click', function() {
@@ -2691,12 +2729,12 @@ try {
                         alert('No cabinet data available for deletion.');
                         return;
                     }
-                    
+
                     // Populate delete confirmation modal
                     const cabinet = currentCabinetData;
                     const deleteDetails = document.getElementById('deleteCabinetDetails');
-                    
-                            deleteDetails.innerHTML = `
+
+                    deleteDetails.innerHTML = `
                         <div class="row">
                             <div class="col-12">
                                 <strong>Cabinet Number:</strong> ${cabinet.cabinet_number}<br>
@@ -2705,14 +2743,14 @@ try {
                                 <strong>Created:</strong> ${new Date(cabinet.created_at).toLocaleDateString()}
                             </div>
                         </div>
-                    `;                    // Hide the view modal first
+                    `; // Hide the view modal first
                     const viewModal = bootstrap.Modal.getInstance(document.getElementById('viewCabinetModal'));
                     if (viewModal) {
                         viewModal.hide();
                     }
                 });
             }
-            
+
             // Handle confirm delete button click
             if (confirmDeleteBtn) {
                 confirmDeleteBtn.addEventListener('click', function() {
@@ -2720,65 +2758,65 @@ try {
                         alert('No cabinet data available for deletion.');
                         return;
                     }
-                    
+
                     const cabinet = currentCabinetData;
-                    
+
                     // Show loading state
                     const originalBtnText = this.innerHTML;
                     this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Deleting...';
                     this.disabled = true;
-                    
+
                     // Call delete API
                     fetch('cabinet_api.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            action: 'delete_cabinet',
-                            cabinet_id: cabinet.id
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                action: 'delete_cabinet',
+                                cabinet_id: cabinet.id
+                            })
                         })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        // Reset button state
-                        this.innerHTML = originalBtnText;
-                        this.disabled = false;
-                        
-                        if (data.success) {
-                            // Hide delete confirmation modal
-                            const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteCabinetModal'));
-                            if (deleteModal) {
-                                deleteModal.hide();
+                        .then(response => response.json())
+                        .then(data => {
+                            // Reset button state
+                            this.innerHTML = originalBtnText;
+                            this.disabled = false;
+
+                            if (data.success) {
+                                // Hide delete confirmation modal
+                                const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteCabinetModal'));
+                                if (deleteModal) {
+                                    deleteModal.hide();
+                                }
+
+                                // Show success message
+                                const successMessage = document.getElementById('successMessage');
+                                successMessage.textContent = `Cabinet "${cabinet.name}" has been successfully deleted!`;
+
+                                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                                successModal.show();
+
+                                // Refresh the activity list
+                                setTimeout(() => {
+                                    loadRecentActivity(currentPage);
+                                    // Reset current cabinet data
+                                    currentCabinetData = null;
+                                }, 1500);
+
+                            } else {
+                                alert('Error deleting cabinet: ' + (data.message || 'Unknown error'));
                             }
-                            
-                            // Show success message
-                            const successMessage = document.getElementById('successMessage');
-                            successMessage.textContent = `Cabinet "${cabinet.name}" has been successfully deleted!`;
-                            
-                            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                            successModal.show();
-                            
-                            // Refresh the activity list
-                            setTimeout(() => {
-                                loadRecentActivity(currentPage);
-                                // Reset current cabinet data
-                                currentCabinetData = null;
-                            }, 1500);
-                            
-                        } else {
-                            alert('Error deleting cabinet: ' + (data.message || 'Unknown error'));
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error deleting cabinet:', error);
-                        
-                        // Reset button state
-                        this.innerHTML = originalBtnText;
-                        this.disabled = false;
-                        
-                        alert('Error deleting cabinet. Please try again.');
-                    });
+                        })
+                        .catch(error => {
+                            console.error('Error deleting cabinet:', error);
+
+                            // Reset button state
+                            this.innerHTML = originalBtnText;
+                            this.disabled = false;
+
+                            alert('Error deleting cabinet. Please try again.');
+                        });
                 });
             }
         }
@@ -2788,25 +2826,25 @@ try {
             console.log('Export function called'); // Debug logging
             const form = document.getElementById('exportForm');
             const formData = new FormData(form);
-            
+
             const cabinetId = formData.get('cabinet_id');
             const format = formData.get('format');
-            
+
             console.log('Cabinet ID:', cabinetId, 'Format:', format); // Debug logging
-            
+
             if (!cabinetId) {
                 alert('Please select a cabinet to export.');
                 return;
             }
-            
+
             // Create export URL
             const url = `export.php?cabinet_id=${cabinetId}&format=${format}`;
             console.log('Export URL:', url); // Debug logging
-            
+
             // Close modal first to prevent aria-hidden focus issues
             const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
             modal.hide();
-            
+
             // Small delay to allow modal to close properly before opening new window
             setTimeout(() => {
                 if (format === 'pdf') {
@@ -2832,7 +2870,7 @@ try {
             const formatExcel = document.getElementById('format_excel');
             const allCabinetsOption = document.getElementById('all-cabinets-option');
             const exportCabinetSelect = document.getElementById('export_cabinet');
-            
+
             if (formatPdf && formatExcel && allCabinetsOption) {
                 if (formatExcel.checked) {
                     // Excel format - show "All Cabinets" option
@@ -2853,16 +2891,16 @@ try {
         if (addUserForm) {
             addUserForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                
+
                 // Hide the Add User modal first
                 const addUserModal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
                 addUserModal.hide();
-                
+
                 // Show loading modal with custom message
                 document.getElementById('loadingMessage').textContent = 'Adding User...';
                 const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
                 loadingModal.show();
-                
+
                 const formData = new FormData();
                 formData.append('add_user', 'true');
                 formData.append('first_name', document.getElementById('modal_first_name').value);
@@ -2874,46 +2912,46 @@ try {
                 formData.append('username', document.getElementById('modal_username').value);
                 formData.append('password', document.getElementById('modal_password').value);
                 formData.append('role', document.getElementById('modal_role').value);
-                
+
                 fetch('dashboard.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // Hide loading modal
-                    loadingModal.hide();
-                    
-                    if (data.success) {
-                        // Reset form
-                        document.getElementById('addUserForm').reset();
-                        
-                        // Show success modal with custom message
-                        document.getElementById('successMessage').textContent = data.message;
-                        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                        successModal.show();
-                        
-                        // Refresh the page after success modal is closed
-                        const successModalElement = document.getElementById('successModal');
-                        const refreshHandler = function() {
-                            window.location.reload();
-                            successModalElement.removeEventListener('hidden.bs.modal', refreshHandler);
-                        };
-                        successModalElement.addEventListener('hidden.bs.modal', refreshHandler);
-                        
-                    } else {
-                        // Show error
-                        alert('Error: ' + (data.message || 'Failed to add user'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error adding user:', error);
-                    
-                    // Hide loading modal
-                    loadingModal.hide();
-                    
-                    alert('Error adding user. Please try again.');
-                });
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Hide loading modal
+                        loadingModal.hide();
+
+                        if (data.success) {
+                            // Reset form
+                            document.getElementById('addUserForm').reset();
+
+                            // Show success modal with custom message
+                            document.getElementById('successMessage').textContent = data.message;
+                            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                            successModal.show();
+
+                            // Refresh the page after success modal is closed
+                            const successModalElement = document.getElementById('successModal');
+                            const refreshHandler = function() {
+                                window.location.reload();
+                                successModalElement.removeEventListener('hidden.bs.modal', refreshHandler);
+                            };
+                            successModalElement.addEventListener('hidden.bs.modal', refreshHandler);
+
+                        } else {
+                            // Show error
+                            alert('Error: ' + (data.message || 'Failed to add user'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error adding user:', error);
+
+                        // Hide loading modal
+                        loadingModal.hide();
+
+                        alert('Error adding user. Please try again.');
+                    });
             });
         }
 
@@ -2922,66 +2960,69 @@ try {
         if (addCategoryForm) {
             addCategoryForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                
+
                 const submitBtn = this.querySelector('button[type="submit"]');
                 const originalBtnText = submitBtn.innerHTML;
-                
+
                 // Show loading state
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Adding...';
                 submitBtn.disabled = true;
-                
+
                 const formData = new FormData();
                 formData.append('add_category', 'true');
                 const newCategoryName = document.getElementById('category_name').value;
                 formData.append('category_name', newCategoryName);
 
                 withLoading(async () => {
-                    const response = await fetch('dashboard.php', { method: 'POST', body: formData });
-                    return await response.json();
-                }, 'Adding Category...')
-                .then(data => {
-                    // Reset button
-                    submitBtn.innerHTML = originalBtnText;
-                    submitBtn.disabled = false;
-                    
-                    if (data.success) {
-                        // Close the add category modal
-                        const addModal = bootstrap.Modal.getInstance(document.getElementById('addCategoryModal'));
-                        addModal.hide();
-                        
-                        // Reset form
-                        document.getElementById('category_name').value = '';
-                        
-                        // Show success modal with custom message including the added category name
-                        document.getElementById('successMessage').textContent = `Category "${newCategoryName}" Added Successfully ✔`;
-                        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                        successModal.show();
-                        
-                        // Refresh the page after success modal is closed
-                        const successModalElement = document.getElementById('successModal');
-                        const refreshHandler = function() {
-                            window.location.reload();
-                            successModalElement.removeEventListener('hidden.bs.modal', refreshHandler);
-                        };
-                        successModalElement.addEventListener('hidden.bs.modal', refreshHandler);
-                        
-                    } else {
-                        // Show error
-                        alert('Error: ' + (data.message || 'Failed to add category'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error adding category:', error);
-                    
-                    // Reset button
-                    submitBtn.innerHTML = originalBtnText;
-                    submitBtn.disabled = false;
-                    
-                    alert('Error adding category. Please try again.');
-                });
+                        const response = await fetch('dashboard.php', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        return await response.json();
+                    }, 'Adding Category...')
+                    .then(data => {
+                        // Reset button
+                        submitBtn.innerHTML = originalBtnText;
+                        submitBtn.disabled = false;
+
+                        if (data.success) {
+                            // Close the add category modal
+                            const addModal = bootstrap.Modal.getInstance(document.getElementById('addCategoryModal'));
+                            addModal.hide();
+
+                            // Reset form
+                            document.getElementById('category_name').value = '';
+
+                            // Show success modal with custom message including the added category name
+                            document.getElementById('successMessage').textContent = `Category "${newCategoryName}" Added Successfully ✔`;
+                            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                            successModal.show();
+
+                            // Refresh the page after success modal is closed
+                            const successModalElement = document.getElementById('successModal');
+                            const refreshHandler = function() {
+                                window.location.reload();
+                                successModalElement.removeEventListener('hidden.bs.modal', refreshHandler);
+                            };
+                            successModalElement.addEventListener('hidden.bs.modal', refreshHandler);
+
+                        } else {
+                            // Show error
+                            alert('Error: ' + (data.message || 'Failed to add category'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error adding category:', error);
+
+                        // Reset button
+                        submitBtn.innerHTML = originalBtnText;
+                        submitBtn.disabled = false;
+
+                        alert('Error adding category. Please try again.');
+                    });
             });
         }
-        
     </script>
 </body>
+
 </html>

@@ -10,7 +10,8 @@ define('BASE_URL', 'http://' . $_SERVER['HTTP_HOST'] . '/cabinet-inventory-syste
 
 // Database configuration
 // Smart database host detection for network access
-function getDbHost() {
+function getDbHost()
+{
     // Check if we have network config (from mobile server)
     $networkConfigFile = dirname(dirname(__FILE__)) . '/network_config.json';
     if (file_exists($networkConfigFile)) {
@@ -23,7 +24,7 @@ function getDbHost() {
             }
         }
     }
-    
+
     // For localhost access, use localhost
     return 'localhost';
 }
@@ -104,11 +105,10 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-} catch(PDOException $e) {
+} catch (PDOException $e) {
     error_log("Database connection failed: " . $e->getMessage());
     die("A database error occurred. Please try again later.");
 }
 
 // Include utility functions
 require_once 'functions.php';
-?>

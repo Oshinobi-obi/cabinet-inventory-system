@@ -51,22 +51,21 @@ if ($qrData !== false && strlen($qrData) > 0) {
     $white = imagecolorallocate($img, 255, 255, 255);
     $black = imagecolorallocate($img, 0, 0, 0);
     $gray = imagecolorallocate($img, 128, 128, 128);
-    
+
     imagefill($img, 0, 0, $white);
-    imagerectangle($img, 10, 10, $size-10, $size-10, $black);
-    
+    imagerectangle($img, 10, 10, $size - 10, $size - 10, $black);
+
     // Add text
     $text = "QR CODE";
     if (function_exists('imagettftext')) {
-        imagestring($img, 4, $size/2 - 30, $size/2 - 10, $text, $black);
-        imagestring($img, 3, $size/2 - 50, $size/2 + 10, "Generation Failed", $gray);
+        imagestring($img, 4, $size / 2 - 30, $size / 2 - 10, $text, $black);
+        imagestring($img, 3, $size / 2 - 50, $size / 2 + 10, "Generation Failed", $gray);
     } else {
-        imagestring($img, 3, $size/2 - 30, $size/2 - 10, $text, $black);
-        imagestring($img, 2, $size/2 - 50, $size/2 + 10, "Generation Failed", $gray);
+        imagestring($img, 3, $size / 2 - 30, $size / 2 - 10, $text, $black);
+        imagestring($img, 2, $size / 2 - 50, $size / 2 + 10, "Generation Failed", $gray);
     }
-    
+
     header('Content-Type: image/png');
     imagepng($img);
     imagedestroy($img);
 }
-?>

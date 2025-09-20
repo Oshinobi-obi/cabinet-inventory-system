@@ -27,10 +27,10 @@ if (!$cabinetId) {
 try {
     // Generate QR code and save to database
     [$success, $qrPathOrError, $cabinet] = generateAndSaveQRCodeToDB($pdo, $cabinetId);
-    
+
     if ($success) {
         echo json_encode([
-            'success' => true, 
+            'success' => true,
             'message' => 'QR Code generated successfully',
             'cabinet_name' => $cabinet['name'],
             'cabinet_number' => $cabinet['cabinet_number'],
@@ -38,14 +38,13 @@ try {
         ]);
     } else {
         echo json_encode([
-            'success' => false, 
+            'success' => false,
             'error' => $qrPathOrError
         ]);
     }
 } catch (Exception $e) {
     echo json_encode([
-        'success' => false, 
+        'success' => false,
         'error' => 'An error occurred while generating QR code: ' . $e->getMessage()
     ]);
 }
-?>

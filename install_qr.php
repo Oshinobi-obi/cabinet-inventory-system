@@ -27,13 +27,13 @@ curl_close($ch);
 if ($httpCode === 200 && $zipContent) {
     file_put_contents($zipFile, $zipContent);
     echo "✅ Downloaded successfully!<br>";
-    
+
     // Extract the zip file
     $zip = new ZipArchive;
     if ($zip->open($zipFile) === TRUE) {
         $zip->extractTo(__DIR__ . '/temp/');
         $zip->close();
-        
+
         // Move files to correct location
         $extractedDir = __DIR__ . '/temp/phpqrcode-master';
         if (is_dir($extractedDir)) {
@@ -46,13 +46,12 @@ if ($httpCode === 200 && $zipContent) {
                 }
             }
             echo "✅ Files extracted to phpqrcode directory!<br>";
-            
+
             // Clean up
             unlink($zipFile);
             array_map('unlink', glob(__DIR__ . '/temp/phpqrcode-master/*'));
             rmdir(__DIR__ . '/temp/phpqrcode-master');
             rmdir(__DIR__ . '/temp');
-            
         } else {
             echo "❌ Extraction failed - directory structure unexpected<br>";
         }
@@ -76,6 +75,18 @@ if (file_exists(__DIR__ . '/phpqrcode/qrlib.php')) {
 ?>
 
 <style>
-body { font-family: Arial, sans-serif; margin: 20px; }
-.btn { padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 10px; }
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        background: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        display: inline-block;
+        margin-top: 10px;
+    }
 </style>

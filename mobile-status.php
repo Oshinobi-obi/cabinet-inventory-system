@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Mobile Access Status Checker
  * Verifies that the mobile setup is working correctly
@@ -10,6 +11,7 @@ header('Content-Type: text/html; charset=utf-8');
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,15 +19,46 @@ header('Content-Type: text/html; charset=utf-8');
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .status-card { border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .check-item { padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-        .check-success { background: #d4edda; border-left: 4px solid #28a745; }
-        .check-warning { background: #fff3cd; border-left: 4px solid #ffc107; }
-        .check-error { background: #f8d7da; border-left: 4px solid #dc3545; }
-        .network-info { background: #e3f2fd; border-radius: 10px; padding: 20px; margin: 20px 0; }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .status-card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .check-item {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .check-success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+
+        .check-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+
+        .check-error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+
+        .network-info {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
     </style>
 </head>
+
 <body>
     <div class="container mt-5">
         <div class="row justify-content-center">
@@ -36,11 +69,11 @@ header('Content-Type: text/html; charset=utf-8');
                         <p class="mb-0">Cabinet Information System</p>
                     </div>
                     <div class="card-body">
-                        
+
                         <?php
                         $checks = [];
                         $overallStatus = true;
-                        
+
                         // Check 1: Network config file
                         $networkConfig = null;
                         $networkConfigFile = __DIR__ . '/network_config.json';
@@ -60,7 +93,7 @@ header('Content-Type: text/html; charset=utf-8');
                                 'message' => 'Start the mobile server using <code>php server.php</code>'
                             ];
                         }
-                        
+
                         // Check 2: Server IP detection
                         $serverIP = getServerIP();
                         if ($serverIP && $serverIP !== '127.0.0.1') {
@@ -79,7 +112,7 @@ header('Content-Type: text/html; charset=utf-8');
                             ];
                             $overallStatus = false;
                         }
-                        
+
                         // Check 3: Base URL generation
                         $baseURL = getBaseURL();
                         $checks[] = [
@@ -88,7 +121,7 @@ header('Content-Type: text/html; charset=utf-8');
                             'title' => 'Base URL Generated',
                             'message' => "Base URL: <strong>$baseURL</strong>"
                         ];
-                        
+
                         // Check 4: QR Code directory
                         $qrDir = __DIR__ . '/qrcodes/';
                         if (is_dir($qrDir) && is_writable($qrDir)) {
@@ -106,7 +139,7 @@ header('Content-Type: text/html; charset=utf-8');
                                 'message' => 'Directory may need to be created or permissions fixed'
                             ];
                         }
-                        
+
                         // Check 5: Mobile CSS
                         if (file_exists(__DIR__ . '/assets/css/mobile-enhancements.css')) {
                             $checks[] = [
@@ -123,7 +156,7 @@ header('Content-Type: text/html; charset=utf-8');
                                 'message' => 'Mobile enhancement stylesheet not found'
                             ];
                         }
-                        
+
                         // Display checks
                         foreach ($checks as $check) {
                             $statusClass = 'check-' . $check['status'];
@@ -136,24 +169,24 @@ header('Content-Type: text/html; charset=utf-8');
                             echo "</div></div></div>";
                         }
                         ?>
-                        
+
                         <!-- Network Information -->
                         <?php if ($networkConfig): ?>
-                        <div class="network-info">
-                            <h5><i class="fas fa-info-circle me-2"></i>Current Network Setup</h5>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <strong>Server IP:</strong> <?php echo $networkConfig['server_ip']; ?><br>
-                                    <strong>Port:</strong> <?php echo $networkConfig['server_port']; ?><br>
-                                </div>
-                                <div class="col-md-6">
-                                    <strong>Base URL:</strong> <?php echo $networkConfig['base_url']; ?><br>
-                                    <strong>Started:</strong> <?php echo $networkConfig['started_at']; ?><br>
+                            <div class="network-info">
+                                <h5><i class="fas fa-info-circle me-2"></i>Current Network Setup</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Server IP:</strong> <?php echo $networkConfig['server_ip']; ?><br>
+                                        <strong>Port:</strong> <?php echo $networkConfig['server_port']; ?><br>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Base URL:</strong> <?php echo $networkConfig['base_url']; ?><br>
+                                        <strong>Started:</strong> <?php echo $networkConfig['started_at']; ?><br>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
                         <?php endif; ?>
-                        
+
                         <!-- Instructions -->
                         <div class="mt-4">
                             <h5><i class="fas fa-mobile-alt me-2"></i>How to Access on Mobile</h5>
@@ -164,7 +197,7 @@ header('Content-Type: text/html; charset=utf-8');
                                 <li class="list-group-item">Scan QR codes to open cabinet details directly</li>
                             </ol>
                         </div>
-                        
+
                         <div class="text-center mt-4">
                             <a href="index.php" class="btn btn-primary btn-lg">
                                 <i class="fas fa-home me-2"></i>Go to Main Site
@@ -178,7 +211,8 @@ header('Content-Type: text/html; charset=utf-8');
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

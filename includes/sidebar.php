@@ -5,36 +5,39 @@
     :root {
         --sidebar-width: 250px;
     }
-    
+
     body {
         overflow-x: hidden;
     }
-    
+
     /* Sidebar - HIDDEN BY DEFAULT */
     #sidebar {
         min-height: 100vh;
         width: var(--sidebar-width);
         position: fixed !important;
         top: 0;
-        left: -250px !important; /* Force hidden - move completely off screen */
+        left: -250px !important;
+        /* Force hidden - move completely off screen */
         z-index: 1050;
         transition: left 0.3s ease-in-out;
-        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-        transform: translateX(0); /* Ensure no transform conflicts */
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        transform: translateX(0);
+        /* Ensure no transform conflicts */
     }
-    
+
     /* Show sidebar when 'show' class is added */
     #sidebar.show {
         left: 0 !important;
     }
-    
+
     /* Content should always take full width */
     #content {
         margin-left: 0 !important;
         width: 100% !important;
-        transition: none; /* Remove any margin transitions */
+        transition: none;
+        /* Remove any margin transitions */
     }
-    
+
     /* Overlay that appears when sidebar is open */
     .sidebar-overlay {
         position: fixed;
@@ -48,12 +51,12 @@
         opacity: 0;
         transition: opacity 0.3s ease-in-out;
     }
-    
+
     .sidebar-overlay.show {
         display: block;
         opacity: 1;
     }
-    
+
     /* Sidebar links styling */
     .sidebar-link {
         color: #adb5bd;
@@ -64,14 +67,14 @@
         border-radius: 0.375rem;
         margin-bottom: 0.25rem;
     }
-    
-    .sidebar-link:hover, 
+
+    .sidebar-link:hover,
     .sidebar-link.active {
         color: #fff;
         background-color: #0d6efd;
         text-decoration: none;
     }
-    
+
     .sidebar-heading {
         font-size: 0.75rem;
         text-transform: uppercase;
@@ -79,17 +82,18 @@
         font-weight: 600;
         color: #6c757d !important;
     }
-    
+
     /* Ensure sidebar is hidden on all screen sizes initially */
     @media (max-width: 768px) {
         #sidebar {
             left: -250px !important;
         }
     }
-    
+
     @media (min-width: 769px) {
         #sidebar {
-            left: -250px !important; /* Keep hidden on desktop too */
+            left: -250px !important;
+            /* Keep hidden on desktop too */
         }
     }
 </style>
@@ -128,7 +132,7 @@
                     <i class="fas fa-user-cog me-2"></i> Profile
                 </a>
             </li>
-            
+
             <!-- Admin-Only Navigation -->
             <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] == 'admin'): ?>
                 <li class="nav-item mt-3">
@@ -142,7 +146,7 @@
                     </a>
                 </li>
             <?php endif; ?>
-            
+
             <!-- Encoder Quick Actions -->
             <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] == 'encoder'): ?>
                 <li class="nav-item mt-3">
@@ -156,7 +160,7 @@
                     </a>
                 </li>
             <?php endif; ?>
-            
+
             <!-- Common Footer Navigation -->
             <li class="nav-item mt-4">
                 <a href="#" id="logoutSidebarBtn" class="nav-link sidebar-link">
@@ -164,7 +168,7 @@
                 </a>
             </li>
         </ul>
-        
+
         <hr class="text-light mt-4">
         <div class="text-center text-light small">
             <p class="mb-1">Logged in as:</p>
@@ -175,89 +179,89 @@
 </div>
 
 <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
-// Sidebar toggle functionality
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Sidebar script loaded'); // Debug log
-    
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebarClose = document.getElementById('sidebarClose');  
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    
-    // Debug logs
-    console.log('Sidebar elements found:', {
-        toggle: !!sidebarToggle,
-        close: !!sidebarClose,
-        sidebar: !!sidebar,
-        overlay: !!sidebarOverlay
-    });
-    
-    // Force sidebar to be hidden on page load
-    if (sidebar) {
-        sidebar.classList.remove('show');
-        sidebar.style.left = '-250px';
-        console.log('Sidebar forced to hidden position');
-    }
-    
-    if (sidebarOverlay) {
-        sidebarOverlay.classList.remove('show');
-    }
-    
-    function showSidebar() {
-        console.log('Showing sidebar');
-        if (sidebar) {
-            sidebar.classList.add('show');
-        }
-        if (sidebarOverlay) {
-            sidebarOverlay.classList.add('show');
-        }
-        document.body.style.overflow = 'hidden';
-    }
-    
-    function hideSidebar() {
-        console.log('Hiding sidebar');
+    // Sidebar toggle functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Sidebar script loaded'); // Debug log
+
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebarClose = document.getElementById('sidebarClose');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        // Debug logs
+        console.log('Sidebar elements found:', {
+            toggle: !!sidebarToggle,
+            close: !!sidebarClose,
+            sidebar: !!sidebar,
+            overlay: !!sidebarOverlay
+        });
+
+        // Force sidebar to be hidden on page load
         if (sidebar) {
             sidebar.classList.remove('show');
+            sidebar.style.left = '-250px';
+            console.log('Sidebar forced to hidden position');
         }
+
         if (sidebarOverlay) {
             sidebarOverlay.classList.remove('show');
         }
-        document.body.style.overflow = '';
-    }
-    
-    // Toggle sidebar when burger menu is clicked
-    if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Burger menu clicked');
-            showSidebar();
-        });
-    } else {
-        console.error('Sidebar toggle button not found!');
-    }
-    
-    // Close sidebar when close button is clicked
-    if (sidebarClose) {
-        sidebarClose.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            hideSidebar();
-        });
-    }
-    
-    // Close sidebar when overlay is clicked
-    if (sidebarOverlay) {
-        sidebarOverlay.addEventListener('click', function() {
-            hideSidebar();
-        });
-    }
-    
-    // Close sidebar on escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && sidebar && sidebar.classList.contains('show')) {
-            hideSidebar();
+
+        function showSidebar() {
+            console.log('Showing sidebar');
+            if (sidebar) {
+                sidebar.classList.add('show');
+            }
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.add('show');
+            }
+            document.body.style.overflow = 'hidden';
         }
+
+        function hideSidebar() {
+            console.log('Hiding sidebar');
+            if (sidebar) {
+                sidebar.classList.remove('show');
+            }
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.remove('show');
+            }
+            document.body.style.overflow = '';
+        }
+
+        // Toggle sidebar when burger menu is clicked
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Burger menu clicked');
+                showSidebar();
+            });
+        } else {
+            console.error('Sidebar toggle button not found!');
+        }
+
+        // Close sidebar when close button is clicked
+        if (sidebarClose) {
+            sidebarClose.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                hideSidebar();
+            });
+        }
+
+        // Close sidebar when overlay is clicked
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', function() {
+                hideSidebar();
+            });
+        }
+
+        // Close sidebar on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && sidebar && sidebar.classList.contains('show')) {
+                hideSidebar();
+            }
+        });
     });
-});
 </script>

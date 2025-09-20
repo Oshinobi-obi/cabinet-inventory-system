@@ -15,7 +15,7 @@ $action = $_GET['action'];
 
 if ($action === 'get_cabinet' && isset($_GET['id'])) {
     $cabinetId = intval($_GET['id']);
-    
+
     try {
         // Get cabinet details
         $stmt = $pdo->prepare("
@@ -27,12 +27,12 @@ if ($action === 'get_cabinet' && isset($_GET['id'])) {
         ");
         $stmt->execute([$cabinetId]);
         $cabinet = $stmt->fetch();
-        
+
         if (!$cabinet) {
             echo json_encode(['success' => false, 'message' => 'Cabinet not found']);
             exit;
         }
-        
+
         // Get cabinet items with category names
         $stmt = $pdo->prepare("
             SELECT i.*, cat.name as category 
@@ -43,20 +43,18 @@ if ($action === 'get_cabinet' && isset($_GET['id'])) {
         ");
         $stmt->execute([$cabinetId]);
         $items = $stmt->fetchAll();
-        
+
         echo json_encode([
             'success' => true,
             'cabinet' => $cabinet,
             'items' => $items
         ]);
-        
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
     }
-
 } elseif ($action === 'get_cabinet_by_number' && isset($_GET['cabinet_number'])) {
     $cabinetNumber = $_GET['cabinet_number'];
-    
+
     try {
         // Get cabinet details by cabinet number
         $stmt = $pdo->prepare("
@@ -68,12 +66,12 @@ if ($action === 'get_cabinet' && isset($_GET['id'])) {
         ");
         $stmt->execute([$cabinetNumber]);
         $cabinet = $stmt->fetch();
-        
+
         if (!$cabinet) {
             echo json_encode(['success' => false, 'message' => 'Cabinet not found']);
             exit;
         }
-        
+
         // Get cabinet items with category names
         $stmt = $pdo->prepare("
             SELECT i.*, cat.name as category_name 
@@ -84,19 +82,16 @@ if ($action === 'get_cabinet' && isset($_GET['id'])) {
         ");
         $stmt->execute([$cabinet['id']]);
         $items = $stmt->fetchAll();
-        
+
         $cabinet['items'] = $items;
-        
+
         echo json_encode([
             'success' => true,
             'cabinet' => $cabinet
         ]);
-        
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
     }
-    
 } else {
     echo json_encode(['success' => false, 'message' => 'Invalid action or missing parameters']);
 }
-?>

@@ -33,7 +33,7 @@ $csrfToken = generateCSRFToken();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Determine if this is an AJAX submission
     $isAjax = (isset($_POST['ajax']) && $_POST['ajax'] === '1') ||
-              (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+        (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
     // Validate CSRF
     if (!isset($_POST['csrf_token']) || !validateCSRFToken($_POST['csrf_token'])) {
         $errors[] = 'Invalid session token. Please refresh and try again.';
@@ -84,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -95,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="assets/css/dashboard.css" rel="stylesheet">
     <link rel="preload" as="video" href="assets/images/Trail-Loading.webm">
 </head>
+
 <body>
     <?php include 'includes/sidebar.php'; ?>
 
@@ -120,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </span>
             </div>
 
-            <?php 
+            <?php
             // Show a professional first-time password alert to encoders whose password hasn't been changed yet
             $showFirstTimeBanner = (($_SESSION['user_role'] ?? '') === 'encoder') && empty($user['password_changed_at']);
             if ($showFirstTimeBanner): ?>
@@ -155,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label">Name</label>
-                            <input type="text" class="form-control" value="<?php echo htmlspecialchars(($user['first_name'] ?? '').' '.($user['last_name'] ?? '')); ?>" disabled>
+                            <input type="text" class="form-control" value="<?php echo htmlspecialchars(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')); ?>" disabled>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Username</label>
@@ -219,7 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Loading Modal -->
     <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-sm">
@@ -249,164 +251,177 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
     <?php if ($success): ?>
-    <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
-        // Mark password as changed so encoder reminder modal won’t appear again
-        try { localStorage.setItem('cis_password_changed', '1'); } catch (e) {}
-    </script>
+        <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
+            // Mark password as changed so encoder reminder modal won’t appear again
+            try {
+                localStorage.setItem('cis_password_changed', '1');
+            } catch (e) {}
+        </script>
     <?php endif; ?>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
-    // Eye icons toggle for password fields
-    document.addEventListener('DOMContentLoaded', function() {
-        const bindToggle = (btnId, inputId) => {
-            const btn = document.getElementById(btnId);
-            const input = document.getElementById(inputId);
-            if (!btn || !input) return;
-            btn.addEventListener('click', function() {
-                input.type = input.type === 'password' ? 'text' : 'password';
-                const icon = this.querySelector('i');
-                if (icon) { icon.classList.toggle('fa-eye'); icon.classList.toggle('fa-eye-slash'); }
-            });
-        };
-        bindToggle('toggleNew', 'new_password');
-        bindToggle('toggleConfirm', 'confirm_password');
-
-        // AJAX submission with 5-second minimum loading animation
-        const form = document.getElementById('changePasswordForm');
-        const errorBox = document.getElementById('ajaxErrorContainer');
-        const LOADING_MIN_MS = 5000;
-
-        function showLoading(message) {
-            const msg = document.getElementById('loadingMessage');
-            if (msg && message) msg.textContent = message;
-            const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
-            modal.show();
-            return modal;
-        }
-
-        async function withLoading(action, message) {
-            const modal = showLoading(message || 'Processing...');
-            const start = Date.now();
-            try {
-                const res = await action();
-                const elapsed = Date.now() - start;
-                if (elapsed < LOADING_MIN_MS) {
-                    await new Promise(r => setTimeout(r, LOADING_MIN_MS - elapsed));
-                }
-                return res;
-            } finally {
-                modal.hide();
-            }
-        }
-
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                // Client-side validation before AJAX
-                const newEl = document.getElementById('new_password');
-                const confirmEl = document.getElementById('confirm_password');
-                const pwd = newEl.value || '';
-                const confirmPwd = confirmEl.value || '';
-                const meets = {
-                    length: pwd.length >= 8,
-                    upper: /[A-Z]/.test(pwd),
-                    lower: /[a-z]/.test(pwd),
-                    number: /[0-9]/.test(pwd),
-                    special: /[^A-Za-z0-9]/.test(pwd)
-                };
-                const allOk = meets.length && meets.upper && meets.lower && meets.number && meets.special;
-                const matchOk = pwd === confirmPwd;
-                updateCriteriaUI(meets);
-                setConfirmValidity(matchOk);
-                if (!allOk || !matchOk) {
-                    e.preventDefault();
-                    errorBox.classList.remove('d-none');
-                    errorBox.textContent = !allOk ? 'New password does not meet the required criteria.' : 'Passwords do not match.';
-                    return;
-                }
-                e.preventDefault();
-                const fd = new FormData(form);
-                fd.set('ajax', '1');
-                // Reset errors UI
-                errorBox.classList.add('d-none');
-                errorBox.innerHTML = '';
-
-                withLoading(async () => {
-                    const resp = await fetch('profile.php', { method: 'POST', body: fd });
-                    return await resp.json();
-                }, 'Updating Password, please wait...')
-                .then(data => {
-                    if (data && data.success) {
-                        // Success modal
-                        const sm = new bootstrap.Modal(document.getElementById('successModal'));
-                        sm.show();
-                        // Local flag to suppress reminders
-                        try { localStorage.setItem('cis_password_changed', '1'); } catch (e) {}
-                        // Hide first-time alert if present
-                        const banner = document.getElementById('firstTimePasswordAlert');
-                        if (banner) banner.classList.add('d-none');
-                        // Reset form fields
-                        form.reset();
-                    } else if (data && data.errors) {
-                        errorBox.innerHTML = '<ul class="mb-0">' + data.errors.map(e => '<li>' + e + '</li>').join('') + '</ul>';
-                        errorBox.classList.remove('d-none');
-                    } else {
-                        errorBox.textContent = 'Unexpected error. Please try again.';
-                        errorBox.classList.remove('d-none');
+        // Eye icons toggle for password fields
+        document.addEventListener('DOMContentLoaded', function() {
+            const bindToggle = (btnId, inputId) => {
+                const btn = document.getElementById(btnId);
+                const input = document.getElementById(inputId);
+                if (!btn || !input) return;
+                btn.addEventListener('click', function() {
+                    input.type = input.type === 'password' ? 'text' : 'password';
+                    const icon = this.querySelector('i');
+                    if (icon) {
+                        icon.classList.toggle('fa-eye');
+                        icon.classList.toggle('fa-eye-slash');
                     }
-                })
-                .catch(err => {
-                    errorBox.textContent = 'Network error. Please try again.';
-                    errorBox.classList.remove('d-none');
                 });
-            });
-        }
-        // Real-time validation listeners
-        const newPwdEl = document.getElementById('new_password');
-        const confirmPwdEl = document.getElementById('confirm_password');
-        function updateCriteriaUI(meets) {
-            const set = (id, ok) => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                el.classList.toggle('text-success', ok);
-                el.classList.toggle('text-muted', !ok);
-                const icon = el.querySelector('i');
-                if (icon) {
-                    icon.className = ok ? 'fas fa-check-circle me-1' : 'fas fa-circle me-1';
-                }
             };
-            set('crit-length', meets.length);
-            set('crit-upper', meets.upper);
-            set('crit-lower', meets.lower);
-            set('crit-number', meets.number);
-            set('crit-special', meets.special);
-        }
-        function setConfirmValidity(ok) {
-            if (!confirmPwdEl) return;
-            if (!ok && confirmPwdEl.value) {
-                confirmPwdEl.classList.add('is-invalid');
-            } else {
-                confirmPwdEl.classList.remove('is-invalid');
+            bindToggle('toggleNew', 'new_password');
+            bindToggle('toggleConfirm', 'confirm_password');
+
+            // AJAX submission with 5-second minimum loading animation
+            const form = document.getElementById('changePasswordForm');
+            const errorBox = document.getElementById('ajaxErrorContainer');
+            const LOADING_MIN_MS = 5000;
+
+            function showLoading(message) {
+                const msg = document.getElementById('loadingMessage');
+                if (msg && message) msg.textContent = message;
+                const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
+                modal.show();
+                return modal;
             }
-        }
-        if (newPwdEl) {
-            newPwdEl.addEventListener('input', function() {
-                const pwd = newPwdEl.value || '';
-                updateCriteriaUI({
-                    length: pwd.length >= 8,
-                    upper: /[A-Z]/.test(pwd),
-                    lower: /[a-z]/.test(pwd),
-                    number: /[0-9]/.test(pwd),
-                    special: /[^A-Za-z0-9]/.test(pwd)
+
+            async function withLoading(action, message) {
+                const modal = showLoading(message || 'Processing...');
+                const start = Date.now();
+                try {
+                    const res = await action();
+                    const elapsed = Date.now() - start;
+                    if (elapsed < LOADING_MIN_MS) {
+                        await new Promise(r => setTimeout(r, LOADING_MIN_MS - elapsed));
+                    }
+                    return res;
+                } finally {
+                    modal.hide();
+                }
+            }
+
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    // Client-side validation before AJAX
+                    const newEl = document.getElementById('new_password');
+                    const confirmEl = document.getElementById('confirm_password');
+                    const pwd = newEl.value || '';
+                    const confirmPwd = confirmEl.value || '';
+                    const meets = {
+                        length: pwd.length >= 8,
+                        upper: /[A-Z]/.test(pwd),
+                        lower: /[a-z]/.test(pwd),
+                        number: /[0-9]/.test(pwd),
+                        special: /[^A-Za-z0-9]/.test(pwd)
+                    };
+                    const allOk = meets.length && meets.upper && meets.lower && meets.number && meets.special;
+                    const matchOk = pwd === confirmPwd;
+                    updateCriteriaUI(meets);
+                    setConfirmValidity(matchOk);
+                    if (!allOk || !matchOk) {
+                        e.preventDefault();
+                        errorBox.classList.remove('d-none');
+                        errorBox.textContent = !allOk ? 'New password does not meet the required criteria.' : 'Passwords do not match.';
+                        return;
+                    }
+                    e.preventDefault();
+                    const fd = new FormData(form);
+                    fd.set('ajax', '1');
+                    // Reset errors UI
+                    errorBox.classList.add('d-none');
+                    errorBox.innerHTML = '';
+
+                    withLoading(async () => {
+                            const resp = await fetch('profile.php', {
+                                method: 'POST',
+                                body: fd
+                            });
+                            return await resp.json();
+                        }, 'Updating Password, please wait...')
+                        .then(data => {
+                            if (data && data.success) {
+                                // Success modal
+                                const sm = new bootstrap.Modal(document.getElementById('successModal'));
+                                sm.show();
+                                // Local flag to suppress reminders
+                                try {
+                                    localStorage.setItem('cis_password_changed', '1');
+                                } catch (e) {}
+                                // Hide first-time alert if present
+                                const banner = document.getElementById('firstTimePasswordAlert');
+                                if (banner) banner.classList.add('d-none');
+                                // Reset form fields
+                                form.reset();
+                            } else if (data && data.errors) {
+                                errorBox.innerHTML = '<ul class="mb-0">' + data.errors.map(e => '<li>' + e + '</li>').join('') + '</ul>';
+                                errorBox.classList.remove('d-none');
+                            } else {
+                                errorBox.textContent = 'Unexpected error. Please try again.';
+                                errorBox.classList.remove('d-none');
+                            }
+                        })
+                        .catch(err => {
+                            errorBox.textContent = 'Network error. Please try again.';
+                            errorBox.classList.remove('d-none');
+                        });
                 });
-                // Also re-check match when new password changes
-                setConfirmValidity(pwd === (confirmPwdEl?.value || ''));
-            });
-        }
-        if (confirmPwdEl) {
-            confirmPwdEl.addEventListener('input', function() {
-                setConfirmValidity((newPwdEl?.value || '') === confirmPwdEl.value);
-            });
-        }
-    });
+            }
+            // Real-time validation listeners
+            const newPwdEl = document.getElementById('new_password');
+            const confirmPwdEl = document.getElementById('confirm_password');
+
+            function updateCriteriaUI(meets) {
+                const set = (id, ok) => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.classList.toggle('text-success', ok);
+                    el.classList.toggle('text-muted', !ok);
+                    const icon = el.querySelector('i');
+                    if (icon) {
+                        icon.className = ok ? 'fas fa-check-circle me-1' : 'fas fa-circle me-1';
+                    }
+                };
+                set('crit-length', meets.length);
+                set('crit-upper', meets.upper);
+                set('crit-lower', meets.lower);
+                set('crit-number', meets.number);
+                set('crit-special', meets.special);
+            }
+
+            function setConfirmValidity(ok) {
+                if (!confirmPwdEl) return;
+                if (!ok && confirmPwdEl.value) {
+                    confirmPwdEl.classList.add('is-invalid');
+                } else {
+                    confirmPwdEl.classList.remove('is-invalid');
+                }
+            }
+            if (newPwdEl) {
+                newPwdEl.addEventListener('input', function() {
+                    const pwd = newPwdEl.value || '';
+                    updateCriteriaUI({
+                        length: pwd.length >= 8,
+                        upper: /[A-Z]/.test(pwd),
+                        lower: /[a-z]/.test(pwd),
+                        number: /[0-9]/.test(pwd),
+                        special: /[^A-Za-z0-9]/.test(pwd)
+                    });
+                    // Also re-check match when new password changes
+                    setConfirmValidity(pwd === (confirmPwdEl?.value || ''));
+                });
+            }
+            if (confirmPwdEl) {
+                confirmPwdEl.addEventListener('input', function() {
+                    setConfirmValidity((newPwdEl?.value || '') === confirmPwdEl.value);
+                });
+            }
+        });
     </script>
 </body>
+
 </html>

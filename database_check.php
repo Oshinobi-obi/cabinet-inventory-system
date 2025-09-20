@@ -7,11 +7,11 @@ try {
     // Check if qr_path column exists in cabinets table
     $stmt = $pdo->query("DESCRIBE cabinets");
     $columns = $stmt->fetchAll();
-    
+
     echo "<h2>Cabinets table columns:</h2>";
     echo "<table border='1' style='border-collapse: collapse;'>";
     echo "<tr><th>Field</th><th>Type</th><th>Null</th><th>Key</th><th>Default</th><th>Extra</th></tr>";
-    
+
     $qrPathExists = false;
     foreach ($columns as $column) {
         echo "<tr>";
@@ -22,7 +22,7 @@ try {
         echo "<td>{$column['Default']}</td>";
         echo "<td>{$column['Extra']}</td>";
         echo "</tr>";
-        
+
         if ($column['Field'] === 'qr_path') {
             $qrPathExists = true;
         }
@@ -69,14 +69,14 @@ try {
         }
     }
     echo "</table>";
-    
+
     if ($qrPathExists) {
         echo "<p>✅ qr_path column exists in cabinets table</p>";
-        
+
         // Show sample data
         $stmt = $pdo->query("SELECT id, cabinet_number, name, qr_path FROM cabinets LIMIT 5");
         $cabinets = $stmt->fetchAll();
-        
+
         echo "<h2>Sample cabinet data:</h2>";
         echo "<table border='1' style='border-collapse: collapse;'>";
         echo "<tr><th>ID</th><th>Cabinet Number</th><th>Name</th><th>QR Path</th></tr>";
@@ -89,21 +89,20 @@ try {
             echo "</tr>";
         }
         echo "</table>";
-        
     } else {
         echo "<p>❌ qr_path column does not exist in cabinets table</p>";
         echo "<h2>SQL to add qr_path column:</h2>";
         echo "<pre style='background: #f5f5f5; padding: 10px;'>";
         echo "ALTER TABLE cabinets ADD COLUMN qr_path VARCHAR(255) NULL AFTER photo_path;";
         echo "</pre>";
-        
+
         echo "<p><strong>You need to run this SQL command to add the qr_path column before testing QR code saving.</strong></p>";
-        
+
         // Optionally, auto-run the ALTER TABLE command
         echo "<form method='post'>";
         echo "<button type='submit' name='add_column' onclick='return confirm(\"Are you sure you want to add the qr_path column to the cabinets table?\")'>Add qr_path Column</button>";
         echo "</form>";
-        
+
         if (isset($_POST['add_column'])) {
             try {
                 $pdo->exec("ALTER TABLE cabinets ADD COLUMN qr_path VARCHAR(255) NULL AFTER photo_path");
@@ -113,7 +112,6 @@ try {
             }
         }
     }
-    
 } catch (Exception $e) {
     echo "<p>❌ Database error: " . $e->getMessage() . "</p>";
 }

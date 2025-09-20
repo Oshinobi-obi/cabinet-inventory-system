@@ -19,7 +19,7 @@ if (isset($_GET['action'])) {
                 $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
                 $stmt->execute([$userId]);
                 $_SESSION['success'] = "User deleted successfully!";
-            } catch(PDOException $e) {
+            } catch (PDOException $e) {
                 $_SESSION['error'] = "Error deleting user: " . $e->getMessage();
             }
         } else {
@@ -41,16 +41,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $username = sanitizeInput($_POST['username']);
         $password = sanitizeInput($_POST['password']);
         $role = sanitizeInput($_POST['role']);
-        
+
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        
+
         try {
             $stmt = $pdo->prepare("
                 INSERT INTO users (first_name, last_name, office, division, email, mobile, username, password, role) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([$firstName, $lastName, $office, $division, $email, $mobile, $username, $hashedPassword, $role]);
-            
+
             // Prepare user data for email
             $userData = [
                 'first_name' => $firstName,
@@ -62,22 +62,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'office' => $office,
                 'division' => $division
             ];
-            
+
             // Send welcome email with credentials
             $emailResult = EmailService::sendNewUserEmail($userData);
-            
+
             // Log email activity
             EmailService::logEmailActivity($userData, $emailResult['success'], $emailResult['message']);
-            
+
             if ($emailResult['success']) {
                 $_SESSION['success'] = "User added successfully! Welcome email sent to " . $email;
             } else {
                 $_SESSION['success'] = "User added successfully, but email failed to send: " . $emailResult['message'];
                 // Still consider this a success since user was created
             }
-            
+
             redirect('users.php');
-        } catch(PDOException $e) {
+        } catch (PDOException $e) {
             $error = "Error adding user: " . $e->getMessage();
         }
     } elseif (isset($_POST['edit_user'])) {
@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $mobile = sanitizeInput($_POST['mobile']);
         $username = sanitizeInput($_POST['username']);
         $role = sanitizeInput($_POST['role']);
-        
+
         try {
             if (!empty($_POST['password'])) {
                 $hashedPassword = password_hash(sanitizeInput($_POST['password']), PASSWORD_DEFAULT);
@@ -106,10 +106,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 ");
                 $stmt->execute([$firstName, $lastName, $office, $division, $email, $mobile, $username, $role, $userId]);
             }
-            
+
             $_SESSION['success'] = "User updated successfully!";
             redirect('users.php');
-        } catch(PDOException $e) {
+        } catch (PDOException $e) {
             $error = "Error updating user: " . $e->getMessage();
         }
     }
@@ -142,6 +142,7 @@ $users = $stmt->fetchAll();
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -168,11 +169,11 @@ $users = $stmt->fetchAll();
         ::-webkit-scrollbar-thumb:hover {
             background: #a8a8a8;
         }
-        
+
         #sidebar {
             left: -250px !important;
         }
-        
+
         /* Role Badge Styling - matching dashboard */
         .badge.fs-6 {
             font-size: 0.9rem !important;
@@ -181,9 +182,10 @@ $users = $stmt->fetchAll();
         }
     </style>
 </head>
+
 <body>
     <?php include 'includes/sidebar.php'; ?>
-    
+
     <div id="content">
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary admin-navbar">
             <div class="container-fluid">
@@ -204,16 +206,17 @@ $users = $stmt->fetchAll();
                 </h2>
                 <div class="badge bg-danger fs-6">Admin Access</div>
             </div>
-            
+
             <?php if (isset($error)): ?>
                 <div class="alert alert-danger"><?php echo $error; ?></div>
             <?php endif; ?>
-            
+
             <?php if (isset($_SESSION['success'])): ?>
-                <div class="alert alert-success"><?php echo $_SESSION['success']; unset($_SESSION['success']); ?></div>
+                <div class="alert alert-success"><?php echo $_SESSION['success'];
+                                                    unset($_SESSION['success']); ?></div>
             <?php endif; ?>
-            
-            
+
+
             <!-- Users List -->
             <div class="card">
                 <div class="card-header">
@@ -235,77 +238,77 @@ $users = $stmt->fetchAll();
                                 </thead>
                                 <tbody>
                                     <?php foreach ($users as $user): ?>
-                                    <tr>
-                                        <td><?php echo $user['first_name'] . ' ' . $user['last_name']; ?></td>
-                                        <td><?php echo $user['username']; ?></td>
-                                        <td><?php echo $user['email']; ?></td>
-                                        <td>
-                                            <span class="badge bg-<?php echo $user['role'] == 'admin' ? 'danger' : 'primary'; ?>">
-                                                <?php echo ucfirst($user['role']); ?>
-                                            </span>
-                                        </td>
-                                        <td><?php echo date('M j, Y', strtotime($user['created_at'])); ?></td>
-                                        <td>
-                                            <button class="btn btn-sm btn-info edit-user-btn" data-user='<?php echo htmlspecialchars(json_encode($user), ENT_QUOTES, 'UTF-8'); ?>'>
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <?php if ($user['id'] != $_SESSION['user_id']): ?>
-                                            <button class="btn btn-sm btn-danger delete-user-btn" data-user-id="<?php echo $user['id']; ?>" data-user-name="<?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name'], ENT_QUOTES, 'UTF-8'); ?>">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
+                                        <tr>
+                                            <td><?php echo $user['first_name'] . ' ' . $user['last_name']; ?></td>
+                                            <td><?php echo $user['username']; ?></td>
+                                            <td><?php echo $user['email']; ?></td>
+                                            <td>
+                                                <span class="badge bg-<?php echo $user['role'] == 'admin' ? 'danger' : 'primary'; ?>">
+                                                    <?php echo ucfirst($user['role']); ?>
+                                                </span>
+                                            </td>
+                                            <td><?php echo date('M j, Y', strtotime($user['created_at'])); ?></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-info edit-user-btn" data-user='<?php echo htmlspecialchars(json_encode($user), ENT_QUOTES, 'UTF-8'); ?>'>
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <?php if ($user['id'] != $_SESSION['user_id']): ?>
+                                                    <button class="btn btn-sm btn-danger delete-user-btn" data-user-id="<?php echo $user['id']; ?>" data-user-name="<?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name'], ENT_QUOTES, 'UTF-8'); ?>">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
                     <?php else: ?>
-                <p class="text-muted">No users found.</p>
+                        <p class="text-muted">No users found.</p>
                     <?php endif; ?>
                     <!-- Pagination Controls -->
                     <?php if ($totalPages > 1): ?>
-                    <nav aria-label="Users pagination">
-                        <ul class="pagination justify-content-center mt-3">
-                            <li class="page-item<?php if ($page <= 1) echo ' disabled'; ?>">
-                                <a class="page-link" href="?page=<?php echo $page-1; ?>" tabindex="-1">Previous</a>
-                            </li>
-                            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                <li class="page-item<?php if ($i == $page) echo ' active'; ?>">
-                                    <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                        <nav aria-label="Users pagination">
+                            <ul class="pagination justify-content-center mt-3">
+                                <li class="page-item<?php if ($page <= 1) echo ' disabled'; ?>">
+                                    <a class="page-link" href="?page=<?php echo $page - 1; ?>" tabindex="-1">Previous</a>
                                 </li>
-                            <?php endfor; ?>
-                            <li class="page-item<?php if ($page >= $totalPages) echo ' disabled'; ?>">
-                                <a class="page-link" href="?page=<?php echo $page+1; ?>">Next</a>
-                            </li>
-                        </ul>
-                    </nav>
+                                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                                    <li class="page-item<?php if ($i == $page) echo ' active'; ?>">
+                                        <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                                    </li>
+                                <?php endfor; ?>
+                                <li class="page-item<?php if ($page >= $totalPages) echo ' disabled'; ?>">
+                                    <a class="page-link" href="?page=<?php echo $page + 1; ?>">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 
-        <!-- Loading Modal (reusable, matches login.php style) -->
-        <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" style="background:rgba(0,0,0,0.5);">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content" style="background:transparent; border:none; box-shadow:none; align-items:center;">
-                    <div class="modal-body text-center">
-                        <div class="position-relative" style="width:120px; height:120px; margin:0 auto;">
-                            <video id="loadingVideo" style="width:120px; height:120px; border-radius:50%; background:#fff; display:none;" autoplay loop muted playsinline>
-                                <source src="assets/images/Trail-Loading.webm" type="video/webm">
-                            </video>
-                            <div id="loadingSpinner" class="spinner-border text-primary" style="width:120px; height:120px;" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
+    <!-- Loading Modal (reusable, matches login.php style) -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" style="background:rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background:transparent; border:none; box-shadow:none; align-items:center;">
+                <div class="modal-body text-center">
+                    <div class="position-relative" style="width:120px; height:120px; margin:0 auto;">
+                        <video id="loadingVideo" style="width:120px; height:120px; border-radius:50%; background:#fff; display:none;" autoplay loop muted playsinline>
+                            <source src="assets/images/Trail-Loading.webm" type="video/webm">
+                        </video>
+                        <div id="loadingSpinner" class="spinner-border text-primary" style="width:120px; height:120px;" role="status">
+                            <span class="visually-hidden">Loading...</span>
                         </div>
-                        <div id="loadingMessage" class="mt-3 text-white fw-bold" style="font-size:1.2rem; text-shadow:0 1px 4px #000;">Loading Details...</div>
                     </div>
+                    <div id="loadingMessage" class="mt-3 text-white fw-bold" style="font-size:1.2rem; text-shadow:0 1px 4px #000;">Loading Details...</div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Edit User Modal -->
+    <!-- Edit User Modal -->
     <div class="modal fade" id="editUserModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -315,7 +318,7 @@ $users = $stmt->fetchAll();
                 <form method="POST" action="">
                     <div class="modal-body">
                         <input type="hidden" id="edit_user_id" name="user_id">
-                        
+
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">First Name</label>
@@ -326,7 +329,7 @@ $users = $stmt->fetchAll();
                                 <input type="text" class="form-control" id="edit_last_name" name="last_name" required>
                             </div>
                         </div>
-                        
+
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Office</label>
@@ -337,7 +340,7 @@ $users = $stmt->fetchAll();
                                 <input type="text" class="form-control" id="edit_division" name="division">
                             </div>
                         </div>
-                        
+
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Email</label>
@@ -348,7 +351,7 @@ $users = $stmt->fetchAll();
                                 <input type="tel" class="form-control" id="edit_mobile" name="mobile">
                             </div>
                         </div>
-                        
+
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Username</label>
@@ -362,7 +365,7 @@ $users = $stmt->fetchAll();
                                 </select>
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">New Password (leave blank to keep current)</label>
                             <input type="password" class="form-control" name="password">
@@ -398,105 +401,109 @@ $users = $stmt->fetchAll();
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
-document.addEventListener('DOMContentLoaded', function() {
-    // Generate random password (only if button exists)
-    var genBtn = document.getElementById('generatePassword');
-    if (genBtn) {
-        genBtn.addEventListener('click', function() {
-            const password = generateRandomPassword(12);
-            var pwInput = document.getElementById('password');
-            if (pwInput) pwInput.value = password;
-        });
-    }
-
-    function generateRandomPassword(length) {
-        const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
-        let password = "";
-        for (let i = 0; i < length; i++) {
-            password += charset.charAt(Math.floor(Math.random() * charset.length));
-        }
-        return password;
-    }
-
-    // Toggle password visibility (only if button exists)
-    var toggleBtn = document.getElementById('togglePassword');
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', function() {
-            var passwordInput = document.getElementById('password');
-            if (!passwordInput) return;
-            if (passwordInput.type === "password") {
-                passwordInput.type = "text";
-                this.textContent = "Hide";
-            } else {
-                passwordInput.type = "password";
-                this.textContent = "Show";
+        document.addEventListener('DOMContentLoaded', function() {
+            // Generate random password (only if button exists)
+            var genBtn = document.getElementById('generatePassword');
+            if (genBtn) {
+                genBtn.addEventListener('click', function() {
+                    const password = generateRandomPassword(12);
+                    var pwInput = document.getElementById('password');
+                    if (pwInput) pwInput.value = password;
+                });
             }
-        });
-    }
-    // Edit and Delete button event delegation for CSP compliance
-    document.querySelector('tbody').addEventListener('click', function(e) {
-        // Edit
-        if (e.target.closest('.edit-user-btn')) {
-            var btn = e.target.closest('.edit-user-btn');
-            var user = JSON.parse(btn.getAttribute('data-user'));
-            editUser(user);
-        }
-        // Delete
-        if (e.target.closest('.delete-user-btn')) {
-            var btn = e.target.closest('.delete-user-btn');
-            var userId = btn.getAttribute('data-user-id');
-            var userName = btn.getAttribute('data-user-name');
-            deleteUser(userId, userName);
-        }
-    });
-});
 
-function editUser(user) {
-    // Show loading modal with role-specific message
-    var loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'), {backdrop:'static', keyboard:false});
-    var loadingMessage = document.getElementById('loadingMessage');
-    var loadingVideo = document.getElementById('loadingVideo');
-    var loadingSpinner = document.getElementById('loadingSpinner');
-    var roleLabel = user.role === 'admin' ? 'Admin' : 'Encoder';
-    loadingMessage.textContent = `Loading ${roleLabel} Details...`;
-    if (loadingVideo) {
-        loadingVideo.style.display = 'block';
-        loadingSpinner.style.display = 'none';
-        loadingVideo.src = 'assets/images/Trail-Loading.webm';
-        loadingVideo.load();
-        loadingVideo.onerror = function() {
-            loadingVideo.style.display = 'none';
-            loadingSpinner.style.display = 'block';
-        };
-        setTimeout(function() {
-            if (loadingVideo.readyState < 2) {
-                loadingVideo.style.display = 'none';
-                loadingSpinner.style.display = 'block';
+            function generateRandomPassword(length) {
+                const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+                let password = "";
+                for (let i = 0; i < length; i++) {
+                    password += charset.charAt(Math.floor(Math.random() * charset.length));
+                }
+                return password;
             }
-        }, 500);
-    }
-    loadingModal.show();
-    setTimeout(function() {
-        loadingModal.hide();
-        // Fill form fields
-        document.getElementById('edit_user_id').value = user.id;
-        document.getElementById('edit_first_name').value = user.first_name;
-        document.getElementById('edit_last_name').value = user.last_name;
-        document.getElementById('edit_office').value = user.office || '';
-        document.getElementById('edit_division').value = user.division || '';
-        document.getElementById('edit_email').value = user.email;
-        document.getElementById('edit_mobile').value = user.mobile || '';
-        document.getElementById('edit_username').value = user.username;
-        document.getElementById('edit_role').value = user.role;
-        new bootstrap.Modal(document.getElementById('editUserModal')).show();
-    }, 900);
-}
 
-function deleteUser(userId, userName) {
-    document.getElementById('deleteUserName').textContent = userName;
-    document.getElementById('confirmDeleteBtn').href = 'users.php?action=delete&id=' + userId;
-    new bootstrap.Modal(document.getElementById('deleteUserModal')).show();
-}
-</script>
+            // Toggle password visibility (only if button exists)
+            var toggleBtn = document.getElementById('togglePassword');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function() {
+                    var passwordInput = document.getElementById('password');
+                    if (!passwordInput) return;
+                    if (passwordInput.type === "password") {
+                        passwordInput.type = "text";
+                        this.textContent = "Hide";
+                    } else {
+                        passwordInput.type = "password";
+                        this.textContent = "Show";
+                    }
+                });
+            }
+            // Edit and Delete button event delegation for CSP compliance
+            document.querySelector('tbody').addEventListener('click', function(e) {
+                // Edit
+                if (e.target.closest('.edit-user-btn')) {
+                    var btn = e.target.closest('.edit-user-btn');
+                    var user = JSON.parse(btn.getAttribute('data-user'));
+                    editUser(user);
+                }
+                // Delete
+                if (e.target.closest('.delete-user-btn')) {
+                    var btn = e.target.closest('.delete-user-btn');
+                    var userId = btn.getAttribute('data-user-id');
+                    var userName = btn.getAttribute('data-user-name');
+                    deleteUser(userId, userName);
+                }
+            });
+        });
+
+        function editUser(user) {
+            // Show loading modal with role-specific message
+            var loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+            var loadingMessage = document.getElementById('loadingMessage');
+            var loadingVideo = document.getElementById('loadingVideo');
+            var loadingSpinner = document.getElementById('loadingSpinner');
+            var roleLabel = user.role === 'admin' ? 'Admin' : 'Encoder';
+            loadingMessage.textContent = `Loading ${roleLabel} Details...`;
+            if (loadingVideo) {
+                loadingVideo.style.display = 'block';
+                loadingSpinner.style.display = 'none';
+                loadingVideo.src = 'assets/images/Trail-Loading.webm';
+                loadingVideo.load();
+                loadingVideo.onerror = function() {
+                    loadingVideo.style.display = 'none';
+                    loadingSpinner.style.display = 'block';
+                };
+                setTimeout(function() {
+                    if (loadingVideo.readyState < 2) {
+                        loadingVideo.style.display = 'none';
+                        loadingSpinner.style.display = 'block';
+                    }
+                }, 500);
+            }
+            loadingModal.show();
+            setTimeout(function() {
+                loadingModal.hide();
+                // Fill form fields
+                document.getElementById('edit_user_id').value = user.id;
+                document.getElementById('edit_first_name').value = user.first_name;
+                document.getElementById('edit_last_name').value = user.last_name;
+                document.getElementById('edit_office').value = user.office || '';
+                document.getElementById('edit_division').value = user.division || '';
+                document.getElementById('edit_email').value = user.email;
+                document.getElementById('edit_mobile').value = user.mobile || '';
+                document.getElementById('edit_username').value = user.username;
+                document.getElementById('edit_role').value = user.role;
+                new bootstrap.Modal(document.getElementById('editUserModal')).show();
+            }, 900);
+        }
+
+        function deleteUser(userId, userName) {
+            document.getElementById('deleteUserName').textContent = userName;
+            document.getElementById('confirmDeleteBtn').href = 'users.php?action=delete&id=' + userId;
+            new bootstrap.Modal(document.getElementById('deleteUserModal')).show();
+        }
+    </script>
 </body>
+
 </html>

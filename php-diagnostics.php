@@ -99,4 +99,3 @@ if ($scanned) {
 }
 
 echo "</body></html>";
-?>

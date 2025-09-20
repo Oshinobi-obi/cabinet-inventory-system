@@ -3,6 +3,7 @@ require_once 'includes/config.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,25 +16,31 @@ require_once 'includes/config.php';
         ::-webkit-scrollbar {
             width: 8px;
         }
+
         ::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 4px;
         }
+
         ::-webkit-scrollbar-thumb {
             background: #c1c1c1;
             border-radius: 4px;
         }
+
         ::-webkit-scrollbar-thumb:hover {
             background: #a8a8a8;
         }
+
         #qr-reader {
             width: 100%;
             max-width: 640px;
             margin: 0 auto;
         }
+
         #qr-reader img {
             width: 100%;
         }
+
         .scanner-overlay {
             display: none;
             position: fixed;
@@ -41,22 +48,26 @@ require_once 'includes/config.php';
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 1000;
         }
+
         .scanner-overlay.active {
             display: block;
         }
+
         .error-message {
             color: #dc3545;
             margin-top: 10px;
             text-align: center;
         }
+
         #stopButton {
             display: none !important;
         }
     </style>
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary public-navbar">
         <div class="container">
@@ -83,7 +94,7 @@ require_once 'includes/config.php';
                     <div class="card-body">
                         <div id="qr-reader"></div>
                         <div id="qr-reader-results"></div>
-                        
+
                         <div class="text-center mt-3">
                             <button id="startButton" class="btn btn-primary">
                                 <i class="fas fa-camera me-2"></i>
@@ -94,7 +105,7 @@ require_once 'includes/config.php';
                                 Stop Scanner
                             </button>
                         </div>
-                        
+
                         <div class="text-center mt-3">
                             <small class="text-muted">
                                 Point your camera at a cabinet's QR code to view its contents
@@ -127,7 +138,7 @@ require_once 'includes/config.php';
 
             // Show loading overlay
             document.getElementById('scannerOverlay').classList.add('active');
-            
+
             // Extract cabinet number from QR code URL
             try {
                 const url = new URL(decodedText);
@@ -139,7 +150,7 @@ require_once 'includes/config.php';
                     throw new Error('Invalid QR code format');
                 }
             } catch (error) {
-                document.getElementById('qr-reader-results').innerHTML = 
+                document.getElementById('qr-reader-results').innerHTML =
                     '<div class="error-message">Invalid QR code. Please try again.</div>';
                 document.getElementById('scannerOverlay').classList.remove('active');
                 startScanner(); // Restart scanner
@@ -153,15 +164,17 @@ require_once 'includes/config.php';
 
         function startScanner() {
             html5QrcodeScanner = new Html5QrcodeScanner(
-                "qr-reader",
-                { 
+                "qr-reader", {
                     fps: 10,
-                    qrbox: {width: 250, height: 250},
+                    qrbox: {
+                        width: 250,
+                        height: 250
+                    },
                     aspectRatio: 1.0
                 }
             );
             html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-            
+
             document.getElementById('startButton').style.display = 'none';
             document.getElementById('stopButton').style.display = 'inline-block';
         }
@@ -180,4 +193,5 @@ require_once 'includes/config.php';
         document.getElementById('stopButton').addEventListener('click', stopScanner);
     </script>
 </body>
+
 </html>

@@ -1,11 +1,13 @@
 <?php
+
 /**
  * Email Configuration for Cabinet Inventory System
  * Configure SMTP settings for sending user credentials
  */
 
 // Email configuration - Update these with your email provider settings
-class EmailConfig {
+class EmailConfig
+{
     // SMTP Settings - Configure based on your email provider
     public static $smtp_settings = [
         'host' => 'smtp.gmail.com',        // Gmail SMTP server
@@ -17,11 +19,12 @@ class EmailConfig {
         'from_email' => '',                // Same as username usually
         'reply_to' => '',                  // Reply-to email
     ];
-    
+
     // Email templates
-    public static function getNewUserTemplate($userData) {
+    public static function getNewUserTemplate($userData)
+    {
         $subject = "🔐 Your New Account - Cabinet Inventory Management System";
-        
+
         $message = "
         <!DOCTYPE html>
         <html>
@@ -102,14 +105,15 @@ class EmailConfig {
             </div>
         </body>
         </html>";
-        
+
         return ['subject' => $subject, 'message' => $message];
     }
-    
+
     // Alternative plain text template for email clients that don't support HTML
-    public static function getNewUserPlainTemplate($userData) {
+    public static function getNewUserPlainTemplate($userData)
+    {
         $subject = "Your New Account - Cabinet Inventory Management System";
-        
+
         $message = "
 Hello " . $userData['first_name'] . " " . $userData['last_name'] . ",
 
@@ -144,28 +148,28 @@ Administrative Team
 ---
 This is an automated message. Please do not reply to this email.
         ";
-        
+
         return ['subject' => $subject, 'message' => $message];
     }
 }
 
 // Helper function to validate email configuration
-function validateEmailConfig() {
+function validateEmailConfig()
+{
     $config = EmailConfig::$smtp_settings;
     $errors = [];
-    
+
     if (empty($config['username'])) {
         $errors[] = "SMTP username not configured";
     }
-    
+
     if (empty($config['password'])) {
         $errors[] = "SMTP password not configured";
     }
-    
+
     if (empty($config['from_email'])) {
         $errors[] = "From email not configured";
     }
-    
+
     return empty($errors) ? true : $errors;
 }
-?>

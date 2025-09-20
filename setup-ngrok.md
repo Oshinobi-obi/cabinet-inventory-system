@@ -1,6 +1,7 @@
 # Setup ngrok for HTTPS Camera Access
 
 ## What is ngrok?
+
 ngrok creates a secure HTTPS tunnel to your local server, allowing camera access.
 
 ## Setup Steps:
@@ -23,6 +24,7 @@ ngrok creates a secure HTTPS tunnel to your local server, allowing camera access
 5. **Access on phone**: Use the HTTPS ngrok URL
 
 ## Benefits:
+
 - ✅ Real HTTPS (camera works)
 - ✅ Accessible from anywhere
 - ✅ Free tier available

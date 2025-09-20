@@ -1,5 +1,4 @@
 <?php
-// Enable error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -9,45 +8,35 @@ try {
     die("Config error: " . $e->getMessage());
 }
 
-// Process QR scan or search
 $cabinetData = null;
 $searchResults = [];
 $error = null;
-$searchType = 'cabinet'; // default search type
+$searchType = 'cabinet';
 $searchTerm = '';
 $pagination = null;
 
-// Pagination settings
 $itemsPerPage = 9;
 $currentPage = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($currentPage - 1) * $itemsPerPage;
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_GET['search_term'])) {
-    // Handle different search types
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-        // Get POST data
         $searchTerm = sanitizeInput($_POST['search_term']);
         $searchType = isset($_POST['search_type']) ? sanitizeInput($_POST['search_type']) : 'cabinet';
-        
-        // Redirect to GET to prevent form resubmission message
+
         $redirectUrl = $_SERVER['PHP_SELF'] . '?search_term=' . urlencode($searchTerm) . '&search_type=' . urlencode($searchType);
         header("Location: " . $redirectUrl);
         exit();
-        
     } else if (isset($_GET['search_term'])) {
-        // Handle pagination with existing search
         $searchTerm = sanitizeInput($_GET['search_term']);
         $searchType = isset($_GET['search_type']) ? sanitizeInput($_GET['search_type']) : 'cabinet';
     } else {
-        // QR scan always searches by cabinet
         $searchTerm = sanitizeInput($_GET['cabinet']);
         $searchType = 'cabinet';
     }
 
     try {
         if ($searchType === 'cabinet') {
-            // Search by cabinet number or name with pagination
-            // First get total count
             $countStmt = $pdo->prepare("
                 SELECT COUNT(DISTINCT c.id) as total
                 FROM cabinets c
@@ -58,8 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             $countStmt->execute([$searchTerm, "%$searchTerm%"]);
             $totalResults = $countStmt->fetch()['total'];
             $totalPages = ceil($totalResults / $itemsPerPage);
-            
-            // Get paginated results
+
             $stmt = $pdo->prepare("
                 SELECT c.*, 
                        GROUP_CONCAT(DISTINCT cat.name) as categories,
@@ -74,15 +62,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             ");
             $stmt->execute([$searchTerm, "%$searchTerm%", $itemsPerPage, $offset]);
             $searchResults = $stmt->fetchAll();
-            
-            // For backward compatibility with QR codes, set cabinetData for single result
+
             if (count($searchResults) === 1 && $totalResults === 1) {
                 $cabinetData = $searchResults[0];
             }
-            
         } else if ($searchType === 'item') {
-            // Search by item name with pagination
-            // First get total count
             $countStmt = $pdo->prepare("
                 SELECT COUNT(DISTINCT c.id) as total
                 FROM cabinets c
@@ -92,8 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             $countStmt->execute(["%$searchTerm%"]);
             $totalResults = $countStmt->fetch()['total'];
             $totalPages = ceil($totalResults / $itemsPerPage);
-            
-            // Get paginated results
+
             $stmt = $pdo->prepare("
                 SELECT DISTINCT c.*, 
                        GROUP_CONCAT(DISTINCT cat.name) as categories,
@@ -110,8 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             $stmt->execute(["%$searchTerm%", $itemsPerPage, $offset]);
             $searchResults = $stmt->fetchAll();
         }
-        
-        // Create pagination object
+
         if (isset($totalResults) && $totalResults > 0) {
             $pagination = [
                 'current_page' => $currentPage,
@@ -120,8 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                 'items_per_page' => $itemsPerPage
             ];
         }
-        
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         $error = "Error searching: " . $e->getMessage();
     }
 }
@@ -129,6 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -139,6 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
     <link href="assets/css/index.css" rel="stylesheet">
     <link href="assets/css/mobile-enhancements.css" rel="stylesheet">
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark public-navbar">
         <div class="container">
@@ -158,10 +141,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             <h1 class="mt-2">Cabinet Contents Viewer</h1>
             <p class="text-muted">Search by cabinet number or name, or scan QR code</p>
         </div>
-        
+
         <div class="search-box">
             <form method="POST" action="" id="searchForm">
-                <!-- Search Type Radio Buttons -->
                 <div class="row mb-3">
                     <div class="col-12">
                         <div class="d-flex justify-content-center gap-4">
@@ -180,19 +162,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="input-group">
-                    <input type="text" class="form-control form-control-lg" 
-                           placeholder="Enter search term..." 
-                           name="search_term" 
-                           value="<?php echo htmlspecialchars($searchTerm); ?>" 
-                           required>
+                    <input type="text" class="form-control form-control-lg"
+                        placeholder="Enter search term..."
+                        name="search_term"
+                        value="<?php echo htmlspecialchars($searchTerm); ?>"
+                        required>
                     <button class="btn btn-primary" type="submit" id="searchButton">
                         <i class="fas fa-search me-1"></i> Search
                     </button>
                 </div>
             </form>
-            
+
             <div class="text-center mt-3">
                 <button id="qrCodeBtn" class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#qrDisplayModal" disabled>
                     <i class="fas fa-qrcode me-1"></i> <span id="qrBtnText">Select a Cabinet First</span>
@@ -202,18 +184,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                 </button>
             </div>
         </div>
-        
+
         <?php if ($error): ?>
             <div class="alert alert-danger"><?php echo $error; ?></div>
         <?php endif; ?>
-        
+
         <?php if (!empty($searchResults)): ?>
             <div class="search-results">
                 <h4 class="mb-4">
-                    <i class="fas fa-list me-2"></i>Search Results 
+                    <i class="fas fa-list me-2"></i>Search Results
                     <span class="badge bg-primary"><?php echo count($searchResults); ?> cabinet(s) found</span>
                 </h4>
-                
+
                 <div class="row">
                     <?php foreach ($searchResults as $cabinet): ?>
                         <div class="col-md-6 col-lg-4 mb-4">
@@ -221,26 +203,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                                 <div class="position-absolute top-0 end-0 p-2">
                                     <input class="form-check-input cabinet-selector" type="radio" name="selected_cabinet" value="<?php echo $cabinet['id']; ?>" id="cabinet_<?php echo $cabinet['id']; ?>">
                                 </div>
-                                
+
                                 <?php if ($cabinet['photo_path']): ?>
-                                    <img src="<?php echo htmlspecialchars($cabinet['photo_path']); ?>" 
-                                         class="card-img-top" 
-                                         alt="Cabinet Photo"
-                                         style="height: 200px; object-fit: cover;">
+                                    <img src="<?php echo htmlspecialchars($cabinet['photo_path']); ?>"
+                                        class="card-img-top"
+                                        alt="Cabinet Photo"
+                                        style="height: 200px; object-fit: cover;">
                                 <?php else: ?>
                                     <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
                                         <i class="fas fa-cabinet-filing fa-3x text-muted"></i>
                                     </div>
                                 <?php endif; ?>
-                                
+
                                 <div class="card-body d-flex flex-column">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h5 class="card-title mb-0">Cabinet <?php echo htmlspecialchars($cabinet['cabinet_number']); ?></h5>
                                         <i class="fas fa-eye text-primary" style="cursor: pointer;" title="View Details"></i>
                                     </div>
-                                    
+
                                     <h6 class="text-muted mb-2"><?php echo htmlspecialchars($cabinet['name']); ?></h6>
-                                    
+
                                     <div class="mb-3">
                                         <small class="text-muted">
                                             <i class="fas fa-box me-1"></i><?php echo $cabinet['item_count']; ?> items
@@ -252,14 +234,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                                             <?php endif; ?>
                                         </small>
                                     </div>
-                                    
+
                                     <div class="mt-auto">
-                                        <button class="btn btn-primary btn-sm w-100 view-cabinet-btn" 
-                                                data-cabinet-id="<?php echo $cabinet['id']; ?>"
-                                                data-search-type="<?php echo $searchType; ?>"
-                                                data-search-term="<?php echo htmlspecialchars($searchTerm); ?>"
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#viewCabinetModal">
+                                        <button class="btn btn-primary btn-sm w-100 view-cabinet-btn"
+                                            data-cabinet-id="<?php echo $cabinet['id']; ?>"
+                                            data-search-type="<?php echo $searchType; ?>"
+                                            data-search-term="<?php echo htmlspecialchars($searchTerm); ?>"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#viewCabinetModal">
                                             <i class="fas fa-eye me-1"></i> View Cabinet
                                         </button>
                                     </div>
@@ -268,71 +250,64 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                         </div>
                     <?php endforeach; ?>
                 </div>
-                
-                <!-- Pagination Controls -->
+
                 <?php if ($pagination && $pagination['total_pages'] > 1): ?>
                     <nav aria-label="Search results pagination" class="mt-4">
                         <ul class="pagination justify-content-center">
-                            <!-- Previous page -->
                             <?php if ($pagination['current_page'] > 1): ?>
                                 <li class="page-item">
-                                    <a class="page-link pagination-nav" href="#" 
-                                       data-page="<?php echo $pagination['current_page'] - 1; ?>" 
-                                       data-search-type="<?php echo htmlspecialchars($searchType); ?>" 
-                                       data-search-term="<?php echo htmlspecialchars($searchTerm); ?>">&lt;</a>
+                                    <a class="page-link pagination-nav" href="#"
+                                        data-page="<?php echo $pagination['current_page'] - 1; ?>"
+                                        data-search-type="<?php echo htmlspecialchars($searchType); ?>"
+                                        data-search-term="<?php echo htmlspecialchars($searchTerm); ?>">&lt;</a>
                                 </li>
                             <?php endif; ?>
 
-                            <!-- Skip 5 pages backward -->
                             <?php if ($pagination['current_page'] > 5 && $pagination['total_pages'] >= 5): ?>
                                 <?php $skipBackPage = max(1, $pagination['current_page'] - 5); ?>
                                 <li class="page-item">
-                                    <a class="page-link pagination-nav" href="#" 
-                                       data-page="<?php echo $skipBackPage; ?>" 
-                                       data-search-type="<?php echo htmlspecialchars($searchType); ?>" 
-                                       data-search-term="<?php echo htmlspecialchars($searchTerm); ?>">&lt;&lt;</a>
+                                    <a class="page-link pagination-nav" href="#"
+                                        data-page="<?php echo $skipBackPage; ?>"
+                                        data-search-type="<?php echo htmlspecialchars($searchType); ?>"
+                                        data-search-term="<?php echo htmlspecialchars($searchTerm); ?>">&lt;&lt;</a>
                                 </li>
                             <?php endif; ?>
 
-                            <!-- Current page input -->
                             <li class="page-item active">
-                                <input type="number" class="form-control form-control-sm text-center guest-page-input" 
-                                       value="<?php echo $pagination['current_page']; ?>" 
-                                       min="1" max="<?php echo $pagination['total_pages']; ?>" 
-                                       style="width: 40px; height: 30px; border: none; font-size: 0.8rem; padding: 2px 4px;"
-                                       data-max-pages="<?php echo $pagination['total_pages']; ?>"
-                                       data-search-type="<?php echo htmlspecialchars($searchType); ?>" 
-                                       data-search-term="<?php echo htmlspecialchars($searchTerm); ?>">
+                                <input type="number" class="form-control form-control-sm text-center guest-page-input"
+                                    value="<?php echo $pagination['current_page']; ?>"
+                                    min="1" max="<?php echo $pagination['total_pages']; ?>"
+                                    style="width: 40px; height: 30px; border: none; font-size: 0.8rem; padding: 2px 4px;"
+                                    data-max-pages="<?php echo $pagination['total_pages']; ?>"
+                                    data-search-type="<?php echo htmlspecialchars($searchType); ?>"
+                                    data-search-term="<?php echo htmlspecialchars($searchTerm); ?>">
                             </li>
 
-                            <!-- Skip 5 pages forward -->
                             <?php if ($pagination['current_page'] + 5 <= $pagination['total_pages'] && $pagination['total_pages'] >= 5): ?>
                                 <?php $skipForwardPage = min($pagination['total_pages'], $pagination['current_page'] + 5); ?>
                                 <li class="page-item">
-                                    <a class="page-link pagination-nav" href="#" 
-                                       data-page="<?php echo $skipForwardPage; ?>" 
-                                       data-search-type="<?php echo htmlspecialchars($searchType); ?>" 
-                                       data-search-term="<?php echo htmlspecialchars($searchTerm); ?>">&gt;&gt;</a>
+                                    <a class="page-link pagination-nav" href="#"
+                                        data-page="<?php echo $skipForwardPage; ?>"
+                                        data-search-type="<?php echo htmlspecialchars($searchType); ?>"
+                                        data-search-term="<?php echo htmlspecialchars($searchTerm); ?>">&gt;&gt;</a>
                                 </li>
                             <?php endif; ?>
 
-                            <!-- Next page -->
                             <?php if ($pagination['current_page'] < $pagination['total_pages']): ?>
                                 <li class="page-item">
-                                    <a class="page-link pagination-nav" href="#" 
-                                       data-page="<?php echo $pagination['current_page'] + 1; ?>" 
-                                       data-search-type="<?php echo htmlspecialchars($searchType); ?>" 
-                                       data-search-term="<?php echo htmlspecialchars($searchTerm); ?>">&gt;</a>
+                                    <a class="page-link pagination-nav" href="#"
+                                        data-page="<?php echo $pagination['current_page'] + 1; ?>"
+                                        data-search-type="<?php echo htmlspecialchars($searchType); ?>"
+                                        data-search-term="<?php echo htmlspecialchars($searchTerm); ?>">&gt;</a>
                                 </li>
                             <?php endif; ?>
                         </ul>
                     </nav>
-                    
-                    <!-- Pagination info -->
+
                     <div class="text-center mt-2">
                         <small class="text-muted">
-                            Showing <?php echo (($pagination['current_page'] - 1) * $pagination['items_per_page'] + 1); ?> - 
-                            <?php echo min($pagination['current_page'] * $pagination['items_per_page'], $pagination['total_records']); ?> 
+                            Showing <?php echo (($pagination['current_page'] - 1) * $pagination['items_per_page'] + 1); ?> -
+                            <?php echo min($pagination['current_page'] * $pagination['items_per_page'], $pagination['total_records']); ?>
                             of <?php echo $pagination['total_records']; ?> results
                         </small>
                     </div>
@@ -346,7 +321,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         <?php endif; ?>
     </div>
 
-    <!-- View Cabinet Modal -->
     <div class="modal fade" id="viewCabinetModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -370,7 +344,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         </div>
     </div>
 
-    <!-- QR Display Modal -->
     <div class="modal fade" id="qrDisplayModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -392,7 +365,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         </div>
     </div>
 
-    <!-- QR Scanner Modal -->
     <div class="modal fade" id="qrScannerModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -418,12 +390,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="assets/js/index.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
-        // Handle view cabinet button clicks
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize QR button state
             updateQRButtonState();
-            
-            // Check if Html5Qrcode library is loaded
+
             setTimeout(() => {
                 if (typeof Html5Qrcode !== 'undefined') {
                     console.log('Html5Qrcode library loaded successfully');
@@ -431,36 +400,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     console.error('Html5Qrcode library failed to load');
                 }
             }, 1000);
-            
-            // Initialize QR Scanner
+
             let html5QrCode = null;
             let isScanning = false;
-            
-            // Handle QR Scanner button click
+
             document.getElementById('qrScanBtn').addEventListener('click', function() {
                 const modal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
                 modal.show();
-                
-                // Start scanning when modal is shown with a small delay to ensure library is loaded
+
                 document.getElementById('qrScannerModal').addEventListener('shown.bs.modal', function() {
-                    // Add a small delay to ensure Html5Qrcode library is fully loaded
                     setTimeout(() => {
                         startQRScanner();
                     }, 100);
-                }, { once: true });
-                
-                // Stop scanning when modal is hidden
+                }, {
+                    once: true
+                });
+
                 document.getElementById('qrScannerModal').addEventListener('hidden.bs.modal', function() {
                     stopQRScanner();
                 });
             });
-            
+
             function startQRScanner() {
                 if (isScanning) return;
-                
+
                 const qrReaderResults = document.getElementById('qr-reader-results');
-                
-                // Check if Html5Qrcode library is loaded
+
                 if (typeof Html5Qrcode === 'undefined') {
                     console.error('Html5Qrcode library not loaded');
                     qrReaderResults.innerHTML = `
@@ -471,15 +436,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     `;
                     return;
                 }
-                
-                // Check for HTTPS requirement, but allow local network development
+
                 const isHTTPS = window.location.protocol === 'https:';
                 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                const isLocalNetwork = window.location.hostname.match(/^192\.168\./) || 
-                                      window.location.hostname.match(/^10\./) || 
-                                      window.location.hostname.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./);
-                
-                // Show warning for HTTP on mobile, but still try to work
+                const isLocalNetwork = window.location.hostname.match(/^192\.168\./) ||
+                    window.location.hostname.match(/^10\./) ||
+                    window.location.hostname.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./);
+
                 if (!isHTTPS && !isLocalhost && isLocalNetwork) {
                     qrReaderResults.innerHTML = `
                         <div class="alert alert-warning">
@@ -514,9 +477,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                             </div>
                         </div>
                     `;
-                    return; // Don't try to start camera if not secure context
+                    return;
                 } else {
-                    // Show loading message for secure contexts
                     qrReaderResults.innerHTML = `
                         <div class="alert alert-info">
                             <i class="fas fa-camera me-2"></i>
@@ -524,58 +486,52 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                         </div>
                     `;
                 }
-                
+
                 html5QrCode = new Html5Qrcode("qr-reader");
-                
-                // Get cameras with better error handling
+
                 Html5Qrcode.getCameras().then(devices => {
                     console.log('Available cameras:', devices);
-                    
+
                     if (devices && devices.length) {
-                        // Filter out virtual cameras and find real cameras
-                        const realCameras = devices.filter(device => 
+                        const realCameras = devices.filter(device =>
                             !device.label.toLowerCase().includes('obs') &&
                             !device.label.toLowerCase().includes('virtual') &&
                             !device.label.toLowerCase().includes('snap') &&
                             device.label.trim() !== ''
                         );
-                        
+
                         console.log('Real cameras found:', realCameras);
-                        
-                        // Use real cameras if available, otherwise fall back to all cameras
+
                         const camerasToUse = realCameras.length > 0 ? realCameras : devices;
-                        let cameraId = camerasToUse[0].id; // Default to first camera
-                        
-                        // Try to find back camera from real cameras
-                        const backCamera = camerasToUse.find(device => 
-                            device.label.toLowerCase().includes('back') || 
+                        let cameraId = camerasToUse[0].id;
+
+                        const backCamera = camerasToUse.find(device =>
+                            device.label.toLowerCase().includes('back') ||
                             device.label.toLowerCase().includes('rear') ||
                             device.label.toLowerCase().includes('environment')
                         );
-                        
+
                         if (backCamera) {
                             cameraId = backCamera.id;
                             console.log('Using back camera:', backCamera.label);
                         } else {
                             console.log('Using camera:', camerasToUse[0].label);
                         }
-                        
-                        // Start scanning with better configuration
+
                         html5QrCode.start(
-                            cameraId,
-                            {
+                            cameraId, {
                                 fps: 10,
-                                qrbox: { width: 250, height: 250 },
+                                qrbox: {
+                                    width: 250,
+                                    height: 250
+                                },
                                 aspectRatio: 1.0
                             },
                             (decodedText, decodedResult) => {
                                 console.log('QR Code detected:', decodedText);
-                                // QR Code detected - process it
                                 processQRCode(decodedText);
                             },
                             (errorMessage) => {
-                                // Scanning error - can be ignored for continuous scanning
-                                // Only log errors that aren't "No MultiFormat Readers were able to detect the code"
                                 if (!errorMessage.includes('No MultiFormat Readers')) {
                                     console.log('QR scan error (can be ignored):', errorMessage);
                                 }
@@ -592,14 +548,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                         }).catch(err => {
                             console.error('Camera start error:', err);
                             isScanning = false;
-                            
+
                             let errorMessage = 'Camera access failed.';
                             let errorDetails = err.message || 'Unknown error';
-                            
-                            // Check if we're on HTTP (not HTTPS or localhost)
+
                             const isHTTPS = window.location.protocol === 'https:';
                             const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                            
+
                             if (!isHTTPS && !isLocalhost) {
                                 errorMessage = 'Camera requires HTTPS connection.';
                                 errorDetails = `You're accessing via ${window.location.protocol}// but cameras require HTTPS for security. Try accessing via HTTPS or localhost.`;
@@ -616,7 +571,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                                 errorMessage = 'Camera configuration not supported.';
                                 errorDetails = 'The camera doesn\'t support the required configuration.';
                             }
-                            
+
                             qrReaderResults.innerHTML = `
                                 <div class="alert alert-danger">
                                     <i class="fas fa-exclamation-triangle me-2"></i>
@@ -644,19 +599,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     }
                 }).catch(err => {
                     console.error('Camera detection error:', err);
-                    
-                    // Check if we're on HTTP (not HTTPS or localhost)
+
                     const isHTTPS = window.location.protocol === 'https:';
                     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                    
+
                     let errorMessage = 'Error accessing camera system.';
                     let errorDetails = err.message || 'Unknown error';
-                    
+
                     if (!isHTTPS && !isLocalhost) {
                         errorMessage = 'HTTPS Required for Camera Access';
                         errorDetails = `Modern browsers require HTTPS to access cameras for security. You're currently using ${window.location.protocol}//`;
                     }
-                    
+
                     qrReaderResults.innerHTML = `
                         <div class="alert alert-danger">
                             <i class="fas fa-exclamation-triangle me-2"></i>
@@ -675,7 +629,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     `;
                 });
             }
-            
+
             function stopQRScanner() {
                 if (html5QrCode && isScanning) {
                     html5QrCode.stop().then(() => {
@@ -687,65 +641,55 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     });
                 }
             }
-            
+
             function processQRCode(decodedText) {
-                // Stop scanning
                 stopQRScanner();
-                
-                // Close the scanner modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
                 if (modal) {
                     modal.hide();
                 }
-                
-                // Extract cabinet info from QR code
+
                 let cabinetInfo = extractCabinetFromQR(decodedText);
-                
+
                 if (cabinetInfo) {
-                    // Fill the search form with cabinet info
                     const searchInput = document.querySelector('input[name="search_term"]');
                     const cabinetRadio = document.getElementById('search_cabinet');
-                    
+
                     if (searchInput && cabinetRadio) {
                         searchInput.value = cabinetInfo;
                         cabinetRadio.checked = true;
-                        
-                        // Show success message
+
                         showQRScanSuccess(cabinetInfo);
-                        
-                        // Automatically trigger search after a short delay
+
                         setTimeout(() => {
-                            document.getElementById('searchForm').dispatchEvent(new Event('submit', { bubbles: true }));
+                            document.getElementById('searchForm').dispatchEvent(new Event('submit', {
+                                bubbles: true
+                            }));
                         }, 1500);
                     }
                 } else {
-                    // Show error for unrecognized QR code
                     showQRScanError(decodedText);
                 }
             }
-            
+
             function extractCabinetFromQR(qrText) {
-                // Try to extract cabinet number or name from QR code URL
-                // Handle URLs like: /index.php?cabinet=CAB001 or /index.php?cabinet=Cabinet%201
                 const urlMatch = qrText.match(/[?&]cabinet=([^&]+)/);
                 if (urlMatch) {
                     return decodeURIComponent(urlMatch[1]);
                 }
-                
-                // Try to match cabinet patterns directly
+
                 const cabinetMatch = qrText.match(/CAB\d+|Cabinet\s+\d+|Cabinet\s+[A-Za-z0-9]+/i);
                 if (cabinetMatch) {
                     return cabinetMatch[0];
                 }
-                
-                // If it looks like a simple cabinet identifier
+
                 if (/^[A-Za-z0-9\s]+$/.test(qrText) && qrText.length < 50) {
                     return qrText;
                 }
-                
+
                 return null;
             }
-            
+
             function showQRScanSuccess(cabinetInfo) {
                 const alert = document.createElement('div');
                 alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
@@ -758,15 +702,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 `;
                 document.body.appendChild(alert);
-                
-                // Remove after 5 seconds
+
                 setTimeout(() => {
                     if (alert.parentNode) {
                         alert.remove();
                     }
                 }, 5000);
             }
-            
+
             function showQRScanError(qrText) {
                 const alert = document.createElement('div');
                 alert.className = 'alert alert-warning alert-dismissible fade show position-fixed';
@@ -779,24 +722,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 `;
                 document.body.appendChild(alert);
-                
-                // Remove after 7 seconds
+
                 setTimeout(() => {
                     if (alert.parentNode) {
                         alert.remove();
                     }
                 }, 7000);
             }
-            
-            // Handle cabinet selection
+
             document.addEventListener('change', function(e) {
                 if (e.target.classList.contains('cabinet-selector')) {
                     updateQRButtonState();
                     updateSelectedCabinetVisual();
                 }
             });
-            
-            // Handle cabinet card clicks to select them
+
             document.addEventListener('click', function(e) {
                 if (e.target.closest('.cabinet-card') && !e.target.closest('.view-cabinet-btn') && !e.target.classList.contains('cabinet-selector')) {
                     const card = e.target.closest('.cabinet-card');
@@ -808,8 +748,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     }
                 }
             });
-            
-            // Handle pagination clicks
+
             document.addEventListener('click', function(e) {
                 if (e.target.classList.contains('pagination-nav')) {
                     e.preventDefault();
@@ -822,8 +761,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     return false;
                 }
             });
-            
-            // Handle page input changes
+
             document.addEventListener('change', function(e) {
                 if (e.target.classList.contains('guest-page-input')) {
                     const page = parseInt(e.target.value);
@@ -836,7 +774,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                 }
             });
 
-            // Handle page input Enter key
             document.addEventListener('keypress', function(e) {
                 if (e.target.classList.contains('guest-page-input') && e.key === 'Enter') {
                     const page = parseInt(e.target.value);
@@ -848,8 +785,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     }
                 }
             });
-            
-            // View cabinet modal functionality
+
             document.addEventListener('click', function(e) {
                 if (e.target.classList.contains('view-cabinet-btn') || e.target.closest('.view-cabinet-btn')) {
                     const button = e.target.classList.contains('view-cabinet-btn') ? e.target : e.target.closest('.view-cabinet-btn');
@@ -861,23 +797,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     }
                 }
             });
-            
-            // Handle Cabinet Details modal cleanup
+
             const viewCabinetModal = document.getElementById('viewCabinetModal');
             if (viewCabinetModal) {
-                viewCabinetModal.addEventListener('hidden.bs.modal', function () {
-                    // Clean up any remaining modal backdrops
+                viewCabinetModal.addEventListener('hidden.bs.modal', function() {
                     const backdrops = document.querySelectorAll('.modal-backdrop');
                     backdrops.forEach(backdrop => {
                         backdrop.remove();
                     });
-                    
-                    // Ensure body classes are cleaned up
+
                     document.body.classList.remove('modal-open');
                     document.body.style.overflow = '';
                     document.body.style.paddingRight = '';
-                    
-                    // Reset content for next use
+
                     const content = document.getElementById('viewCabinetContent');
                     if (content) {
                         content.innerHTML = `
@@ -889,20 +821,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     }
                 });
             }
-            
-            // Handle search form submission with loading animation
+
             const searchForm = document.getElementById('searchForm');
             const searchButton = document.getElementById('searchButton');
-            
+
             if (searchForm && searchButton) {
                 searchForm.addEventListener('submit', function(e) {
-                    e.preventDefault(); // Prevent immediate form submission
-                    
-                    // Get the search term from the input
+                    e.preventDefault();
+
                     const searchInput = document.querySelector('input[name="search_term"]');
                     const searchTerm = searchInput ? searchInput.value.trim() : '';
-                    
-                    // Show loading animation on search button
+
                     searchButton.innerHTML = `
                         <div class="d-inline-block me-2" style="width: 20px; height: 20px;">
                             <video src="assets/images/Trail-Loading.webm" style="width: 100%; height: 100%; display:block;" autoplay muted loop playsinline><\/video>
@@ -910,8 +839,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                         Searching...
                     `;
                     searchButton.disabled = true;
-                    
-                    // Create search overlay with personalized message
+
                     const overlay = document.createElement('div');
                     overlay.id = 'search-loading-overlay';
                     overlay.className = 'modal fade show';
@@ -927,10 +855,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                         align-items: center;
                         justify-content: center;
                     `;
-                    
-                    // Create personalized search message
+
                     const searchMessage = searchTerm ? `Searching "${searchTerm}"...` : 'Searching...';
-                    
+
                     overlay.innerHTML = `
                         <div class="modal-dialog">
                             <div class="modal-content">
@@ -941,13 +868,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                             <\/div>
                         <\/div>
                     `;
-                    
+
                     document.body.appendChild(overlay);
                     document.body.classList.add('modal-open');
-                    
-                    // Wait 3 seconds to show the Trail loading animation, then submit form
+
                     setTimeout(() => {
-                        searchForm.submit(); // Submit the form after 3 seconds
+                        searchForm.submit();
                     }, 3000);
                 });
             }
@@ -957,17 +883,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             const selectedCabinet = document.querySelector('input[name="selected_cabinet"]:checked');
             const qrBtn = document.getElementById('qrCodeBtn');
             const qrBtnText = document.getElementById('qrBtnText');
-            
+
             if (selectedCabinet) {
                 const card = selectedCabinet.closest('.cabinet-card');
                 const cabinetNumber = card.getAttribute('data-cabinet-number');
                 const cabinetName = card.getAttribute('data-cabinet-name');
-                
+
                 qrBtn.disabled = false;
                 qrBtn.className = 'btn btn-primary';
                 qrBtnText.textContent = `Show QR Code for Cabinet ${cabinetNumber}`;
-                
-                // Store selected cabinet data for the modal
+
                 window.selectedCabinetData = {
                     id: selectedCabinet.value,
                     cabinet_number: cabinetNumber,
@@ -983,12 +908,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         }
 
         function updateSelectedCabinetVisual() {
-            // Remove previous selections
             document.querySelectorAll('.cabinet-card').forEach(card => {
                 card.classList.remove('selected');
             });
-            
-            // Add selected class to currently selected cabinet
+
             const selectedCabinet = document.querySelector('input[name="selected_cabinet"]:checked');
             if (selectedCabinet) {
                 selectedCabinet.closest('.cabinet-card').classList.add('selected');
@@ -996,17 +919,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         }
 
         function navigateToPage(page, searchType, searchTerm) {
-            // Create URL with pagination parameters
             const url = new URL(window.location.href);
             url.searchParams.set('page', page);
             url.searchParams.set('search_type', searchType);
             url.searchParams.set('search_term', searchTerm);
-            
-            // Navigate to the new page
+
             window.location.href = url.toString();
         }
 
-        // Handle QR modal opening
         document.addEventListener('show.bs.modal', function(e) {
             if (e.target.id === 'qrDisplayModal') {
                 loadQRModalContent();
@@ -1016,7 +936,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         function loadQRModalContent() {
             const modalTitle = document.getElementById('qrModalTitle');
             const modalBody = document.getElementById('qrModalBody');
-            
+
             if (!window.selectedCabinetData) {
                 modalTitle.textContent = 'No Cabinet Selected';
                 modalBody.innerHTML = `
@@ -1027,19 +947,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                 `;
                 return;
             }
-            
+
             const cabinet = window.selectedCabinetData;
             modalTitle.textContent = `QR Code for ${cabinet.name}`;
-            
-            // Show loading initially
+
             modalBody.innerHTML = `
                 <div class="text-center py-4">
                     <video src="assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline><\/video>
                     <h5 class="mt-3 text-muted">Loading QR Code...</h5>
                 </div>
             `;
-            
-            // Load cabinet QR data
+
             setTimeout(() => {
                 modalBody.innerHTML = `
                     <h6 class="mb-3">Cabinet: ${cabinet.cabinet_number}</h6>
@@ -1073,14 +991,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                         This QR code links to: ${window.location.origin}/cabinet-inventory-system/index.php?cabinet=${encodeURIComponent(cabinet.cabinet_number)}
                     </small>
                 `;
-            }, 3000); // 3 second delay to show Trail loading animation
+            }, 3000);
         }
 
         function loadCabinetDetails(cabinetId, searchType = '', searchTerm = '') {
             const content = document.getElementById('viewCabinetContent');
             const modal = new bootstrap.Modal(document.getElementById('viewCabinetModal'));
-            
-            // Show modal first with mobile-friendly loading state
+
             content.innerHTML = `
                 <div class="text-center py-4">
                     <div class="loading-container position-relative">
@@ -1101,22 +1018,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             `;
             modal.show();
             console.log('Cabinet modal opened with dual loading system');
-            
-            // Enhanced fallback mechanism - keep spinner visible during entire loading process
+
             let videoLoaded = false;
             let dataLoaded = false;
             const videoPlayer = content.querySelector('.video-loader');
             const primarySpinner = content.querySelector('.primary-spinner');
-            
-            // Function to hide loading animations when data is ready
+
             const hideLoadingAnimations = () => {
                 if (dataLoaded && videoPlayer && primarySpinner) {
                     videoPlayer.style.display = 'none';
                     primarySpinner.style.display = 'none';
                 }
             };
-            
-            // Try to detect when Lottie loads successfully
+
             const onVideoReady = () => {
                 if (videoPlayer && primarySpinner && !videoLoaded) {
                     videoLoaded = true;
@@ -1125,14 +1039,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     console.log('Video animation loaded successfully');
                 }
             };
-            
-            // Check for Lottie loading at multiple intervals
+
             if (videoPlayer) {
-                videoPlayer.addEventListener('loadeddata', onVideoReady, { once: true });
-                videoPlayer.addEventListener('canplaythrough', onVideoReady, { once: true });
+                videoPlayer.addEventListener('loadeddata', onVideoReady, {
+                    once: true
+                });
+                videoPlayer.addEventListener('canplaythrough', onVideoReady, {
+                    once: true
+                });
             }
-            
-            // Stop checking after 2 seconds and ensure spinner stays visible until data loads
+
             setTimeout(() => {
                 if (!videoLoaded && videoPlayer && primarySpinner) {
                     videoPlayer.style.display = 'none';
@@ -1140,24 +1056,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     console.log('Using fallback spinner for loading animation');
                 }
             }, 2000);
-            
-            // Fetch cabinet info to show proper cabinet name/number in loading message
+
             fetch(`public_api.php?action=get_cabinet&cabinet_id=${cabinetId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         const cabinet = data.cabinet;
                         const cabinetName = cabinet.name || `Cabinet ${cabinet.cabinet_number}`;
-                        
-                        // Create personalized loading message based on search context
+
                         let loadingMessage;
                         if (searchType === 'item' && searchTerm) {
                             loadingMessage = `Finding "${searchTerm}" in ${cabinetName}...`;
                         } else {
                             loadingMessage = `Viewing ${cabinetName}...`;
                         }
-                        
-                        // Update loading message without showing modal again - keep dual loading system
+
                         content.innerHTML = `
                             <div class="text-center py-4">
                                 <div class="loading-container position-relative">
@@ -1176,15 +1089,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                                 <h5 class="mt-3 text-muted">${loadingMessage}</h5>
                             </div>
                         `;
-                        
-                        // Set up the same dual loading system for the second phase
+
                         const secondVideoPlayer = content.querySelector('.video-loader');
                         const secondSpinner = content.querySelector('.primary-spinner');
                         let secondVideoLoaded = false;
-                        
+
                         console.log('Starting second phase loading with personalized message:', loadingMessage);
-                        
-                        // Check for Lottie loading in second phase
+
                         const onSecondVideoReady = () => {
                             if (secondVideoPlayer && secondSpinner && !secondVideoLoaded) {
                                 secondVideoLoaded = true;
@@ -1193,11 +1104,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                                 console.log('Second phase video animation loaded successfully');
                             }
                         };
-                        
-                        // Check at intervals for second phase loading
+
                         if (secondVideoPlayer) {
-                            secondVideoPlayer.addEventListener('loadeddata', onSecondVideoReady, { once: true });
-                            secondVideoPlayer.addEventListener('canplaythrough', onSecondVideoReady, { once: true });
+                            secondVideoPlayer.addEventListener('loadeddata', onSecondVideoReady, {
+                                once: true
+                            });
+                            secondVideoPlayer.addEventListener('canplaythrough', onSecondVideoReady, {
+                                once: true
+                            });
                         }
                         setTimeout(() => {
                             if (!secondVideoLoaded && secondVideoPlayer && secondSpinner) {
@@ -1206,15 +1120,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                                 console.log('Using fallback spinner for second phase loading');
                             }
                         }, 2000);
-                        
-                        // Add a delay to show the personalized loading message, then load final content
+
                         setTimeout(() => {
-                            // Set flag that data loading is complete
                             dataLoaded = true;
-                            
-                            // Check if we need to highlight items based on search
+
                             const shouldHighlight = searchType === 'item' && searchTerm;
-                            
+
                             content.innerHTML = `
                                 <div class="row mb-4">
                                     <div class="col-md-8">
@@ -1291,7 +1202,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                                     </div>`
                                 }
                             `;
-                        }, 3000); // 3 second delay to show loading animation properly
+                        }, 3000);
                     } else {
                         content.innerHTML = `
                             <div class="alert alert-warning">
@@ -1312,117 +1223,143 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                 });
         }
     </script>
-        <!-- What's New Button and Modal -->
-        <button id="whatsNewBtn" type="button" class="btn btn-primary rounded-circle shadow-lg" style="position:fixed;bottom:24px;right:24px;z-index:1055;width:56px;height:56px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;">
-                <i class="fas fa-question"></i>
-        </button>
-            <div class="modal fade" id="whatsNewModal" tabindex="-1" aria-labelledby="whatsNewModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered" style="max-width:400px; width:90vw;">
-                    <div class="modal-content" style="border-radius:16px;">
-                        <div class="modal-header py-2">
-                            <h5 class="modal-title" id="whatsNewModalLabel"><i class="fas fa-bolt text-warning me-2"></i>What's New?</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body py-2 px-2">
-                            <ul class="list-group list-group-flush whats-new-list" style="max-height:180px;overflow-y:auto;" id="whatsNewAccordion">
-                                <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v14" style="cursor:pointer;user-select:none;">
-                                    <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                        <svg width="16" height="16" viewBox="0 0 16 16"><polygon points="5,3 13,8 5,13" fill="#555"/></svg>
-                                    </span>
-                                    <span class="toggle-label"><strong>v1.4</strong> - Added QR code scanning for cabinets</span>
-                                    <div class="collapse mt-1" id="wn-v14" data-parent="#whatsNewAccordion">
-                                        <div class="text-secondary small ms-4">You can now scan QR codes to quickly access cabinet details using your device camera.</div>
-                                    </div>
-                                </li>
-                                <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v13" style="cursor:pointer;user-select:none;">
-                                    <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                        <svg width="16" height="16" viewBox="0 0 16 16"><polygon points="5,3 13,8 5,13" fill="#555"/></svg>
-                                    </span>
-                                    <span class="toggle-label"><strong>v1.3</strong> - Improved mobile responsiveness</span>
-                                    <div class="collapse mt-1" id="wn-v13" data-parent="#whatsNewAccordion">
-                                        <div class="text-secondary small ms-4">The interface now adapts better to phones and tablets for easier use on the go.</div>
-                                    </div>
-                                </li>
-                                <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v12" style="cursor:pointer;user-select:none;">
-                                    <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                        <svg width="16" height="16" viewBox="0 0 16 16"><polygon points="5,3 13,8 5,13" fill="#555"/></svg>
-                                    </span>
-                                    <span class="toggle-label"><strong>v1.2</strong> - User-friendly error messages</span>
-                                    <div class="collapse mt-1" id="wn-v12" data-parent="#whatsNewAccordion">
-                                        <div class="text-secondary small ms-4">Clearer error messages help you understand and fix issues faster.</div>
-                                    </div>
-                                </li>
-                                <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v11" style="cursor:pointer;user-select:none;">
-                                    <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                        <svg width="16" height="16" viewBox="0 0 16 16"><polygon points="5,3 13,8 5,13" fill="#555"/></svg>
-                                    </span>
-                                    <span class="toggle-label"><strong>v1.1</strong> - Initial public viewer release</span>
-                                    <div class="collapse mt-1" id="wn-v11" data-parent="#whatsNewAccordion">
-                                        <div class="text-secondary small ms-4">First release of the public cabinet viewer for easy access to cabinet information.</div>
-                                    </div>
-                                </li>
-                                <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v10" style="cursor:pointer;user-select:none;">
-                                    <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                        <svg width="16" height="16" viewBox="0 0 16 16"><polygon points="5,3 13,8 5,13" fill="#555"/></svg>
-                                    </span>
-                                    <span class="toggle-label"><strong>v1.0</strong> - Project launched 🚀</span>
-                                    <div class="collapse mt-1" id="wn-v10" data-parent="#whatsNewAccordion">
-                                        <div class="text-secondary small ms-4">The Cabinet Inventory System project is live!</div>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+    <button id="whatsNewBtn" type="button" class="btn btn-primary rounded-circle shadow-lg" style="position:fixed;bottom:24px;right:24px;z-index:1055;width:56px;height:56px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;">
+        <i class="fas fa-question"></i>
+    </button>
+    <div class="modal fade" id="whatsNewModal" tabindex="-1" aria-labelledby="whatsNewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:400px; width:90vw;">
+            <div class="modal-content" style="border-radius:16px;">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title" id="whatsNewModalLabel"><i class="fas fa-bolt text-warning me-2"></i>What's New?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-2 px-2">
+                    <ul class="list-group list-group-flush whats-new-list" style="max-height:180px;overflow-y:auto;" id="whatsNewAccordion">
+                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v14" style="cursor:pointer;user-select:none;">
+                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.4</strong> - Added QR code scanning for cabinets</span>
+                            <div class="collapse mt-1" id="wn-v14" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">You can now scan QR codes to quickly access cabinet details using your device camera.</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v13" style="cursor:pointer;user-select:none;">
+                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.3</strong> - Improved mobile responsiveness</span>
+                            <div class="collapse mt-1" id="wn-v13" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">The interface now adapts better to phones and tablets for easier use on the go.</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v12" style="cursor:pointer;user-select:none;">
+                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.2</strong> - User-friendly error messages</span>
+                            <div class="collapse mt-1" id="wn-v12" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">Clearer error messages help you understand and fix issues faster.</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v11" style="cursor:pointer;user-select:none;">
+                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.1</strong> - Initial public viewer release</span>
+                            <div class="collapse mt-1" id="wn-v11" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">First release of the public cabinet viewer for easy access to cabinet information.</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v10" style="cursor:pointer;user-select:none;">
+                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.0</strong> - Project launched 🚀</span>
+                            <div class="collapse mt-1" id="wn-v10" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">The Cabinet Inventory System project is live!</div>
+                            </div>
+                        </li>
+                    </ul>
                 </div>
             </div>
-        <style>
+        </div>
+    </div>
+    <style>
         #whatsNewBtn {
-                box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-                transition: background 0.2s;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+            transition: background 0.2s;
         }
-        #whatsNewBtn:active { background: #0b5ed7; }
-        .whats-new-list { min-width:200px; }
+
+        #whatsNewBtn:active {
+            background: #0b5ed7;
+        }
+
+        .whats-new-list {
+            min-width: 200px;
+        }
+
         @media (max-width: 600px) {
-            #whatsNewBtn { right: 12px; bottom: 12px; width:48px; height:48px; font-size:1.2rem; }
-            .modal-dialog { margin: 0 auto; }
-            .whats-new-list { max-height: 120px; font-size:0.98rem; }
+            #whatsNewBtn {
+                right: 12px;
+                bottom: 12px;
+                width: 48px;
+                height: 48px;
+                font-size: 1.2rem;
+            }
+
+            .modal-dialog {
+                margin: 0 auto;
+            }
+
+            .whats-new-list {
+                max-height: 120px;
+                font-size: 0.98rem;
+            }
         }
-            </style>
-            <style>
-            .toggle-arrow svg {
-                transition: transform 0.2s;
-            }
-            .toggle-arrow[aria-expanded="true"] svg {
-                transform: rotate(90deg);
-            }
-            </style>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <script nonce="<?php echo isset($GLOBALS['csp_nonce']) ? $GLOBALS['csp_nonce'] : ''; ?>">
+    </style>
+    <style>
+        .toggle-arrow svg {
+            transition: transform 0.2s;
+        }
+
+        .toggle-arrow[aria-expanded="true"] svg {
+            transform: rotate(90deg);
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script nonce="<?php echo isset($GLOBALS['csp_nonce']) ? $GLOBALS['csp_nonce'] : ''; ?>">
         document.getElementById('whatsNewBtn').addEventListener('click', function() {
             var modal = new bootstrap.Modal(document.getElementById('whatsNewModal'));
             modal.show();
         });
-        // Accordion toggle: make entire row clickable, not just triangle
         document.querySelectorAll('.whats-new-toggle').forEach(function(row) {
             var versionId = row.getAttribute('data-version');
             var target = document.getElementById(versionId);
             var arrow = row.querySelector('.toggle-arrow');
             row.setAttribute('aria-expanded', 'false');
-            if(target) {
+            if (target) {
                 row.addEventListener('click', function(e) {
-                    // Prevent double toggle if clicking arrow or label
-                    if(e.target.closest('.collapse')) return;
+                    if (e.target.closest('.collapse')) return;
                     var isOpen = target.classList.contains('show');
-                    // Close all
                     document.querySelectorAll('.collapse[id^="wn-v"]').forEach(function(el) {
-                        if(el !== target) {
+                        if (el !== target) {
                             el.classList.remove('show');
-                            var otherRow = document.querySelector('.whats-new-toggle[data-version="'+el.id+'"]');
-                            if(otherRow) otherRow.setAttribute('aria-expanded', 'false');
+                            var otherRow = document.querySelector('.whats-new-toggle[data-version="' + el.id + '"]');
+                            if (otherRow) otherRow.setAttribute('aria-expanded', 'false');
                         }
                     });
-                    // Toggle this one
-                    if(isOpen) {
+                    if (isOpen) {
                         target.classList.remove('show');
                         row.setAttribute('aria-expanded', 'false');
                     } else {
@@ -1432,6 +1369,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                 });
             }
         });
-        </script>
+    </script>
 </body>
+
 </html>
