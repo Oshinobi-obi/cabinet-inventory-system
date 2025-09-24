@@ -1,5 +1,13 @@
 <?php
-require_once 'includes/auth.php';
+// Handle logout POST (AJAX) at the very top before any output
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
+    require_once '../includes/auth.php';
+    $_SESSION = array();
+    session_destroy();
+    exit;
+}
+
+require_once '../includes/auth.php';
 authenticate();
 authorize(['admin', 'encoder']);
 
@@ -56,15 +64,109 @@ if (isset($_GET['action'])) {
     }
 }
 
+// Function to fix auto-increment sequence
+function fixAutoIncrement($pdo) {
+    try {
+        // Get the current auto-increment value
+        $stmt = $pdo->query("SHOW TABLE STATUS LIKE 'cabinets'");
+        $result = $stmt->fetch();
+        $currentAutoIncrement = $result['Auto_increment'] ?? 1;
+        
+        // Get the actual maximum ID from the table
+        $stmt = $pdo->query("SELECT MAX(id) as max_id FROM cabinets");
+        $result = $stmt->fetch();
+        $maxId = $result['max_id'] ?? 0;
+        
+        // If auto-increment is way off, reset it
+        if ($currentAutoIncrement > $maxId + 100) {
+            $nextId = $maxId + 1;
+            $pdo->exec("ALTER TABLE cabinets AUTO_INCREMENT = $nextId");
+        }
+    } catch (Exception $e) {
+        // Silently fail if there's an issue
+    }
+}
+
+// Fix auto-increment sequence on page load
+fixAutoIncrement($pdo);
+
+
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['edit_cabinet'])) {
+    if (isset($_POST['add_cabinet'])) {
+        // Add new cabinet
+        $cabinetNumber = sanitizeInput($_POST['cabinet_number']);
+        $name = sanitizeInput($_POST['name']);
+
+        // Handle file upload
+        $photoPath = null;
+        if (isset($_FILES['photo']) && $_FILES['photo']['error'] == UPLOAD_ERR_OK) {
+            $uploadDir = 'uploads/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+
+            $fileName = time() . '_' . basename($_FILES['photo']['name']);
+            $targetPath = $uploadDir . $fileName;
+
+            if (move_uploaded_file($_FILES['photo']['tmp_name'], $targetPath)) {
+                $photoPath = $targetPath;
+            }
+        }
+
+        try {
+            // Insert cabinet
+            $stmt = $pdo->prepare("INSERT INTO cabinets (cabinet_number, name, photo_path) VALUES (?, ?, ?)");
+            $stmt->execute([$cabinetNumber, $name, $photoPath]);
+            $cabinetId = $pdo->lastInsertId();
+
+            // Add items if provided
+            if (isset($_POST['items']) && is_array($_POST['items'])) {
+                foreach ($_POST['items'] as $item) {
+                    if (!empty($item['name']) && !empty($item['category'])) {
+                        $stmt = $pdo->prepare("
+                            INSERT INTO items (cabinet_id, category_id, name, quantity) 
+                            VALUES (?, ?, ?, ?)
+                        ");
+                        $stmt->execute([
+                            $cabinetId,
+                            $item['category'],
+                            sanitizeInput($item['name']),
+                            intval($item['quantity'])
+                        ]);
+                    }
+                }
+            }
+
+            // Return JSON response for AJAX
+            if (isset($_POST['ajax'])) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'message' => 'Cabinet added successfully!']);
+                exit;
+            }
+
+            $_SESSION['success'] = "Cabinet added successfully!";
+            redirect('cabinet.php');
+        } catch (PDOException $e) {
+            if (isset($_POST['ajax'])) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Error adding cabinet: ' . $e->getMessage()]);
+                exit;
+            }
+            $error = "Error adding cabinet: " . $e->getMessage();
+        }
+    } elseif (isset($_POST['edit_cabinet'])) {
         // Edit existing cabinet
         $cabinetId = intval($_POST['cabinet_id']);
         $name = sanitizeInput($_POST['name']);
 
-        // Handle file upload for edit
-        $photoPath = $_POST['existing_photo'] ?? null;
+        // Get current photo path from database first
+        $stmt = $pdo->prepare("SELECT photo_path FROM cabinets WHERE id = ?");
+        $stmt->execute([$cabinetId]);
+        $currentCabinet = $stmt->fetch();
+        $photoPath = $currentCabinet['photo_path']; // Keep existing photo by default
+
+        // Handle file upload for edit - only if a new photo is uploaded
         if (isset($_FILES['photo']) && $_FILES['photo']['error'] == UPLOAD_ERR_OK) {
             $uploadDir = 'uploads/';
             if (!is_dir($uploadDir)) {
@@ -85,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         try {
             // Update cabinet
-            $stmt = $pdo->prepare("UPDATE cabinets SET name = ?, photo_path = ? WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE cabinets SET name = ?, photo_path = ?, updated_at = NOW() WHERE id = ?");
             $stmt->execute([$name, $photoPath, $cabinetId]);
 
             // Delete existing items
@@ -110,9 +212,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
             }
 
+            // Return JSON response for AJAX
+            if (isset($_POST['ajax'])) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'message' => 'Cabinet updated successfully!']);
+                exit;
+            }
+
             $_SESSION['success'] = "Cabinet updated successfully!";
             redirect('cabinet.php');
         } catch (PDOException $e) {
+            if (isset($_POST['ajax'])) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Error updating cabinet: ' . $e->getMessage()]);
+                exit;
+            }
             $error = "Error updating cabinet: " . $e->getMessage();
         }
     }
@@ -151,11 +265,12 @@ $categories = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cabinets - Cabinet Management System</title>
+    <title>Cabinets</title>
+    <link rel="icon" type="image/x-icon" href="../assets/images/DepEd_Logo.webp">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/navbar.css" rel="stylesheet">
-    <link href="assets/css/cabinet.css" rel="stylesheet">
+    <link href="../assets/css/navbar.css" rel="stylesheet">
+    <link href="../assets/css/cabinet.css" rel="stylesheet">
     <style>
         /* Ensure sidebar is hidden on page load */
         #sidebar {
@@ -183,11 +298,98 @@ $categories = $stmt->fetchAll();
             border-bottom: 1px solid #dee2e6;
             border-radius: 10px 10px 0 0 !important;
         }
+
+        /* Glassmorphism overlay for logout modal */
+        #logoutConfirmModal {
+            background: rgba(255, 255, 255, 0.25) !important;
+            backdrop-filter: blur(8px) saturate(1.2);
+            -webkit-backdrop-filter: blur(8px) saturate(1.2);
+            transition: background 0.2s;
+            z-index: 2000;
+        }
+
+        #logoutConfirmModal .modal-content,
+        #logoutConfirmModal .modal-title,
+        #logoutConfirmModal .modal-body,
+        #logoutConfirmModal .modal-footer,
+        #logoutConfirmModal .modal-content p,
+        #logoutConfirmModal .modal-content h5 {
+            color: #222 !important;
+            background: #fff !important;
+            user-select: none;
+        }
+
+        #logoutConfirmModal .modal-content {
+            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.18);
+        }
+
+        #logoutConfirmModal .modal-title {
+            font-weight: 600;
+        }
+
+        #logoutConfirmModal .modal-footer {
+            background: #fff !important;
+        }
+
+        #logoutConfirmModal .btn-danger,
+        #logoutConfirmModal .btn-secondary {
+            user-select: none;
+        }
+        
+        /* Mobile-friendly table scrolling */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+        }
+        
+        .table-responsive::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        /* Ensure table doesn't break on mobile */
+        @media (max-width: 768px) {
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+            
+            .table th,
+            .table td {
+                white-space: nowrap;
+                padding: 0.5rem 0.25rem;
+            }
+        }
+        
+        /* Mobile-friendly modal tables */
+        .modal .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .modal .table th,
+        .modal .table td {
+            white-space: nowrap;
+        }
     </style>
 </head>
 
 <body>
-    <?php include 'includes/sidebar.php'; ?>
+    <?php include '../includes/sidebar.php'; ?>
 
     <div id="content">
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary admin-navbar">
@@ -242,6 +444,7 @@ $categories = $stmt->fetchAll();
                 </div>
             <?php endif; ?>
 
+
             <!-- Cabinets List -->
             <div class="card">
                 <div class="card-header">
@@ -289,18 +492,6 @@ $categories = $stmt->fetchAll();
                                                         data-bs-toggle="modal"
                                                         data-bs-target="#viewCabinetModal">
                                                         <i class="fas fa-eye"></i>
-                                                    </button>
-                                                    <button type="button" class="btn btn-sm btn-success edit-cabinet-btn me-1"
-                                                        data-cabinet-id="<?php echo $cabinet['id']; ?>"
-                                                        title="Edit Cabinet">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <button type="button" class="btn btn-sm btn-warning export-cabinet-btn me-1"
-                                                        data-cabinet-id="<?php echo $cabinet['id']; ?>"
-                                                        title="Export Cabinet"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#exportModal">
-                                                        <i class="fas fa-download"></i>
                                                     </button>
                                                     <button type="button"
                                                         class="btn btn-sm btn-secondary qr-generate-btn"
@@ -371,7 +562,7 @@ $categories = $stmt->fetchAll();
                 <div class="modal-body" id="viewCabinetContent">
                     <!-- Loading State -->
                     <div id="view-loading-state" class="text-center py-5">
-                        <video src="assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
+                        <video src="../assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
                         <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
                     </div>
 
@@ -440,7 +631,7 @@ $categories = $stmt->fetchAll();
                     <!-- Loading Overlay -->
                     <div id="export-loading-overlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9); z-index: 1000; border-radius: 0.375rem;">
                         <div class="d-flex flex-column justify-content-center align-items-center h-100">
-                            <video src="assets/images/Trail-Loading.webm" style="width: 120px; height: 120px; display:block;" autoplay muted loop playsinline></video>
+                            <video src="../assets/images/Trail-Loading.webm" style="width: 120px; height: 120px; display:block;" autoplay muted loop playsinline></video>
                             <h6 class="mt-2 text-muted">Preparing Export...</h6>
                         </div>
                     </div>
@@ -507,7 +698,7 @@ $categories = $stmt->fetchAll();
                     <div class="modal-body">
                         <!-- Loading State -->
                         <div id="edit-loading-state" class="text-center py-5">
-                            <video src="assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
+                            <video src="../assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
                             <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
                         </div>
 
@@ -561,6 +752,34 @@ $categories = $stmt->fetchAll();
         </div>
     </div>
 
+    <!-- Logout Confirmation Modal (hidden by default) -->
+    <div class="modal" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" style="display:none;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius:12px;">
+                <div class="modal-header" style="border-bottom:none;">
+                    <h5 class="modal-title">Confirm Logout</h5>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Are you sure you want to logout?</p>
+                </div>
+                <div class="modal-footer" style="border-top:none;">
+                    <button type="button" class="btn btn-secondary" id="cancelLogoutBtn">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmLogoutBtn">Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Logout Loading Modal (hidden by default) -->
+    <div class="modal" id="logoutLoadingModal" tabindex="-1" aria-hidden="true" style="display:none; background:rgba(255,255,255,0.25); backdrop-filter: blur(8px) saturate(1.2); -webkit-backdrop-filter: blur(8px) saturate(1.2); z-index:2100;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background:transparent; border:none; box-shadow:none; align-items:center;">
+                <div class="modal-body text-center">
+                    <video src="../assets/images/Trail-Loading.webm" autoplay loop muted style="width:120px; border-radius:50%; background:#fff;"></video>
+                    <div class="mt-3 text-dark fw-bold" style="font-size:1.2rem; text-shadow:0 1px 4px #fff;">Logging Out! Thank you...</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- QR Code Display Modal -->
     <?php if (isset($_SESSION['qr_file'])): ?>
@@ -578,7 +797,7 @@ $categories = $stmt->fetchAll();
                                 <h6>Cabinet: <?php echo htmlspecialchars($_SESSION['qr_cabinet_name'] ?? 'Unknown'); ?></h6>
                                 <p class="text-muted">Number: <?php echo htmlspecialchars($_SESSION['qr_cabinet_number'] ?? 'Unknown'); ?></p>
                                 <div class="border rounded p-3 bg-light">
-                                    <img src="<?php echo $_SESSION['qr_file']; ?>" alt="QR Code" class="img-fluid" style="max-width: 250px;">
+                                    <img src="../<?php echo $_SESSION['qr_file']; ?>" alt="QR Code" class="img-fluid" style="max-width: 250px;">
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -611,7 +830,7 @@ $categories = $stmt->fetchAll();
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <a href="export.php?cabinet_id=<?php echo $_GET['id'] ?? ''; ?>" class="btn btn-primary">
+                        <a href="../includes/export.php?cabinet_id=<?php echo $_GET['id'] ?? ''; ?>" class="btn btn-primary">
                             <i class="fas fa-download me-1"></i>View Full Report
                         </a>
                     </div>
@@ -665,6 +884,51 @@ $categories = $stmt->fetchAll();
         let itemCount = 1;
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Logout modal logic
+            var logoutBtn = document.getElementById('logoutSidebarBtn');
+            var confirmModal = new bootstrap.Modal(document.getElementById('logoutConfirmModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+            var loadingModal = new bootstrap.Modal(document.getElementById('logoutLoadingModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.getElementById('logoutConfirmModal').style.display = 'block';
+                    confirmModal.show();
+                });
+            }
+            document.getElementById('confirmLogoutBtn').onclick = function() {
+                confirmModal.hide();
+                setTimeout(function() {
+                    document.getElementById('logoutLoadingModal').style.display = 'block';
+                    loadingModal.show();
+                    // AJAX POST to logout (destroy session)
+                    fetch('cabinet.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'logout=1',
+                        cache: 'no-store',
+                        credentials: 'same-origin'
+                    }).then(function() {
+                        setTimeout(function() {
+                            window.location.replace('login.php');
+                        }, 2000);
+                    });
+                }, 300);
+            };
+            document.getElementById('cancelLogoutBtn').onclick = function() {
+                confirmModal.hide();
+                setTimeout(function() {
+                    document.getElementById('logoutConfirmModal').style.display = 'none';
+                }, 300);
+            };
+
             // Toggle sidebar
             const sidebarToggle = document.getElementById('sidebarToggle');
             const sidebar = document.getElementById('sidebar');
@@ -685,11 +949,12 @@ $categories = $stmt->fetchAll();
                 });
             });
 
-            // Initialize tooltips
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
 
             // Show QR success modal if QR code was generated
             <?php if (isset($_SESSION['qr_file'])): ?>
@@ -898,7 +1163,7 @@ $categories = $stmt->fetchAll();
             document.getElementById('view-content-container').style.display = 'none';
 
             // Fetch cabinet data using the same API as dashboard.php
-            fetch(`cabinet_api.php?action=get_cabinet_by_number&cabinet_number=${cabinetNumber}`)
+            fetch(`../includes/cabinet_api.php?action=get_cabinet_by_number&cabinet_number=${cabinetNumber}`)
                 .then(response => response.json())
                 .then(data => {
                     // Hide loading, show content
@@ -933,7 +1198,7 @@ $categories = $stmt->fetchAll();
                                     </table>
                                 </div>
                                 <div class="col-md-4 text-center">
-                                    ${cabinet.photo_path ? `<img src="${cabinet.photo_path}" alt="Cabinet Photo" class="img-fluid rounded" style="max-height: 150px;">` : '<div class="bg-light rounded p-3"><i class="fas fa-image fa-3x text-muted"></i><p class="mt-2 mb-0 text-muted">No photo</p></div>'}
+                                    ${cabinet.photo_path ? `<img src="../${cabinet.photo_path}" alt="Cabinet Photo" class="img-fluid rounded" style="max-height: 150px;">` : '<div class="bg-light rounded p-3"><i class="fas fa-image fa-3x text-muted"></i><p class="mt-2 mb-0 text-muted">No photo</p></div>'}
                                 </div>
                             </div>
                             
@@ -971,7 +1236,7 @@ $categories = $stmt->fetchAll();
                             ${cabinet.qr_path ? `
                                 <div class="text-center mt-3">
                                     <h6 class="text-primary">QR Code</h6>
-                                    <img src="${cabinet.qr_path}" alt="QR Code" class="img-fluid" style="max-width: 150px;">
+                                    <img src="../${cabinet.qr_path}" alt="QR Code" class="img-fluid" style="max-width: 150px;">
                                 </div>
                             ` : ''}
                         `;
@@ -1048,7 +1313,7 @@ $categories = $stmt->fetchAll();
                 this.disabled = true;
 
                 // Call delete API
-                fetch('cabinet_api.php', {
+                fetch('../includes/cabinet_api.php', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1181,7 +1446,7 @@ $categories = $stmt->fetchAll();
             editItemCount = 0;
 
             // Fetch cabinet data
-            fetch('cabinet_api.php?action=get_cabinet&id=' + cabinetId)
+            fetch('../includes/cabinet_api.php?action=get_cabinet&id=' + cabinetId)
                 .then(response => response.json())
                 .then(data => {
                     // Hide loading, show form content
@@ -1201,7 +1466,7 @@ $categories = $stmt->fetchAll();
                         const photoPreview = document.getElementById('current-photo-preview');
                         if (photoPreview) {
                             if (cabinet.photo_path) {
-                                photoPreview.innerHTML = '<small class="text-muted">Current photo:</small><br><img src="' + cabinet.photo_path + '" alt="Current Photo" style="max-height: 100px;" class="img-thumbnail">';
+                                photoPreview.innerHTML = '<small class="text-muted">Current photo:</small><br><img src="../' + cabinet.photo_path + '" alt="Current Photo" style="max-height: 100px;" class="img-thumbnail">';
                             } else {
                                 photoPreview.innerHTML = '';
                             }
@@ -1371,7 +1636,7 @@ $categories = $stmt->fetchAll();
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-body text-center py-5">
-                            <video src="assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline><\/video>
+                            <video src="../assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline><\/video>
                             <h5 class="mt-3 text-muted">Generating QR Code...</h5>
                         </div>
                     </div>
@@ -1382,7 +1647,7 @@ $categories = $stmt->fetchAll();
             document.body.classList.add('modal-open');
 
             // Make AJAX request to generate QR code
-            fetch('ajax_qr_generate.php', {
+            fetch('../includes/ajax_qr_generate.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

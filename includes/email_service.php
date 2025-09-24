@@ -482,8 +482,19 @@ class EmailService
      */
     private static function getLoginUrl()
     {
-        // Use the specific IP address and port for your system
-        return 'http://192.168.102.230:8080/login.php';
+        // Try to read from network_config.json first
+        $configFile = __DIR__ . '/../network_config.json';
+        if (file_exists($configFile)) {
+            $config = json_decode(file_get_contents($configFile), true);
+            if (isset($config['base_url'])) {
+                return $config['base_url'] . '/admin/login.php';
+            }
+        }
+        
+        // Fallback to current server detection
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        return $protocol . '://' . $host . '/admin/login.php';
     }
 
     /**

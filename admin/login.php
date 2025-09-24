@@ -1,5 +1,5 @@
 <?php
-require_once 'includes/config.php';
+require_once '../includes/config.php';
 
 // Redirect if already logged in
 if (isLoggedIn()) {
@@ -44,11 +44,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Cabinet Management System</title>
+    <title>Login</title>
+    <link rel="icon" type="image/x-icon" href="../assets/images/DepEd_Logo.webp">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         ::-webkit-scrollbar {
@@ -140,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </form>
 
             <div class="text-center mt-3">
-                <a href="index.php" class="text-decoration-none">
+                <a href="../public/index.php" class="text-decoration-none">
                     ← Back to Viewer
                 </a>
             </div>
@@ -155,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <!-- Video with fallback spinner -->
                     <div class="position-relative" style="width:120px; height:120px; margin:0 auto;">
                         <video id="loadingVideo" style="width:120px; height:120px; border-radius:50%; background:#fff; display:none;" autoplay loop muted playsinline>
-                            <source src="assets/images/Trail-Loading.webm" type="video/webm">
+                            <source src="../assets/images/Trail-Loading.webm" type="video/webm">
                         </video>
                         <!-- Fallback spinner -->
                         <div id="loadingSpinner" class="spinner-border text-primary" style="width:120px; height:120px;" role="status">
@@ -241,35 +241,68 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         .then(data => {
                             const username = formData.get('username') || '';
                             if (data.success) {
+                                // Success case - show Success_Check.webm
                                 loadingMessage.textContent = `Verification Successful! Welcome back ${data.username || username}!`;
-                                setTimeout(() => {
-                                    window.location.href = 'dashboard.php';
-                                }, 1200);
-                            } else {
-                                // For failed verification, try to swap to Cross.webm
+                                
                                 if (loadingVideo && loadingVideo.style.display !== 'none') {
-                                    const crossSrc = 'assets/images/Cross.webm';
-                                    loadingVideo.src = crossSrc;
+                                    // Switch to Success_Check.webm
+                                    loadingVideo.src = '../assets/images/Success_Check.webm';
+                                    loadingVideo.loop = false; // Play only once
                                     loadingVideo.load();
+                                    
+                                    // Handle video load errors
                                     loadingVideo.onerror = function() {
-                                        // If Cross.webm also fails, just keep the spinner
+                                        loadingVideo.style.display = 'none';
+                                        loadingSpinner.style.display = 'block';
+                                    };
+                                    
+                                    // Wait for video to end or 3 seconds, then redirect
+                                    loadingVideo.addEventListener('ended', function() {
+                                        window.location.href = 'dashboard.php';
+                                    }, { once: true });
+                                    
+                                    // Fallback timeout - redirect after 3 seconds regardless
+                                    setTimeout(() => {
+                                        window.location.href = 'dashboard.php';
+                                    }, 3000);
+                                } else {
+                                    // Fallback if video not available
+                                    setTimeout(() => {
+                                        window.location.href = 'dashboard.php';
+                                    }, 3000);
+                                }
+                            } else {
+                                // Failure case - show Cross.webm
+                                loadingMessage.textContent = 'Failed to verify credentials! Please try again...';
+                                
+                                if (loadingVideo && loadingVideo.style.display !== 'none') {
+                                    // Switch to Cross.webm
+                                    loadingVideo.src = '../assets/images/Cross.webm';
+                                    loadingVideo.loop = false; // Play only once
+                                    loadingVideo.load();
+                                    
+                                    // Handle video load errors
+                                    loadingVideo.onerror = function() {
                                         loadingVideo.style.display = 'none';
                                         loadingSpinner.style.display = 'block';
                                     };
                                 }
-                                loadingMessage.textContent = 'Failed to verify credentials! Please try again...';
+                                
+                                // Close modal after exactly 3 seconds
                                 setTimeout(() => {
                                     loadingModal.hide();
                                     document.getElementById('loginError').textContent = 'Wrong Username or Password! Please try again!';
                                     document.getElementById('loginError').classList.remove('d-none');
                                     document.getElementById('username').value = username;
                                     document.getElementById('password').value = '';
-                                    // Reset for next attempt
+                                    
+                                    // Reset video for next attempt
                                     if (loadingVideo) {
                                         loadingVideo.src = 'assets/images/Trail-Loading.webm';
+                                        loadingVideo.loop = true;
                                         loadingVideo.load();
                                     }
-                                }, 1200);
+                                }, 3000);
                             }
                         })
                         .catch(() => {

@@ -1,5 +1,13 @@
 <?php
-require_once 'includes/auth.php';
+// Handle logout POST (AJAX) at the very top before any output
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
+    require_once '../includes/auth.php';
+    $_SESSION = array();
+    session_destroy();
+    exit;
+}
+
+require_once '../includes/auth.php';
 authenticate();
 
 // Set CSP nonce and a permissive CSP header (align with dashboard)
@@ -88,17 +96,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - Cabinet Management System></title>
+    <title>Profile</title>
+    <link rel="icon" type="image/x-icon" href="../assets/images/DepEd_Logo.webp">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="assets/css/navbar.css" rel="stylesheet">
-    <link href="assets/css/dashboard.css" rel="stylesheet">
-    <link rel="preload" as="video" href="assets/images/Trail-Loading.webm">
+    <link href="../assets/css/navbar.css" rel="stylesheet">
+    <link href="../assets/css/dashboard.css" rel="stylesheet">
+    <link rel="preload" as="video" href="../assets/images/Trail-Loading.webm">
+    <style>
+        /* Glassmorphism overlay for logout modal */
+        #logoutConfirmModal {
+            background: rgba(255, 255, 255, 0.25) !important;
+            backdrop-filter: blur(8px) saturate(1.2);
+            -webkit-backdrop-filter: blur(8px) saturate(1.2);
+            transition: background 0.2s;
+            z-index: 2000;
+        }
+
+        #logoutConfirmModal .modal-content,
+        #logoutConfirmModal .modal-title,
+        #logoutConfirmModal .modal-body,
+        #logoutConfirmModal .modal-footer,
+        #logoutConfirmModal .modal-content p,
+        #logoutConfirmModal .modal-content h5 {
+            color: #222 !important;
+            background: #fff !important;
+            user-select: none;
+        }
+
+        #logoutConfirmModal .modal-content {
+            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.18);
+        }
+
+        #logoutConfirmModal .modal-title {
+            font-weight: 600;
+        }
+
+        #logoutConfirmModal .modal-footer {
+            background: #fff !important;
+        }
+
+        #logoutConfirmModal .btn-danger,
+        #logoutConfirmModal .btn-secondary {
+            user-select: none;
+        }
+    </style>
 </head>
 
 <body>
-    <?php include 'includes/sidebar.php'; ?>
+    <?php include '../includes/sidebar.php'; ?>
 
     <div id="content">
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary admin-navbar">
@@ -227,7 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
                 <div class="modal-body text-center py-4">
-                    <video src="assets/images/Trail-Loading.webm" style="width: 80px; height: 80px;" autoplay muted loop playsinline></video>
+                    <video src="../assets/images/Trail-Loading.webm" style="width: 80px; height: 80px;" autoplay muted loop playsinline></video>
                     <h6 id="loadingMessage" class="mt-3 text-muted">Updating Password, please wait...</h6>
                 </div>
             </div>
@@ -250,17 +297,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
+
+    <!-- Logout Confirmation Modal (hidden by default) -->
+    <div class="modal" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" style="display:none;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius:12px;">
+                <div class="modal-header" style="border-bottom:none;">
+                    <h5 class="modal-title">Confirm Logout</h5>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Are you sure you want to logout?</p>
+                </div>
+                <div class="modal-footer" style="border-top:none;">
+                    <button type="button" class="btn btn-secondary" id="cancelLogoutBtn">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmLogoutBtn">Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Logout Loading Modal (hidden by default) -->
+    <div class="modal" id="logoutLoadingModal" tabindex="-1" aria-hidden="true" style="display:none; background:rgba(255,255,255,0.25); backdrop-filter: blur(8px) saturate(1.2); -webkit-backdrop-filter: blur(8px) saturate(1.2); z-index:2100;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background:transparent; border:none; box-shadow:none; align-items:center;">
+                <div class="modal-body text-center">
+                    <video src="../assets/images/Trail-Loading.webm" autoplay loop muted style="width:120px; border-radius:50%; background:#fff;"></video>
+                    <div class="mt-3 text-dark fw-bold" style="font-size:1.2rem; text-shadow:0 1px 4px #fff;">Logging Out! Thank you...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <?php if ($success): ?>
         <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
-            // Mark password as changed so encoder reminder modal won’t appear again
+            // Mark password as changed so encoder reminder modal won't appear again
             try {
                 localStorage.setItem('cis_password_changed', '1');
             } catch (e) {}
         </script>
     <?php endif; ?>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
-        // Eye icons toggle for password fields
+        // Logout modal logic
         document.addEventListener('DOMContentLoaded', function() {
+            var logoutBtn = document.getElementById('logoutSidebarBtn');
+            var confirmModal = new bootstrap.Modal(document.getElementById('logoutConfirmModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+            var loadingModal = new bootstrap.Modal(document.getElementById('logoutLoadingModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.getElementById('logoutConfirmModal').style.display = 'block';
+                    confirmModal.show();
+                });
+            }
+            document.getElementById('confirmLogoutBtn').onclick = function() {
+                confirmModal.hide();
+                setTimeout(function() {
+                    document.getElementById('logoutLoadingModal').style.display = 'block';
+                    loadingModal.show();
+                    // AJAX POST to logout (destroy session)
+                    fetch('profile.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'logout=1',
+                        cache: 'no-store',
+                        credentials: 'same-origin'
+                    }).then(function() {
+                        setTimeout(function() {
+                            window.location.replace('login.php');
+                        }, 2000);
+                    });
+                }, 300);
+            };
+            document.getElementById('cancelLogoutBtn').onclick = function() {
+                confirmModal.hide();
+                setTimeout(function() {
+                    document.getElementById('logoutConfirmModal').style.display = 'none';
+                }, 300);
+            };
+
+            // Eye icons toggle for password fields
             const bindToggle = (btnId, inputId) => {
                 const btn = document.getElementById(btnId);
                 const input = document.getElementById(inputId);
@@ -330,6 +452,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         return;
                     }
                     e.preventDefault();
+                    
+                    // Show loading modal with custom message
+                    document.getElementById('loadingMessage').textContent = 'Updating Password...';
+                    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'), {
+                        backdrop: 'static',
+                        keyboard: false
+                    });
+                    loadingModal.show();
+                    
                     const fd = new FormData(form);
                     fd.set('ajax', '1');
                     // Reset errors UI
@@ -345,24 +476,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }, 'Updating Password, please wait...')
                         .then(data => {
                             if (data && data.success) {
-                                // Success modal
-                                const sm = new bootstrap.Modal(document.getElementById('successModal'));
-                                sm.show();
-                                // Local flag to suppress reminders
-                                try {
-                                    localStorage.setItem('cis_password_changed', '1');
-                                } catch (e) {}
-                                // Hide first-time alert if present
-                                const banner = document.getElementById('firstTimePasswordAlert');
-                                if (banner) banner.classList.add('d-none');
-                                // Reset form fields
-                                form.reset();
+                                // Show Success_Check.webm animation
+                                const loadingVideo = document.getElementById('loadingVideo');
+                                if (loadingVideo) {
+                                    loadingVideo.src = '../assets/images/Success_Check.webm';
+                                    loadingVideo.load();
+                                    document.getElementById('loadingMessage').textContent = 'Password Updated Successfully!';
+                                    
+                                    // Show the success animation for 2 seconds
+                                    setTimeout(() => {
+                                        loadingModal.hide();
+                                        
+                                        // Success modal
+                                        const sm = new bootstrap.Modal(document.getElementById('successModal'));
+                                        sm.show();
+                                        // Local flag to suppress reminders
+                                        try {
+                                            localStorage.setItem('cis_password_changed', '1');
+                                        } catch (e) {}
+                                        // Hide first-time alert if present
+                                        const banner = document.getElementById('firstTimePasswordAlert');
+                                        if (banner) banner.classList.add('d-none');
+                                        // Reset form fields
+                                        form.reset();
+                                    }, 2000);
+                                } else {
+                                    // Fallback if video not available
+                                    loadingModal.hide();
+                                    
+                                    // Success modal
+                                    const sm = new bootstrap.Modal(document.getElementById('successModal'));
+                                    sm.show();
+                                    // Local flag to suppress reminders
+                                    try {
+                                        localStorage.setItem('cis_password_changed', '1');
+                                    } catch (e) {}
+                                    // Hide first-time alert if present
+                                    const banner = document.getElementById('firstTimePasswordAlert');
+                                    if (banner) banner.classList.add('d-none');
+                                    // Reset form fields
+                                    form.reset();
+                                }
                             } else if (data && data.errors) {
-                                errorBox.innerHTML = '<ul class="mb-0">' + data.errors.map(e => '<li>' + e + '</li>').join('') + '</ul>';
-                                errorBox.classList.remove('d-none');
+                                // Show Cross.webm animation for error
+                                const loadingVideo = document.getElementById('loadingVideo');
+                                if (loadingVideo) {
+                                    loadingVideo.src = '../assets/images/Cross.webm';
+                                    loadingVideo.load();
+                                    document.getElementById('loadingMessage').textContent = 'Failed to Update Password!';
+                                    
+                                    // Show the error animation for 2 seconds
+                                    setTimeout(() => {
+                                        loadingModal.hide();
+                                        errorBox.innerHTML = '<ul class="mb-0">' + data.errors.map(e => '<li>' + e + '</li>').join('') + '</ul>';
+                                        errorBox.classList.remove('d-none');
+                                    }, 2000);
+                                } else {
+                                    // Fallback if video not available
+                                    loadingModal.hide();
+                                    errorBox.innerHTML = '<ul class="mb-0">' + data.errors.map(e => '<li>' + e + '</li>').join('') + '</ul>';
+                                    errorBox.classList.remove('d-none');
+                                }
                             } else {
-                                errorBox.textContent = 'Unexpected error. Please try again.';
-                                errorBox.classList.remove('d-none');
+                                // Show Cross.webm animation for error
+                                const loadingVideo = document.getElementById('loadingVideo');
+                                if (loadingVideo) {
+                                    loadingVideo.src = '../assets/images/Cross.webm';
+                                    loadingVideo.load();
+                                    document.getElementById('loadingMessage').textContent = 'Unexpected Error!';
+                                    
+                                    // Show the error animation for 2 seconds
+                                    setTimeout(() => {
+                                        loadingModal.hide();
+                                        errorBox.textContent = 'Unexpected error. Please try again.';
+                                        errorBox.classList.remove('d-none');
+                                    }, 2000);
+                                } else {
+                                    // Fallback if video not available
+                                    loadingModal.hide();
+                                    errorBox.textContent = 'Unexpected error. Please try again.';
+                                    errorBox.classList.remove('d-none');
+                                }
                             }
                         })
                         .catch(err => {

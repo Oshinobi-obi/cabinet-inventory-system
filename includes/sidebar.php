@@ -147,19 +147,6 @@
                 </li>
             <?php endif; ?>
 
-            <!-- Encoder Quick Actions -->
-            <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] == 'encoder'): ?>
-                <li class="nav-item mt-3">
-                    <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted">
-                        <i class="fas fa-edit me-2"></i>Quick Actions
-                    </h6>
-                </li>
-                <li class="nav-item">
-                    <a href="cabinet.php" class="nav-link sidebar-link">
-                        <i class="fas fa-plus me-2"></i> Add New Cabinet
-                    </a>
-                </li>
-            <?php endif; ?>
 
             <!-- Common Footer Navigation -->
             <li class="nav-item mt-4">

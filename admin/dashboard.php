@@ -1,14 +1,14 @@
 <?php
 // Handle logout POST (AJAX) at the very top before any output
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
-    require_once 'includes/auth.php';
+    require_once '../includes/auth.php';
     $_SESSION = array();
     session_destroy();
     exit;
 }
 
-require_once 'includes/auth.php';
-require_once 'includes/email_service.php';
+require_once '../includes/auth.php';
+require_once '../includes/email_service.php';
 authenticate();
 
 // Generate CSP nonce for inline scripts
@@ -53,6 +53,59 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'recent_activity') {
                 'current_page' => $page,
                 'total_pages' => $totalPages,
                 'total_records' => $totalRecords
+            ]
+        ]);
+        exit;
+    } catch (PDOException $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        exit;
+    }
+}
+
+// Handle AJAX requests for activity search
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'search_activities') {
+    header('Content-Type: application/json');
+    
+    $searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
+    $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+    $limit = isset($_GET['limit']) ? max(1, intval($_GET['limit'])) : 5;
+    $offset = ($page - 1) * $limit;
+    
+    if (empty($searchTerm)) {
+        echo json_encode(['success' => false, 'message' => 'Search term is required']);
+        exit;
+    }
+    
+    try {
+        // Get total count for pagination
+        $countStmt = $pdo->prepare("
+            SELECT COUNT(*) as total 
+            FROM cabinets 
+            WHERE cabinet_number LIKE ? OR name LIKE ?
+        ");
+        $searchPattern = '%' . $searchTerm . '%';
+        $countStmt->execute([$searchPattern, $searchPattern]);
+        $totalRecords = $countStmt->fetch()['total'];
+        $totalPages = ceil($totalRecords / $limit);
+        
+        // Search across all cabinets by cabinet number or name with pagination
+        $stmt = $pdo->prepare("
+            SELECT cabinet_number, name, created_at, updated_at, 'Created' as action
+            FROM cabinets 
+            WHERE cabinet_number LIKE ? OR name LIKE ?
+            ORDER BY updated_at DESC
+            LIMIT ? OFFSET ?
+        ");
+        $stmt->execute([$searchPattern, $searchPattern, $limit, $offset]);
+        $activities = $stmt->fetchAll();
+        
+        echo json_encode([
+            'success' => true,
+            'activities' => $activities,
+            'pagination' => [
+                'current_page' => $page,
+                'total_pages' => $totalPages,
+                'total_items' => $totalRecords
             ]
         ]);
         exit;
@@ -142,6 +195,32 @@ if (isset($_POST['add_category']) && $_SERVER['REQUEST_METHOD'] == 'POST') {
         exit;
     }
 }
+
+// Function to fix auto-increment sequence
+function fixAutoIncrement($pdo) {
+    try {
+        // Get the current auto-increment value
+        $stmt = $pdo->query("SHOW TABLE STATUS LIKE 'cabinets'");
+        $result = $stmt->fetch();
+        $currentAutoIncrement = $result['Auto_increment'] ?? 1;
+        
+        // Get the actual maximum ID from the table
+        $stmt = $pdo->query("SELECT MAX(id) as max_id FROM cabinets");
+        $result = $stmt->fetch();
+        $maxId = $result['max_id'] ?? 0;
+        
+        // If auto-increment is way off, reset it
+        if ($currentAutoIncrement > $maxId + 100) {
+            $nextId = $maxId + 1;
+            $pdo->exec("ALTER TABLE cabinets AUTO_INCREMENT = $nextId");
+        }
+    } catch (Exception $e) {
+        // Silently fail if there's an issue
+    }
+}
+
+// Fix auto-increment sequence on page load
+fixAutoIncrement($pdo);
 
 // Handle AJAX request for adding user
 if (isset($_POST['add_user']) && $_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -273,16 +352,24 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo ucfirst($_SESSION['user_role']); ?> Dashboard - Cabinet Management System</title>
+    <title><?php echo ucfirst($_SESSION['user_role']); ?> Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="../assets/images/DepEd_Logo.webp">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="assets/css/navbar.css" rel="stylesheet">
-    <link href="assets/css/dashboard.css" rel="stylesheet">
-    <link href="assets/css/mobile-enhancements.css" rel="stylesheet">
-    <link rel="preload" as="video" href="assets/images/Trail-Loading.webm">
+    <link href="../assets/css/navbar.css" rel="stylesheet">
+    <link href="../assets/css/dashboard.css" rel="stylesheet">
+    <link href="../assets/css/mobile-enhancements.css" rel="stylesheet">
+    <link rel="preload" as="video" href="../assets/images/Trail-Loading.webm">
     <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
+        /* Search Input Styling - Remove Blue Highlight */
+        #activitySearch:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            border-color: #ced4da !important;
+        }
+        
         /* Loading Modal Styling */
         #loadingModal .modal-content {
             border: none;
@@ -391,7 +478,7 @@ try {
 
 <body>
 
-    <?php include 'includes/sidebar.php'; ?>
+    <?php include '../includes/sidebar.php'; ?>
 
     <!-- Logout Confirmation Modal (hidden by default) -->
     <div class="modal" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" style="display:none;">
@@ -415,7 +502,7 @@ try {
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="background:transparent; border:none; box-shadow:none; align-items:center;">
                 <div class="modal-body text-center">
-                    <video src="assets/images/Trail-Loading.webm" autoplay loop muted style="width:120px; border-radius:50%; background:#fff;"></video>
+                    <video src="../assets/images/Trail-Loading.webm" autoplay loop muted style="width:120px; border-radius:50%; background:#fff;"></video>
                     <div class="mt-3 text-dark fw-bold" style="font-size:1.2rem; text-shadow:0 1px 4px #fff;">Logging Out! Thank you...</div>
                 </div>
             </div>
@@ -465,7 +552,7 @@ try {
                                         <p class="mb-0">Total Cabinets</p>
                                     </div>
                                     <div class="align-self-center">
-                                        <img src="assets/images/cabinet-icon.svg" alt="Cabinet" style="width: 48px; height: 48px; filter: brightness(0) invert(1);">
+                                        <i class="fas fa-archive fa-2x"></i>
                                     </div>
                                 </div>
                             </div>
@@ -540,12 +627,12 @@ try {
                                         </button>
                                     </div>
                                     <div class="col-md-3 mb-2">
-                                        <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                                        <button type="button" class="btn btn-success w-100 open-add-user">
                                             <i class="fas fa-user-plus me-2"></i>Add User
                                         </button>
                                     </div>
                                     <div class="col-md-3 mb-2">
-                                        <button type="button" class="btn btn-warning w-100" data-bs-toggle="modal" data-bs-target="#emailSettingsModal">
+                                        <button type="button" class="btn btn-warning w-100 open-email-settings">
                                             <i class="fas fa-envelope-open-text me-2"></i>Email Settings
                                         </button>
                                     </div>
@@ -598,14 +685,12 @@ try {
                                         <p class="mb-0">Cabinets to Manage</p>
                                     </div>
                                     <div class="align-self-center">
-                                        <img src="assets/images/cabinet-icon.svg" alt="Cabinet" style="width: 48px; height: 48px; filter: brightness(0) invert(1);">
+                                        <i class="fas fa-archive fa-2x"></i>
                                     </div>
                                 </div>
                             </div>
                             <div class="card-footer">
-                                <a href="cabinet.php" class="text-white text-decoration-none">
-                                    <small>Manage Cabinets <i class="fas fa-arrow-right"></i></small>
-                                </a>
+                                <small>&nbsp;</small>
                             </div>
                         </div>
                     </div>
@@ -624,9 +709,7 @@ try {
                                 </div>
                             </div>
                             <div class="card-footer">
-                                <a href="cabinet.php" class="text-white text-decoration-none">
-                                    <small>Add Items <i class="fas fa-arrow-right"></i></small>
-                                </a>
+                                <small>&nbsp;</small>
                             </div>
                         </div>
                     </div>
@@ -645,9 +728,7 @@ try {
                                 </div>
                             </div>
                             <div class="card-footer">
-                                <a href="cabinet.php" class="text-white text-decoration-none">
-                                    <small>Generate QR <i class="fas fa-arrow-right"></i></small>
-                                </a>
+                                <small>&nbsp;</small>
                             </div>
                         </div>
                     </div>
@@ -661,21 +742,16 @@ try {
                                 <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Your Daily Tasks</h5>
                             </div>
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-4 mb-2">
+                                <div class="row justify-content-center">
+                                    <div class="col-md-5 mb-2">
                                         <button type="button" class="btn btn-primary w-100 open-add-cabinet">
                                             <i class="fas fa-plus me-2"></i>Add New Cabinet
                                         </button>
                                     </div>
-                                    <div class="col-md-4 mb-2">
+                                    <div class="col-md-5 mb-2">
                                         <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#selectCabinetModal">
                                             <i class="fas fa-edit me-2"></i>Edit Cabinets
                                         </button>
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <a href="index.php" class="btn btn-info w-100" target="_blank">
-                                            <i class="fas fa-search me-2"></i>Search & View
-                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -688,11 +764,19 @@ try {
             <div class="row">
                 <div class="col-md-8 mb-4">
                     <div class="card">
-                        <div class="card-header">
+                        <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">
                                 <i class="fas fa-history me-2"></i>
                                 <?php echo $_SESSION['user_role'] === 'admin' ? 'Recent System Activity' : 'Recently Updated Cabinets'; ?>
                             </h5>
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="activitySearch" placeholder="Cabinet Number or Name..." style="outline: none !important; box-shadow: none !important; border-color: #ced4da !important;">
+                                </div>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div id="recent-activity-container">
@@ -1163,7 +1247,7 @@ try {
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
                 <div class="modal-body">
-                    <video src="assets/images/Trail-Loading.webm" style="width: 80px; height: 80px;" autoplay muted loop playsinline></video>
+                    <video id="loadingVideo" src="../assets/images/Trail-Loading.webm" style="width: 80px; height: 80px;" autoplay muted loop playsinline></video>
                     <h5 id="loadingMessage">Processing...</h5>
                 </div>
             </div>
@@ -1438,7 +1522,7 @@ try {
         function loadEmailConfig() {
             // Load current email configuration when modal opens
             $('#emailSettingsModal').on('shown.bs.modal', function() {
-                fetch('includes/email_service.php?action=get_config')
+                fetch('../includes/email_service.php?action=get_config')
                     .then(response => response.json())
                     .then(data => {
                         if (data.success && data.config) {
@@ -1468,6 +1552,21 @@ try {
                 return;
             }
 
+            // Show Admin Quick Actions loading animation instantly
+            showAdminLoadingAnimation(
+                'Configuring Email SMTP Settings...',
+                'Email SMTP Configured Successfully!',
+                3000
+            );
+
+            // Close the email settings modal after showing loading animation
+            const emailModal = bootstrap.Modal.getInstance(document.getElementById('emailSettingsModal'));
+            emailModal.hide();
+
+            // Store success/error handling for later
+            let formSubmissionSuccess = false;
+            let formSubmissionError = null;
+
             const config = {
                 from_email: document.getElementById('from_email').value,
                 from_name: document.getElementById('from_name').value,
@@ -1484,7 +1583,7 @@ try {
             saveBtn.disabled = true;
             saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
 
-            fetch('includes/email_service.php', {
+            fetch('../includes/email_service.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1497,24 +1596,33 @@ try {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        showAlert('success', '✅ Email Configuration Saved Successfully!<br><small>New users will now automatically receive welcome emails with their credentials.</small>');
-                        $('#emailSettingsModal').modal('hide');
+                        formSubmissionSuccess = true;
+                        // The loading animation will handle the success display and page refresh
                     } else {
-                        showAlert('error', 'Error saving configuration: ' + (data.message || 'Unknown error'));
+                        formSubmissionError = 'Error saving configuration: ' + (data.message || 'Unknown error');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    showAlert('error', 'Network error occurred while saving configuration.');
+                    formSubmissionError = 'Network error occurred while saving configuration.';
                 })
-                .finally(() => {
+
+                // Handle errors after loading animation completes
+                setTimeout(() => {
+                    if (formSubmissionError) {
+                        showAlert('error', formSubmissionError);
+                    }
+                }, 3000); // After loading animation completes
+                
+                // Reset button state
+                setTimeout(() => {
                     saveBtn.disabled = false;
                     saveBtn.innerHTML = '<i class="fas fa-save me-1"></i>Save Configuration';
-                });
+                }, 3000);
         }
 
         function previewEmail() {
-            window.open('includes/email_service.php?action=preview', '_blank', 'width=800,height=600');
+            window.open('../includes/email_service.php?action=preview', '_blank', 'width=800,height=600');
         }
 
         function togglePassword() {
@@ -1613,6 +1721,64 @@ try {
             modal.show();
             return modal;
         }
+
+        // Reusable function for Admin Quick Actions loading animations
+        function showAdminLoadingAnimation(loadingMessage, successMessage, duration = 3000) {
+            // Show loading modal with Trail-Loading.webm
+            const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+            
+            // Set loading message and show modal
+            document.getElementById('loadingMessage').textContent = loadingMessage;
+            
+            // Ensure video is set to Trail-Loading.webm
+            const loadingVideo = document.getElementById('loadingVideo');
+            if (loadingVideo) {
+                loadingVideo.src = '../assets/images/Trail-Loading.webm';
+                loadingVideo.load();
+            }
+            
+            loadingModal.show();
+            
+            // Store the modal reference globally so it can be controlled by AJAX responses
+            window.currentLoadingModal = loadingModal;
+            window.currentLoadingVideo = loadingVideo;
+            window.loadingAnimationStartTime = Date.now();
+            
+            // After specified duration, show success animation
+            setTimeout(() => {
+                if (loadingVideo) {
+                    // Switch to Success_Check.webm and play once
+                    loadingVideo.src = '../assets/images/Success_Check.webm';
+                    loadingVideo.load();
+                    loadingVideo.loop = false; // Play only once
+                    document.getElementById('loadingMessage').textContent = successMessage;
+                    
+                    // Wait exactly 3 seconds after success animation starts, then refresh
+                    setTimeout(() => {
+                        loadingModal.hide();
+                        // Reset video for next use
+                        loadingVideo.src = '../assets/images/Trail-Loading.webm';
+                        loadingVideo.loop = true; // Reset loop for next use
+                        loadingVideo.load();
+                        // Clear global references
+                        window.currentLoadingModal = null;
+                        window.currentLoadingVideo = null;
+                        // Refresh page immediately
+                        window.location.reload();
+                    }, 3000); // Exactly 3 seconds for success animation
+                } else {
+                    // Fallback if video not available
+                    loadingModal.hide();
+                    // Refresh page immediately
+                    window.location.reload();
+                }
+            }, duration);
+            
+            return loadingModal;
+        }
         async function withLoading(action, message, minMs = LOADING_MIN_MS) {
             const modal = showLoading(message);
             const start = Date.now();
@@ -1637,7 +1803,7 @@ try {
                             <span class=\"visually-hidden\">Loading...<\/span>\
                         <\/div>\
                     <\/div>\
-                    <video class=\"loader-video\" src=\"assets/images/Trail-Loading.webm\" preload=\"auto\" style=\"width: 80px; height: 80px; display:block; margin:0 auto;\" autoplay muted loop playsinline><\/video>
+                    <video class=\"loader-video\" src=\"../assets/images/Trail-Loading.webm\" preload=\"auto\" style=\"width: 80px; height: 80px; display:block; margin:0 auto;\" autoplay muted loop playsinline><\/video>
                     <div class=\"text-muted mt-2 small\">${message || 'Loading...'}<\/div>
                 <\/div>
             `;
@@ -1812,6 +1978,28 @@ try {
                     withLoading(async () => {}, 'Loading Cabinet Creator...').then(() => {
                         const addModal = new bootstrap.Modal(document.getElementById('addCabinetModal'));
                         addModal.show();
+                    });
+                });
+            });
+
+            // Hook Add User buttons to show loading animation first (3 seconds)
+            const addUserButtons = document.querySelectorAll('.open-add-user');
+            addUserButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    withLoading(async () => {}, 'Loading User Creator...').then(() => {
+                        const addModal = new bootstrap.Modal(document.getElementById('addUserModal'));
+                        addModal.show();
+                    });
+                });
+            });
+
+            // Hook Email Settings buttons to show loading animation first (3 seconds)
+            const emailSettingsButtons = document.querySelectorAll('.open-email-settings');
+            emailSettingsButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    withLoading(async () => {}, 'Loading Email Configuration...').then(() => {
+                        const emailModal = new bootstrap.Modal(document.getElementById('emailSettingsModal'));
+                        emailModal.show();
                     });
                 });
             });
@@ -2027,7 +2215,7 @@ try {
                 const selectorModal = bootstrap.Modal.getInstance(document.getElementById('selectCabinetModal'));
                 if (selectorModal) selectorModal.hide();
                 withLoading(async () => {
-                    const r = await fetch(`cabinet_api.php?action=get_cabinet&id=${id}`);
+                    const r = await fetch(`../includes/cabinet_api.php?action=get_cabinet&id=${id}`);
                     const data = await r.json();
                     if (data.success) {
                         // Map API shape to currentCabinetData expected by editor
@@ -2074,8 +2262,18 @@ try {
                 const page = parseInt(e.target.getAttribute('data-page'));
                 const sort = e.target.getAttribute('data-sort');
                 const order = e.target.getAttribute('data-order');
-                if (page && sort && order) {
-                    loadRecentActivity(page, sort, order);
+                
+                if (isSearching) {
+                    // Handle search pagination
+                    const searchInput = document.getElementById('activitySearch');
+                    if (searchInput && searchInput.value.trim()) {
+                        performGlobalSearch(searchInput.value.trim(), page);
+                    }
+                } else {
+                    // Handle normal pagination
+                    if (page && sort && order) {
+                        loadRecentActivity(page, sort, order);
+                    }
                 }
                 return false;
             }
@@ -2086,8 +2284,18 @@ try {
             if (e.target.classList.contains('page-input')) {
                 const page = parseInt(e.target.value);
                 const maxPages = parseInt(e.target.getAttribute('data-max-pages'));
-                if (page >= 1 && page <= maxPages) {
-                    loadRecentActivity(page, currentSort, currentOrder);
+                
+                if (isSearching) {
+                    // Handle search pagination
+                    const searchInput = document.getElementById('activitySearch');
+                    if (searchInput && searchInput.value.trim() && page >= 1 && page <= maxPages) {
+                        performGlobalSearch(searchInput.value.trim(), page);
+                    }
+                } else {
+                    // Handle normal pagination
+                    if (page >= 1 && page <= maxPages) {
+                        loadRecentActivity(page, currentSort, currentOrder);
+                    }
                 }
             }
         });
@@ -2097,8 +2305,18 @@ try {
             if (e.target.classList.contains('page-input') && e.key === 'Enter') {
                 const page = parseInt(e.target.value);
                 const maxPages = parseInt(e.target.getAttribute('data-max-pages'));
-                if (page >= 1 && page <= maxPages) {
-                    loadRecentActivity(page, currentSort, currentOrder);
+                
+                if (isSearching) {
+                    // Handle search pagination
+                    const searchInput = document.getElementById('activitySearch');
+                    if (searchInput && searchInput.value.trim() && page >= 1 && page <= maxPages) {
+                        performGlobalSearch(searchInput.value.trim(), page);
+                    }
+                } else {
+                    // Handle normal pagination
+                    if (page >= 1 && page <= maxPages) {
+                        loadRecentActivity(page, currentSort, currentOrder);
+                    }
                 }
             }
         });
@@ -2282,7 +2500,7 @@ try {
                     photoPreview.innerHTML = `
                             <div class="text-center">
                                 <small class="text-muted d-block mb-2">Current photo:</small>
-                                <img src="${photoPath}" alt="Current Photo" style="max-height: 100px;" class="img-thumbnail mb-2">
+                                <img src="../${photoPath}" alt="Current Photo" style="max-height: 100px;" class="img-thumbnail mb-2">
                                 <div class="small text-success">
                                     <i class="fas fa-file-image me-1"></i>
                                     ${photoFileName}
@@ -2303,58 +2521,13 @@ try {
 
             const formData = new FormData(this);
             formData.append('edit_cabinet', '1'); // Ensure the edit_cabinet flag is set
+            formData.append('ajax', '1'); // Add AJAX flag for JSON response
 
             const submitBtn = this.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.innerHTML;
 
-            // Show loading state
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
-            submitBtn.disabled = true;
-
-            fetch('cabinet.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    // Reset button first
-                    submitBtn.innerHTML = originalBtnText;
-                    submitBtn.disabled = false;
-
-                    if (response.ok) {
-                        // Close edit modal
-                        const editModal = bootstrap.Modal.getInstance(document.getElementById('editCabinetModal'));
-                        editModal.hide();
-
-                        // Show success modal with edit message
-                        const successMessage = document.getElementById('successMessage');
-                        successMessage.textContent = 'Cabinet Updated Successfully ✔';
-
-                        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                        successModal.show();
-
-                        // Refresh the page after success modal is closed
-                        const successModalElement = document.getElementById('successModal');
-                        const refreshHandler = function() {
-                            window.location.reload();
-                            successModalElement.removeEventListener('hidden.bs.modal', refreshHandler);
-                        };
-                        successModalElement.addEventListener('hidden.bs.modal', refreshHandler);
-
-                    } else {
-                        throw new Error('HTTP error! status: ' + response.status);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error updating cabinet:', error);
-
-                    // Reset button
-                    submitBtn.innerHTML = originalBtnText;
-                    submitBtn.disabled = false;
-
-                    // Show error modal
-                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                    errorModal.show();
-                });
+            // Show loading animation sequence
+            showEditCabinetLoadingAnimation(formData, submitBtn, originalBtnText);
         });
 
         // Handle add cabinet form submission
@@ -2363,6 +2536,7 @@ try {
 
             const formData = new FormData(this);
             formData.append('add_cabinet', '1'); // Ensure the add_cabinet flag is set
+            formData.append('ajax', '1'); // Add AJAX flag for JSON response
 
             const submitBtn = this.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.innerHTML;
@@ -2371,27 +2545,33 @@ try {
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
             submitBtn.disabled = true;
 
-            fetch('cabinet.php', {
+            // Show Admin Quick Actions loading animation instantly
+            showAdminLoadingAnimation(
+                'Adding Cabinet! Please Wait...',
+                'Cabinet Added Successfully!',
+                3000
+            );
+
+            // Close the form modal after showing loading animation
+            const addModal = bootstrap.Modal.getInstance(document.getElementById('addCabinetModal'));
+            addModal.hide();
+
+            // Store success/error handling for later
+            let formSubmissionSuccess = false;
+            let formSubmissionError = null;
+
+            fetch('../admin/cabinet.php', {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => {
+                .then(response => response.json())
+                .then(data => {
                     // Reset button first
                     submitBtn.innerHTML = originalBtnText;
                     submitBtn.disabled = false;
 
-                    if (response.ok) {
-                        // Close add modal
-                        const addModal = bootstrap.Modal.getInstance(document.getElementById('addCabinetModal'));
-                        addModal.hide();
-
-                        // Show success modal with add message
-                        const successMessage = document.getElementById('successMessage');
-                        successMessage.textContent = 'Cabinet Added Successfully ✔';
-
-                        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                        successModal.show();
-
+                    if (data.success) {
+                        formSubmissionSuccess = true;
                         // Reset the form
                         this.reset();
                         // Reset items container to one item
@@ -2404,29 +2584,27 @@ try {
                         firstItem.querySelector('input[name*="[quantity]"]').value = '1';
                         modalItemCount = 0;
 
-                        // Refresh the page after success modal is closed
-                        const successModalElement = document.getElementById('successModal');
-                        const refreshHandler = function() {
-                            window.location.reload();
-                            successModalElement.removeEventListener('hidden.bs.modal', refreshHandler);
-                        };
-                        successModalElement.addEventListener('hidden.bs.modal', refreshHandler);
+                        // The loading animation will handle the success display and page refresh
 
                     } else {
-                        throw new Error('HTTP error! status: ' + response.status);
+                        formSubmissionError = 'Error adding cabinet: ' + (data.message || 'Unknown error');
                     }
                 })
                 .catch(error => {
                     console.error('Error adding cabinet:', error);
-
+                    formSubmissionError = 'Network error adding cabinet. Please try again.';
+                    
                     // Reset button
                     submitBtn.innerHTML = originalBtnText;
                     submitBtn.disabled = false;
-
-                    // Show error modal
-                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                    errorModal.show();
                 });
+
+            // Handle errors after loading animation completes
+            setTimeout(() => {
+                if (formSubmissionError) {
+                    alert(formSubmissionError);
+                }
+            }, 3000); // After loading animation completes
         });
 
         // Edit Cabinet Modal - Add/Remove items functionality
@@ -2506,7 +2684,7 @@ try {
                             <span class="visually-hidden">Loading...</span>
                         </div>
                     </div>
-                    <video class="loader-video" src="assets/images/Trail-Loading.webm" preload="auto" style="width: 120px; height: 120px; display:block; margin:0 auto;" autoplay muted loop playsinline></video>
+                    <video class="loader-video" src="../assets/images/Trail-Loading.webm" preload="auto" style="width: 120px; height: 120px; display:block; margin:0 auto;" autoplay muted loop playsinline></video>
                     <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
                 </div>
             `;
@@ -2514,7 +2692,7 @@ try {
 
             const start = Date.now();
             // Fetch cabinet data
-            fetch(`cabinet_api.php?action=get_cabinet_by_number&cabinet_number=${cabinetNumber}`)
+            fetch(`../includes/cabinet_api.php?action=get_cabinet_by_number&cabinet_number=${cabinetNumber}`)
                 .then(response => response.json())
                 .then(data => {
                     const elapsed = Date.now() - start;
@@ -2547,7 +2725,7 @@ try {
                                     </table>
                                 </div>
                                 <div class="col-md-4 text-center">
-                                    ${cabinet.photo_path ? `<img src="${cabinet.photo_path}" alt="Cabinet Photo" class="img-fluid rounded" style="max-height: 150px;">` : '<div class="bg-light rounded p-3"><i class="fas fa-image fa-3x text-muted"></i><p class="mt-2 mb-0 text-muted">No photo</p></div>'}
+                                    ${cabinet.photo_path ? `<img src="../${cabinet.photo_path}" alt="Cabinet Photo" class="img-fluid rounded" style="max-height: 150px;">` : '<div class="bg-light rounded p-3"><i class="fas fa-image fa-3x text-muted"></i><p class="mt-2 mb-0 text-muted">No photo</p></div>'}
                                 </div>
                             </div>
                             
@@ -2578,7 +2756,7 @@ try {
                             ${cabinet.qr_path ? `
                                 <div class="text-center mt-3">
                                     <h6 class="text-primary">QR Code</h6>
-                                    <img src="${cabinet.qr_path}" alt="QR Code" class="img-fluid" style="max-width: 150px;">
+                                    <img src="../${cabinet.qr_path}" alt="QR Code" class="img-fluid" style="max-width: 150px;">
                                 </div>
                             ` : ''}
                             `;
@@ -2639,7 +2817,7 @@ try {
                 photoPreview.innerHTML = `
                     <div class="text-center">
                         <small class="text-muted d-block mb-2">Current photo:</small>
-                        <img src="${photoPath}" alt="Current Photo" style="max-height: 100px;" class="img-thumbnail mb-2">
+                        <img src="../${photoPath}" alt="Current Photo" style="max-height: 100px;" class="img-thumbnail mb-2">
                         <div class="small text-success">
                             <i class="fas fa-file-image me-1"></i>
                             ${photoFileName}
@@ -2767,7 +2945,7 @@ try {
                     this.disabled = true;
 
                     // Call delete API
-                    fetch('cabinet_api.php', {
+                    fetch('../includes/cabinet_api.php', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -2821,7 +2999,7 @@ try {
             }
         }
 
-        // Export function
+        // Export function with loading animation
         function downloadExport() {
             console.log('Export function called'); // Debug logging
             const form = document.getElementById('exportForm');
@@ -2837,31 +3015,153 @@ try {
                 return;
             }
 
-            // Create export URL
-            const url = `export.php?cabinet_id=${cabinetId}&format=${format}`;
-            console.log('Export URL:', url); // Debug logging
-
-            // Close modal first to prevent aria-hidden focus issues
+            // Close modal first
             const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
             modal.hide();
 
-            // Small delay to allow modal to close properly before opening new window
+            // Show loading animation sequence
+            showExportLoadingAnimation(cabinetId, format);
+        }
+
+        // Export loading animation sequence
+        function showExportLoadingAnimation(cabinetId, format) {
+            const formatText = format === 'pdf' ? 'PDF' : 'Excel Spreadsheet';
+            const cabinetText = cabinetId === 'all' ? 'All Cabinets' : 'Cabinet Data';
+            
+            // Create loading modal
+            const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+            const loadingVideo = document.getElementById('loadingVideo');
+            const loadingMessage = document.getElementById('loadingMessage');
+            
+            // First message: "Downloading (PDF or Excel Spreadsheet)! Please Wait..."
+            loadingMessage.textContent = `Downloading ${formatText}! Please Wait...`;
+            loadingVideo.src = '../assets/images/Trail-Loading.webm';
+            loadingVideo.loop = true;
+            loadingVideo.style.display = 'block';
+            loadingModal.show();
+            
+            // After 3 seconds, show second message
             setTimeout(() => {
-                if (format === 'pdf') {
-                    // For PDF, open in new window which will trigger print dialog
-                    window.open(url, '_blank', 'width=1024,height=768,scrollbars=yes,resizable=yes');
-                    console.log('PDF export opened in new window'); // Debug logging
-                } else {
-                    // For other formats, create download link
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `cabinet_export_${Date.now()}.${format}`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    console.log('Export download triggered'); // Debug logging
+                loadingMessage.textContent = `Exporting ${cabinetText}! Please Wait...`;
+                // Keep same loading animation
+            }, 3000);
+            
+            // After 6 seconds, show third message with success animation
+            setTimeout(() => {
+                loadingMessage.textContent = `Data Export Success! Downloading File...`;
+                loadingVideo.src = '../assets/images/Success_Check.webm';
+                loadingVideo.loop = false;
+                
+                // Start the actual download
+                const url = `../includes/export.php?cabinet_id=${cabinetId}&format=${format}`;
+                
+                try {
+                    if (format === 'pdf') {
+                        // For PDF, open in new window which will trigger print dialog
+                        window.open(url, '_blank', 'width=1024,height=768,scrollbars=yes,resizable=yes');
+                    } else {
+                        // For other formats, create download link
+                        const link = document.createElement('a');
+                        link.href = url;
+                        // Fix file extension for Excel format (use CSV for compatibility)
+                        const fileExtension = format === 'excel' ? 'csv' : format;
+                        link.download = `cabinet_export_${Date.now()}.${fileExtension}`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+                    
+                    // Close modal after 3 seconds
+                    setTimeout(() => {
+                        loadingModal.hide();
+                    }, 3000);
+                } catch (error) {
+                    // Handle export failure
+                    showExportError(loadingModal, loadingVideo, loadingMessage);
                 }
-            }, 200);
+                
+            }, 6000);
+        }
+
+        // Export error handling function
+        function showExportError(loadingModal, loadingVideo, loadingMessage) {
+            loadingMessage.textContent = `Data Export Failed! Please Try Again Later...`;
+            loadingVideo.src = '../assets/images/Cross.webm';
+            loadingVideo.loop = false;
+            
+            // Close modal after 3 seconds
+            setTimeout(() => {
+                loadingModal.hide();
+            }, 3000);
+        }
+
+        // Edit Cabinet loading animation sequence
+        function showEditCabinetLoadingAnimation(formData, submitBtn, originalBtnText) {
+            // Close edit modal first
+            const editModal = bootstrap.Modal.getInstance(document.getElementById('editCabinetModal'));
+            editModal.hide();
+            
+            // Show loading animation immediately after edit modal closes
+            // Create loading modal
+            const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+            const loadingVideo = document.getElementById('loadingVideo');
+            const loadingMessage = document.getElementById('loadingMessage');
+            
+            // First message: "Updating Cabinet! Please Wait..."
+            loadingMessage.textContent = 'Updating Cabinet! Please Wait...';
+            loadingVideo.src = '../assets/images/Trail-Loading.webm';
+            loadingVideo.loop = true;
+            loadingVideo.style.display = 'block';
+            loadingModal.show();
+            
+            // After 3 seconds, show success message with success animation
+            setTimeout(() => {
+                loadingMessage.textContent = 'Cabinet Updated Successfully!';
+                loadingVideo.src = '../assets/images/Success_Check.webm';
+                loadingVideo.loop = false;
+                
+                // Start the actual update
+                fetch('../admin/cabinet.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Reset button
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                    
+                    if (data.success) {
+                        // Close loading modal after 3 seconds and refresh
+                        setTimeout(() => {
+                            loadingModal.hide();
+                            window.location.reload();
+                        }, 3000);
+                    } else {
+                        // Handle error
+                        loadingMessage.textContent = 'Update Failed! Please Try Again...';
+                        loadingVideo.src = '../assets/images/Cross.webm';
+                        loadingVideo.loop = false;
+                        
+                        setTimeout(() => {
+                            loadingModal.hide();
+                        }, 3000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating cabinet:', error);
+                    
+                    // Handle network error
+                    loadingMessage.textContent = 'Network Error! Please Try Again...';
+                    loadingVideo.src = '../assets/images/Cross.webm';
+                    loadingVideo.loop = false;
+                    
+                    setTimeout(() => {
+                        loadingModal.hide();
+                    }, 3000);
+                });
+                
+            }, 3000);
         }
 
         // Toggle All Cabinets option visibility based on format selection
@@ -2892,14 +3192,23 @@ try {
             addUserForm.addEventListener('submit', function(e) {
                 e.preventDefault();
 
-                // Hide the Add User modal first
+                // Get username for success message
+                const username = document.getElementById('modal_username').value;
+
+                // Show Admin Quick Actions loading animation instantly
+                showAdminLoadingAnimation(
+                    'Adding User! Please Wait...',
+                    `User (${username}) Added Successfully!`,
+                    3000
+                );
+
+                // Hide the Add User modal after showing loading animation
                 const addUserModal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
                 addUserModal.hide();
 
-                // Show loading modal with custom message
-                document.getElementById('loadingMessage').textContent = 'Adding User...';
-                const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
-                loadingModal.show();
+                // Store success/error handling for later
+                let formSubmissionSuccess = false;
+                let formSubmissionError = null;
 
                 const formData = new FormData();
                 formData.append('add_user', 'true');
@@ -2919,39 +3228,28 @@ try {
                     })
                     .then(response => response.json())
                     .then(data => {
-                        // Hide loading modal
-                        loadingModal.hide();
-
                         if (data.success) {
+                            formSubmissionSuccess = true;
                             // Reset form
                             document.getElementById('addUserForm').reset();
 
-                            // Show success modal with custom message
-                            document.getElementById('successMessage').textContent = data.message;
-                            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                            successModal.show();
-
-                            // Refresh the page after success modal is closed
-                            const successModalElement = document.getElementById('successModal');
-                            const refreshHandler = function() {
-                                window.location.reload();
-                                successModalElement.removeEventListener('hidden.bs.modal', refreshHandler);
-                            };
-                            successModalElement.addEventListener('hidden.bs.modal', refreshHandler);
+                            // The loading animation will handle the success display and page refresh
 
                         } else {
-                            // Show error
-                            alert('Error: ' + (data.message || 'Failed to add user'));
+                            formSubmissionError = 'Error: ' + (data.message || 'Failed to add user');
                         }
                     })
                     .catch(error => {
                         console.error('Error adding user:', error);
-
-                        // Hide loading modal
-                        loadingModal.hide();
-
-                        alert('Error adding user. Please try again.');
+                        formSubmissionError = 'Network error. Please try again.';
                     });
+
+                // Handle errors after loading animation completes
+                setTimeout(() => {
+                    if (formSubmissionError) {
+                        alert(formSubmissionError);
+                    }
+                }, 3000); // After loading animation completes
             });
         }
 
@@ -3022,6 +3320,118 @@ try {
                     });
             });
         }
+
+        // Activity Search Functionality
+        let isSearching = false; // Track if we're in search mode
+        let searchTimeout; // For debouncing search requests
+        
+        document.getElementById('activitySearch').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            console.log('Dashboard searching for:', searchTerm);
+            
+            // Clear previous timeout
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            
+            if (searchTerm === '') {
+                // Clear search - restore original pagination
+                isSearching = false;
+                loadRecentActivity(1, currentSort, currentOrder);
+                return;
+            }
+            
+            // Debounce search to avoid too many requests
+            searchTimeout = setTimeout(() => {
+                performGlobalSearch(searchTerm);
+            }, 300);
+        });
+
+        function performGlobalSearch(searchTerm, page = 1) {
+            isSearching = true;
+            const container = document.getElementById('recent-activity-container');
+            if (!container) return;
+            
+            // Show loading state with Trail-Loading.webm
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="d-flex justify-content-center align-items-center">
+                        <video autoplay loop muted class="me-3" style="width: 40px; height: 40px;">
+                            <source src="../assets/images/Trail-Loading.webm" type="video/webm">
+                        </video>
+                        <span>Searching cabinets...</span>
+                    </div>
+                </div>
+            `;
+            
+            // Fetch activities from database with search term and pagination
+            fetch(`dashboard.php?ajax=search_activities&search=${encodeURIComponent(searchTerm)}&page=${page}&limit=5`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Search results:', data.activities.length);
+                        renderRecentActivityTable(data.activities, currentSort, currentOrder);
+                        
+                        // Show pagination for search results
+                        if (data.activities.length > 0) {
+                            const pagination = {
+                                current_page: page,
+                                total_pages: data.pagination.total_pages,
+                                total_items: data.pagination.total_items
+                            };
+                            renderPaginationControls(pagination);
+                        } else {
+                            // Hide pagination if no results
+                            const paginationContainer = document.getElementById('pagination-container');
+                            if (paginationContainer) {
+                                paginationContainer.innerHTML = '';
+                            }
+                        }
+                    } else {
+                        container.innerHTML = '<div class="alert alert-warning">No activities found matching your search.</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    container.innerHTML = '<div class="alert alert-danger">Error performing search. Please try again.</div>';
+                });
+        }
+
+        // Override the loadRecentActivity function to store activities
+        const originalLoadRecentActivity = loadRecentActivity;
+        loadRecentActivity = function(page = 1, sort = 'updated_at', order = 'desc') {
+            // Don't load if we're in search mode
+            if (isSearching) {
+                return;
+            }
+            
+            currentPage = page;
+            currentSort = sort;
+            currentOrder = order;
+
+            const container = document.getElementById('recent-activity-container');
+            if (!container) return;
+            container.innerHTML = sectionLoaderHTML('Loading Recent Activity...');
+            setupSectionLoader(container);
+            const start = Date.now();
+
+            fetch(`dashboard.php?ajax=recent_activity&page=${page}&sort=${sort}&order=${order}`)
+                .then(response => response.json())
+                .then(data => {
+                    const elapsed = Date.now() - start;
+                    const wait = Math.max(0, LOADING_MIN_MS - elapsed);
+
+                    setTimeout(() => {
+                        if (data.success) {
+                            allActivities = data.activities; // Store all activities
+                            renderRecentActivityTable(data.activities, currentSort, currentOrder);
+                            renderPaginationControls(data.pagination);
+                        } else {
+                            container.innerHTML = '<div class="alert alert-warning">No recent activity found.</div>';
+                        }
+                    }, wait);
+                });
+        };
     </script>
 </body>
 

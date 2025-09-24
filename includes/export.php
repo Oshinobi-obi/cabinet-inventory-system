@@ -1,80 +1,166 @@
 <?php
-require_once 'includes/auth.php';
+require_once 'auth.php';
 authenticate();
 authorize(['admin', 'encoder']);
 
 if (!isset($_GET['cabinet_id'])) {
     $_SESSION['error'] = "No cabinet specified";
-    redirect('cabinet.php');
+    redirect('../admin/cabinet.php');
 }
 
-$cabinetId = intval($_GET['cabinet_id']);
+$cabinetId = $_GET['cabinet_id'];
 $format = isset($_GET['format']) ? $_GET['format'] : 'html';
 
-// Get cabinet details
-$stmt = $pdo->prepare("
-    SELECT c.*, 
-           GROUP_CONCAT(DISTINCT cat.name) as categories,
-           COUNT(i.id) as item_count
-    FROM cabinets c
-    LEFT JOIN items i ON c.id = i.cabinet_id
-    LEFT JOIN categories cat ON i.category_id = cat.id
-    WHERE c.id = ?
-    GROUP BY c.id
-");
-$stmt->execute([$cabinetId]);
-$cabinet = $stmt->fetch();
+// Handle different export scenarios
+if ($cabinetId === 'all') {
+    // Export all cabinets
+    $stmt = $pdo->prepare("
+        SELECT c.id, c.cabinet_number, c.name as cabinet_name
+        FROM cabinets c
+        ORDER BY c.cabinet_number
+    ");
+    $stmt->execute();
+    $cabinets = $stmt->fetchAll();
+    
+    if (empty($cabinets)) {
+        $_SESSION['error'] = "No cabinets found";
+        redirect('../admin/dashboard.php');
+    }
+} else {
+    // Export single cabinet
+    $cabinetId = intval($cabinetId);
+    $stmt = $pdo->prepare("
+        SELECT c.*, 
+               GROUP_CONCAT(DISTINCT cat.name) as categories,
+               COUNT(i.id) as item_count
+        FROM cabinets c
+        LEFT JOIN items i ON c.id = i.cabinet_id
+        LEFT JOIN categories cat ON i.category_id = cat.id
+        WHERE c.id = ?
+        GROUP BY c.id
+    ");
+    $stmt->execute([$cabinetId]);
+    $cabinet = $stmt->fetch();
 
-if (!$cabinet) {
-    $_SESSION['error'] = "Cabinet not found";
-    redirect('cabinet.php');
-}
-
-// Get items
-$stmt = $pdo->prepare("
-    SELECT i.name, i.quantity, cat.name as category
-    FROM items i
-    JOIN categories cat ON i.category_id = cat.id
-    WHERE i.cabinet_id = ?
-    ORDER BY cat.name, i.name
-");
-$stmt->execute([$cabinetId]);
-$items = $stmt->fetchAll();
-
-// Generate QR code using the function from functions.php
-$qrFile = generateQRCode($cabinet['cabinet_number']);
-
-if ($qrFile === false) {
-    $qrFile = null; // Don't redirect, just show without QR code
-    error_log("QR code generation failed for cabinet: " . $cabinet['cabinet_number']);
+    if (!$cabinet) {
+        $_SESSION['error'] = "Cabinet not found";
+        redirect('../admin/dashboard.php');
+    }
+    
+    // Get items for this cabinet (for PDF display)
+    $stmt = $pdo->prepare("
+        SELECT i.name, i.quantity, cat.name as category
+        FROM items i
+        JOIN categories cat ON i.category_id = cat.id
+        WHERE i.cabinet_id = ?
+        ORDER BY cat.name, i.name
+    ");
+    $stmt->execute([$cabinetId]);
+    $items = $stmt->fetchAll();
 }
 
 // Handle different export formats
 if ($format === 'pdf') {
-    // For PDF format, we'll output HTML with special PDF-optimized styling
-    // The browser will handle the PDF conversion
-    header('Content-Type: text/html; charset=utf-8');
+    // Use the simple PDF generator
+    require_once 'simple_pdf.php';
+    SimplePDF::generateCabinetPDF($cabinetId, $cabinet, $items);
+    exit;
 } elseif ($format === 'excel') {
-    // For Excel format, output as CSV (simple implementation)
-    header('Content-Type: application/vnd.ms-excel');
-    header('Content-Disposition: attachment; filename="cabinet_export_' . $cabinet['cabinet_number'] . '_' . date('Y-m-d') . '.csv"');
-
-    // Output CSV data
-    echo "Cabinet Information Export\n\n";
-    echo "Cabinet Name," . $cabinet['name'] . "\n";
-    echo "Cabinet Number," . $cabinet['cabinet_number'] . "\n";
-    echo "Total Items," . $cabinet['item_count'] . "\n";
-    echo "Categories," . ($cabinet['categories'] ?: 'No categories') . "\n";
-    echo "Last Updated," . date('M j, Y g:i A', strtotime($cabinet['updated_at'])) . "\n\n";
-
-    echo "Item Inventory:\n";
-    echo "Item Name,Category,Quantity\n";
-
-    if ($items) {
-        foreach ($items as $item) {
-            echo '"' . str_replace('"', '""', $item['name']) . '",';
-            echo '"' . str_replace('"', '""', $item['category']) . '",';
-            echo $item['quantity'] . "\n";
+    // For Excel format, output as CSV in the masterlist format
+    header('Content-Type: text/csv; charset=utf-8');
+    
+    if ($cabinetId === 'all') {
+        header('Content-Disposition: attachment; filename="PPRD_Office_Cabinet_Masterlist_' . date('Y-m-d') . '.csv"');
+        
+        // Output CSV header in masterlist format
+        echo "No,Cabinet No.,Categories,Items\n";
+        
+        $rowNumber = 1;
+        foreach ($cabinets as $cabinet) {
+            // Get items for this cabinet
+            $stmt = $pdo->prepare("
+                SELECT i.name, i.quantity, cat.name as category
+                FROM items i
+                JOIN categories cat ON i.category_id = cat.id
+                WHERE i.cabinet_id = ?
+                ORDER BY cat.name, i.name
+            ");
+            $stmt->execute([$cabinet['id']]);
+            $items = $stmt->fetchAll();
+            
+            if (empty($items)) {
+                // If no items, show empty rows (like in your masterlist)
+                for ($i = 0; $i < 20; $i++) {
+                    echo $rowNumber . "," . $cabinet['cabinet_number'] . ",,\n";
+                    $rowNumber++;
+                }
+            } else {
+                // Group items by category
+                $groupedItems = [];
+                foreach ($items as $item) {
+                    $groupedItems[$item['category']][] = $item;
+                }
+                
+                foreach ($groupedItems as $category => $categoryItems) {
+                    foreach ($categoryItems as $item) {
+                        echo $rowNumber . "," . $cabinet['cabinet_number'] . "," . $category . "," . $item['name'] . "\n";
+                        $rowNumber++;
+                    }
+                }
+                
+                // Add empty rows to match masterlist format (up to 20 items per cabinet)
+                $remainingRows = 20 - count($items);
+                for ($i = 0; $i < $remainingRows; $i++) {
+                    echo $rowNumber . "," . $cabinet['cabinet_number'] . ",,\n";
+                    $rowNumber++;
+                }
+            }
+        }
+    } else {
+        // Single cabinet export
+        header('Content-Disposition: attachment; filename="cabinet_export_' . $cabinet['cabinet_number'] . '_' . date('Y-m-d') . '.csv"');
+        
+        // Get items for single cabinet
+        $stmt = $pdo->prepare("
+            SELECT i.name, i.quantity, cat.name as category
+            FROM items i
+            JOIN categories cat ON i.category_id = cat.id
+            WHERE i.cabinet_id = ?
+            ORDER BY cat.name, i.name
+        ");
+        $stmt->execute([$cabinetId]);
+        $items = $stmt->fetchAll();
+        
+        // Output CSV header in masterlist format
+        echo "No,Cabinet No.,Categories,Items\n";
+        
+        $rowNumber = 1;
+        if (empty($items)) {
+            // If no items, show empty rows
+            for ($i = 0; $i < 20; $i++) {
+                echo $rowNumber . "," . $cabinet['cabinet_number'] . ",,\n";
+                $rowNumber++;
+            }
+        } else {
+            // Group items by category
+            $groupedItems = [];
+            foreach ($items as $item) {
+                $groupedItems[$item['category']][] = $item;
+            }
+            
+            foreach ($groupedItems as $category => $categoryItems) {
+                foreach ($categoryItems as $item) {
+                    echo $rowNumber . "," . $cabinet['cabinet_number'] . "," . $category . "," . $item['name'] . "\n";
+                    $rowNumber++;
+                }
+            }
+            
+            // Add empty rows to match masterlist format
+            $remainingRows = 20 - count($items);
+            for ($i = 0; $i < $remainingRows; $i++) {
+                echo $rowNumber . "," . $cabinet['cabinet_number'] . ",,\n";
+                $rowNumber++;
+            }
         }
     }
 
@@ -93,7 +179,7 @@ if ($format === 'pdf') {
         <!-- PDF-optimized styles -->
         <style>
             @page {
-                size: letter landscape;
+                size: A4 landscape;
                 margin: 0.5in;
             }
 
@@ -107,6 +193,11 @@ if ($format === 'pdf') {
                 padding: 0;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+            }
+            
+            .pdf-export {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
 
             .container {
@@ -444,7 +535,18 @@ if ($format === 'pdf') {
                                         <div class="col-md-6">
                                             <p class="mb-2"><strong>Quick Access URL:</strong></p>
                                             <p class="small text-muted bg-white p-2 rounded border">
-                                                <?php echo (defined('BASE_URL') ? BASE_URL : 'http://localhost/cabinet-inventory-system/') . "index.php?cabinet=" . urlencode($cabinet['cabinet_number']); ?>
+                                                <?php 
+                                                // Get base URL from network_config.json or fallback to current server
+                                                $baseUrl = 'http://localhost/cabinet-inventory-system/';
+                                                $configFile = __DIR__ . '/../network_config.json';
+                                                if (file_exists($configFile)) {
+                                                    $config = json_decode(file_get_contents($configFile), true);
+                                                    if (isset($config['base_url'])) {
+                                                        $baseUrl = $config['base_url'] . '/';
+                                                    }
+                                                }
+                                                echo $baseUrl . "public/index.php?cabinet=" . urlencode($cabinet['cabinet_number']); 
+                                                ?>
                                             </p>
                                             <p class="small text-muted">
                                                 <i class="fas fa-mobile-alt me-1"></i>
@@ -549,7 +651,18 @@ if ($format === 'pdf') {
                             <label class="form-label">Public View URL:</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="shareUrl"
-                                    value="<?php echo (defined('BASE_URL') ? BASE_URL : 'http://localhost/cabinet-inventory-system/') . "index.php?cabinet=" . urlencode($cabinet['cabinet_number']); ?>"
+                                    value="<?php 
+                                    // Get base URL from network_config.json or fallback to current server
+                                    $baseUrl = 'http://localhost/cabinet-inventory-system/';
+                                    $configFile = __DIR__ . '/../network_config.json';
+                                    if (file_exists($configFile)) {
+                                        $config = json_decode(file_get_contents($configFile), true);
+                                        if (isset($config['base_url'])) {
+                                            $baseUrl = $config['base_url'] . '/';
+                                        }
+                                    }
+                                    echo $baseUrl . "public/index.php?cabinet=" . urlencode($cabinet['cabinet_number']); 
+                                    ?>"
                                     readonly>
                                 <button class="btn btn-outline-secondary" type="button" id="copyUrlBtn">
                                     <i class="fas fa-copy"></i> Copy
@@ -577,14 +690,19 @@ if ($format === 'pdf') {
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         document.addEventListener('DOMContentLoaded', function() {
             <?php if ($format === 'pdf'): ?>
-                // For PDF format, automatically trigger print dialog
+                // For PDF format, automatically trigger print dialog with PDF settings
                 setTimeout(function() {
+                    // Add PDF-specific styles
+                    document.body.classList.add('pdf-export');
+                    
+                    // Trigger print dialog
                     window.print();
+                    
                     // Close the window after print dialog
                     window.onafterprint = function() {
                         window.close();
                     };
-                }, 500);
+                }, 1000);
             <?php else: ?>
                 // Regular HTML format with interactive buttons
                 // Print functionality

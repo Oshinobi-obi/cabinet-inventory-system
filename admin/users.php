@@ -1,6 +1,14 @@
 <?php
-require_once 'includes/auth.php';
-require_once 'includes/email_service.php';
+// Handle logout POST (AJAX) at the very top before any output
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
+    require_once '../includes/auth.php';
+    $_SESSION = array();
+    session_destroy();
+    exit;
+}
+
+require_once '../includes/auth.php';
+require_once '../includes/email_service.php';
 authenticate();
 authorize(['admin']);
 
@@ -128,16 +136,41 @@ if (isset($_GET['edit']) && isset($_GET['id'])) {
 $usersPerPage = 5;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $usersPerPage;
-// Get total user count
-$countStmt = $pdo->query("SELECT COUNT(*) as total FROM users");
-$totalUsers = $countStmt->fetch()['total'];
-$totalPages = ceil($totalUsers / $usersPerPage);
-// Get paginated users
-$stmt = $pdo->prepare("SELECT * FROM users ORDER BY created_at DESC LIMIT :limit OFFSET :offset");
-$stmt->bindValue(':limit', $usersPerPage, PDO::PARAM_INT);
-$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-$stmt->execute();
-$users = $stmt->fetchAll();
+
+// Hide current logged-in admin from the user list
+// This ensures the admin only sees other users, not themselves
+$currentUserId = $_SESSION['user_id'];
+
+// Check if user_id is set
+if (!isset($currentUserId) || empty($currentUserId)) {
+    error_log("User ID not found in session");
+    die("Session error: User not properly authenticated.");
+}
+
+try {
+    // Check if PDO connection exists
+    if (!isset($pdo) || !$pdo) {
+        error_log("PDO connection not available");
+        die("Database connection error. Please try again later.");
+    }
+    
+    // Get total user count (excluding current logged-in admin)
+    $countStmt = $pdo->prepare("SELECT COUNT(*) as total FROM users WHERE id != ?");
+    $countStmt->execute([$currentUserId]);
+    $totalUsers = $countStmt->fetch()['total'];
+    $totalPages = ceil($totalUsers / $usersPerPage);
+
+    // Get paginated users (excluding current logged-in admin)
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id != ? ORDER BY created_at DESC LIMIT ? OFFSET ?");
+    $stmt->execute([$currentUserId, $usersPerPage, $offset]);
+    $users = $stmt->fetchAll();
+} catch (PDOException $e) {
+    // Log error and show user-friendly message
+    error_log("Database error in users.php: " . $e->getMessage());
+    $error = "Database error occurred. Please try again.";
+    $users = [];
+    $totalPages = 0;
+}
 ?>
 
 <!DOCTYPE html>
@@ -146,10 +179,11 @@ $users = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Users - Cabinet Management System</title>
+    <title>Users Management</title>
+    <link rel="icon" type="image/x-icon" href="../assets/images/DepEd_Logo.webp">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/navbar.css" rel="stylesheet">
+    <link href="../assets/css/navbar.css" rel="stylesheet">
     <style>
         /* Ensure sidebar is hidden on page load */
         ::-webkit-scrollbar {
@@ -180,11 +214,98 @@ $users = $stmt->fetchAll();
             padding: 0.5rem 1rem;
             border-radius: 50px;
         }
+
+        /* Glassmorphism overlay for logout modal */
+        #logoutConfirmModal {
+            background: rgba(255, 255, 255, 0.25) !important;
+            backdrop-filter: blur(8px) saturate(1.2);
+            -webkit-backdrop-filter: blur(8px) saturate(1.2);
+            transition: background 0.2s;
+            z-index: 2000;
+        }
+
+        #logoutConfirmModal .modal-content,
+        #logoutConfirmModal .modal-title,
+        #logoutConfirmModal .modal-body,
+        #logoutConfirmModal .modal-footer,
+        #logoutConfirmModal .modal-content p,
+        #logoutConfirmModal .modal-content h5 {
+            color: #222 !important;
+            background: #fff !important;
+            user-select: none;
+        }
+
+        #logoutConfirmModal .modal-content {
+            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.18);
+        }
+
+        #logoutConfirmModal .modal-title {
+            font-weight: 600;
+        }
+
+        #logoutConfirmModal .modal-footer {
+            background: #fff !important;
+        }
+
+        #logoutConfirmModal .btn-danger,
+        #logoutConfirmModal .btn-secondary {
+            user-select: none;
+        }
+        
+        /* Mobile-friendly table scrolling */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+        }
+        
+        .table-responsive::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        /* Ensure table doesn't break on mobile */
+        @media (max-width: 768px) {
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+            
+            .table th,
+            .table td {
+                white-space: nowrap;
+                padding: 0.5rem 0.25rem;
+            }
+        }
+        
+        /* Mobile-friendly modal tables */
+        .modal .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .modal .table th,
+        .modal .table td {
+            white-space: nowrap;
+        }
     </style>
 </head>
 
 <body>
-    <?php include 'includes/sidebar.php'; ?>
+    <?php include '../includes/sidebar.php'; ?>
 
     <div id="content">
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary admin-navbar">
@@ -296,7 +417,7 @@ $users = $stmt->fetchAll();
                 <div class="modal-body text-center">
                     <div class="position-relative" style="width:120px; height:120px; margin:0 auto;">
                         <video id="loadingVideo" style="width:120px; height:120px; border-radius:50%; background:#fff; display:none;" autoplay loop muted playsinline>
-                            <source src="assets/images/Trail-Loading.webm" type="video/webm">
+                            <source src="../assets/images/Trail-Loading.webm" type="video/webm">
                         </video>
                         <div id="loadingSpinner" class="spinner-border text-primary" style="width:120px; height:120px;" role="status">
                             <span class="visually-hidden">Loading...</span>
@@ -399,9 +520,83 @@ $users = $stmt->fetchAll();
         </div>
     </div>
 
+    <!-- Logout Confirmation Modal (hidden by default) -->
+    <div class="modal" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" style="display:none;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius:12px;">
+                <div class="modal-header" style="border-bottom:none;">
+                    <h5 class="modal-title">Confirm Logout</h5>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Are you sure you want to logout?</p>
+                </div>
+                <div class="modal-footer" style="border-top:none;">
+                    <button type="button" class="btn btn-secondary" id="cancelLogoutBtn">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmLogoutBtn">Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Logout Loading Modal (hidden by default) -->
+    <div class="modal" id="logoutLoadingModal" tabindex="-1" aria-hidden="true" style="display:none; background:rgba(255,255,255,0.25); backdrop-filter: blur(8px) saturate(1.2); -webkit-backdrop-filter: blur(8px) saturate(1.2); z-index:2100;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background:transparent; border:none; box-shadow:none; align-items:center;">
+                <div class="modal-body text-center">
+                    <video src="../assets/images/Trail-Loading.webm" autoplay loop muted style="width:120px; border-radius:50%; background:#fff;"></video>
+                    <div class="mt-3 text-dark fw-bold" style="font-size:1.2rem; text-shadow:0 1px 4px #fff;">Logging Out! Thank you...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         document.addEventListener('DOMContentLoaded', function() {
+            // Logout modal logic
+            var logoutBtn = document.getElementById('logoutSidebarBtn');
+            var confirmModal = new bootstrap.Modal(document.getElementById('logoutConfirmModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+            var loadingModal = new bootstrap.Modal(document.getElementById('logoutLoadingModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.getElementById('logoutConfirmModal').style.display = 'block';
+                    confirmModal.show();
+                });
+            }
+            document.getElementById('confirmLogoutBtn').onclick = function() {
+                confirmModal.hide();
+                setTimeout(function() {
+                    document.getElementById('logoutLoadingModal').style.display = 'block';
+                    loadingModal.show();
+                    // AJAX POST to logout (destroy session)
+                    fetch('users.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'logout=1',
+                        cache: 'no-store',
+                        credentials: 'same-origin'
+                    }).then(function() {
+                        setTimeout(function() {
+                            window.location.replace('login.php');
+                        }, 2000);
+                    });
+                }, 300);
+            };
+            document.getElementById('cancelLogoutBtn').onclick = function() {
+                confirmModal.hide();
+                setTimeout(function() {
+                    document.getElementById('logoutConfirmModal').style.display = 'none';
+                }, 300);
+            };
+
             // Generate random password (only if button exists)
             var genBtn = document.getElementById('generatePassword');
             if (genBtn) {
