@@ -65,17 +65,17 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'recent_activity') {
 // Handle AJAX requests for activity search
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'search_activities') {
     header('Content-Type: application/json');
-    
+
     $searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
     $limit = isset($_GET['limit']) ? max(1, intval($_GET['limit'])) : 5;
     $offset = ($page - 1) * $limit;
-    
+
     if (empty($searchTerm)) {
         echo json_encode(['success' => false, 'message' => 'Search term is required']);
         exit;
     }
-    
+
     try {
         // Get total count for pagination
         $countStmt = $pdo->prepare("
@@ -87,7 +87,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'search_activities') {
         $countStmt->execute([$searchPattern, $searchPattern]);
         $totalRecords = $countStmt->fetch()['total'];
         $totalPages = ceil($totalRecords / $limit);
-        
+
         // Search across all cabinets by cabinet number or name with pagination
         $stmt = $pdo->prepare("
             SELECT cabinet_number, name, created_at, updated_at, 'Created' as action
@@ -98,7 +98,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'search_activities') {
         ");
         $stmt->execute([$searchPattern, $searchPattern, $limit, $offset]);
         $activities = $stmt->fetchAll();
-        
+
         echo json_encode([
             'success' => true,
             'activities' => $activities,
@@ -197,18 +197,19 @@ if (isset($_POST['add_category']) && $_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 // Function to fix auto-increment sequence
-function fixAutoIncrement($pdo) {
+function fixAutoIncrement($pdo)
+{
     try {
         // Get the current auto-increment value
         $stmt = $pdo->query("SHOW TABLE STATUS LIKE 'cabinets'");
         $result = $stmt->fetch();
         $currentAutoIncrement = $result['Auto_increment'] ?? 1;
-        
+
         // Get the actual maximum ID from the table
         $stmt = $pdo->query("SELECT MAX(id) as max_id FROM cabinets");
         $result = $stmt->fetch();
         $maxId = $result['max_id'] ?? 0;
-        
+
         // If auto-increment is way off, reset it
         if ($currentAutoIncrement > $maxId + 100) {
             $nextId = $maxId + 1;
@@ -369,7 +370,7 @@ try {
             box-shadow: none !important;
             border-color: #ced4da !important;
         }
-        
+
         /* Loading Modal Styling */
         #loadingModal .modal-content {
             border: none;
@@ -472,6 +473,46 @@ try {
         #logoutConfirmModal .btn-danger,
         #logoutConfirmModal .btn-secondary {
             user-select: none;
+        }
+
+        /* N/A Item Category Dropdown Styling */
+        .form-select:disabled {
+            background-color: #e9ecef !important;
+            color: #6c757d !important;
+            cursor: not-allowed !important;
+            opacity: 0.7;
+        }
+
+        .form-select:disabled option {
+            color: #6c757d;
+        }
+
+        /* Visual indicator for N/A items */
+        .item-row .form-control:disabled + .form-label::after {
+            content: " (N/A Item)";
+            font-size: 0.8em;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        /* Remove arrow buttons from quantity input */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        /* Disabled quantity input styling */
+        input[type="number"]:disabled {
+            background-color: #e9ecef !important;
+            color: #6c757d !important;
+            cursor: not-allowed !important;
+            opacity: 0.7;
         }
     </style>
 </head>
@@ -922,7 +963,7 @@ try {
                                 <div class="row g-2 mb-2">
                                     <div class="col-md-4">
                                         <label class="form-label">Item Name</label>
-                                        <input type="text" class="form-control" name="items[0][name]" required>
+                                        <input type="text" placeholder="N/A if no items..." class="form-control" name="items[0][name]" required>
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label">Category</label>
@@ -1572,8 +1613,7 @@ try {
                 from_name: document.getElementById('from_name').value,
                 reply_to: document.getElementById('reply_to').value,
                 smtp_host: document.getElementById('smtp_host').value === 'custom' ?
-                    document.getElementById('custom_smtp').value :
-                    document.getElementById('smtp_host').value,
+                    document.getElementById('custom_smtp').value : document.getElementById('smtp_host').value,
                 smtp_port: document.getElementById('smtp_port').value,
                 smtp_username: document.getElementById('smtp_username').value,
                 smtp_password: document.getElementById('smtp_password').value
@@ -1607,18 +1647,18 @@ try {
                     formSubmissionError = 'Network error occurred while saving configuration.';
                 })
 
-                // Handle errors after loading animation completes
-                setTimeout(() => {
-                    if (formSubmissionError) {
-                        showAlert('error', formSubmissionError);
-                    }
-                }, 3000); // After loading animation completes
-                
-                // Reset button state
-                setTimeout(() => {
-                    saveBtn.disabled = false;
-                    saveBtn.innerHTML = '<i class="fas fa-save me-1"></i>Save Configuration';
-                }, 3000);
+            // Handle errors after loading animation completes
+            setTimeout(() => {
+                if (formSubmissionError) {
+                    showAlert('error', formSubmissionError);
+                }
+            }, 3000); // After loading animation completes
+
+            // Reset button state
+            setTimeout(() => {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save me-1"></i>Save Configuration';
+            }, 3000);
         }
 
         function previewEmail() {
@@ -1702,7 +1742,8 @@ try {
                         const changed = localStorage.getItem('cis_password_changed') === '1';
                         if (changed) return; // Client-side extra guard
                     } catch (e) {
-                        /* ignore storage errors */ }
+                        /* ignore storage errors */
+                    }
                     const el = document.getElementById('encoderPasswordReminderModal');
                     if (el) {
                         const modal = new bootstrap.Modal(el);
@@ -1729,24 +1770,24 @@ try {
                 backdrop: 'static',
                 keyboard: false
             });
-            
+
             // Set loading message and show modal
             document.getElementById('loadingMessage').textContent = loadingMessage;
-            
+
             // Ensure video is set to Trail-Loading.webm
             const loadingVideo = document.getElementById('loadingVideo');
             if (loadingVideo) {
                 loadingVideo.src = '../assets/images/Trail-Loading.webm';
                 loadingVideo.load();
             }
-            
+
             loadingModal.show();
-            
+
             // Store the modal reference globally so it can be controlled by AJAX responses
             window.currentLoadingModal = loadingModal;
             window.currentLoadingVideo = loadingVideo;
             window.loadingAnimationStartTime = Date.now();
-            
+
             // After specified duration, show success animation
             setTimeout(() => {
                 if (loadingVideo) {
@@ -1755,7 +1796,7 @@ try {
                     loadingVideo.load();
                     loadingVideo.loop = false; // Play only once
                     document.getElementById('loadingMessage').textContent = successMessage;
-                    
+
                     // Wait exactly 3 seconds after success animation starts, then refresh
                     setTimeout(() => {
                         loadingModal.hide();
@@ -1776,7 +1817,7 @@ try {
                     window.location.reload();
                 }
             }, duration);
-            
+
             return loadingModal;
         }
         async function withLoading(action, message, minMs = LOADING_MIN_MS) {
@@ -1862,6 +1903,105 @@ try {
             // Add Cabinet Modal - Add/Remove items functionality
             let modalItemCount = 0;
 
+            // Function to handle N/A input and gray out category dropdown and quantity
+            function handleNAInput(itemNameInput, categorySelect, quantityInput) {
+                const itemName = itemNameInput.value.trim();
+                const isNA = itemName === 'N/A' || itemName === 'n/A' || itemName === 'N/a';
+                
+                if (isNA) {
+                    // Disable and gray out category dropdown
+                    categorySelect.disabled = true;
+                    categorySelect.style.backgroundColor = '#e9ecef';
+                    categorySelect.style.color = '#6c757d';
+                    categorySelect.style.cursor = 'not-allowed';
+                    categorySelect.required = false;
+                    categorySelect.value = ''; // Clear selection
+                    
+                    // Disable and gray out quantity input
+                    quantityInput.disabled = true;
+                    quantityInput.style.backgroundColor = '#e9ecef';
+                    quantityInput.style.color = '#6c757d';
+                    quantityInput.style.cursor = 'not-allowed';
+                    quantityInput.value = ''; // Clear quantity
+                    
+                    // Add visual indicators
+                    const categoryLabel = categorySelect.closest('.item-row').querySelector('label[for*="category"], .col-md-3:has(select) label');
+                    if (categoryLabel && !categoryLabel.querySelector('.na-indicator')) {
+                        const indicator = document.createElement('span');
+                        indicator.className = 'na-indicator text-muted ms-1';
+                        indicator.innerHTML = '(N/A Item)';
+                        indicator.style.fontSize = '0.8em';
+                        indicator.style.fontStyle = 'italic';
+                        categoryLabel.appendChild(indicator);
+                    }
+                    
+                    const quantityLabel = quantityInput.closest('.item-row').querySelector('label[for*="quantity"], .col-md-3:has(input[type="number"]) label');
+                    if (quantityLabel && !quantityLabel.querySelector('.na-indicator')) {
+                        const indicator = document.createElement('span');
+                        indicator.className = 'na-indicator text-muted ms-1';
+                        indicator.innerHTML = '(N/A Item)';
+                        indicator.style.fontSize = '0.8em';
+                        indicator.style.fontStyle = 'italic';
+                        quantityLabel.appendChild(indicator);
+                    }
+                } else {
+                    // Re-enable category dropdown
+                    categorySelect.disabled = false;
+                    categorySelect.style.backgroundColor = '';
+                    categorySelect.style.color = '';
+                    categorySelect.style.cursor = '';
+                    categorySelect.required = true;
+                    
+                    // Re-enable quantity input
+                    quantityInput.disabled = false;
+                    quantityInput.style.backgroundColor = '';
+                    quantityInput.style.color = '';
+                    quantityInput.style.cursor = '';
+                    if (quantityInput.value === '') {
+                        quantityInput.value = '1'; // Set default quantity
+                    }
+                    
+                    // Remove visual indicators
+                    const categoryLabel = categorySelect.closest('.item-row').querySelector('label[for*="category"], .col-md-3:has(select) label');
+                    if (categoryLabel) {
+                        const indicator = categoryLabel.querySelector('.na-indicator');
+                        if (indicator) {
+                            indicator.remove();
+                        }
+                    }
+                    
+                    const quantityLabel = quantityInput.closest('.item-row').querySelector('label[for*="quantity"], .col-md-3:has(input[type="number"]) label');
+                    if (quantityLabel) {
+                        const indicator = quantityLabel.querySelector('.na-indicator');
+                        if (indicator) {
+                            indicator.remove();
+                        }
+                    }
+                }
+            }
+
+            // Add event listeners to existing item name inputs
+            function addNAInputListeners() {
+                const itemNameInputs = document.querySelectorAll('#modal-items-container input[name*="[name]"]');
+                itemNameInputs.forEach(input => {
+                    const categorySelect = input.closest('.item-row').querySelector('select[name*="[category]"]');
+                    const quantityInput = input.closest('.item-row').querySelector('input[name*="[quantity]"]');
+                    if (categorySelect && quantityInput) {
+                        // Remove existing listeners to avoid duplicates
+                        input.removeEventListener('input', input._naHandler);
+                        input.removeEventListener('blur', input._naHandler);
+                        
+                        // Add new listeners
+                        input._naHandler = () => handleNAInput(input, categorySelect, quantityInput);
+                        input.addEventListener('input', input._naHandler);
+                        input.addEventListener('blur', input._naHandler);
+                        
+                        // Check initial state
+                        handleNAInput(input, categorySelect, quantityInput);
+                    }
+                });
+            }
+
             // Add new item in modal
             document.getElementById('add-modal-item').addEventListener('click', function() {
                 modalItemCount++;
@@ -1872,7 +2012,7 @@ try {
                     <div class="row g-2 mb-2">
                         <div class="col-md-4">
                             <label class="form-label">Item Name</label>
-                            <input type="text" class="form-control" name="items[${modalItemCount}][name]" required>
+                            <input type="text" class="form-control" name="items[${modalItemCount}][name]" placeholder="N/A if no items..." required>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Category</label>
@@ -1902,6 +2042,9 @@ try {
                     </div>
                 `;
                 container.appendChild(newRow);
+                
+                // Add N/A input listeners to the new row
+                addNAInputListeners();
             });
 
             // Remove item in modal
@@ -1978,6 +2121,11 @@ try {
                     withLoading(async () => {}, 'Loading Cabinet Creator...').then(() => {
                         const addModal = new bootstrap.Modal(document.getElementById('addCabinetModal'));
                         addModal.show();
+                        
+                        // Initialize N/A input listeners for existing items
+                        setTimeout(() => {
+                            addNAInputListeners();
+                        }, 100);
                     });
                 });
             });
@@ -2262,7 +2410,7 @@ try {
                 const page = parseInt(e.target.getAttribute('data-page'));
                 const sort = e.target.getAttribute('data-sort');
                 const order = e.target.getAttribute('data-order');
-                
+
                 if (isSearching) {
                     // Handle search pagination
                     const searchInput = document.getElementById('activitySearch');
@@ -2284,7 +2432,7 @@ try {
             if (e.target.classList.contains('page-input')) {
                 const page = parseInt(e.target.value);
                 const maxPages = parseInt(e.target.getAttribute('data-max-pages'));
-                
+
                 if (isSearching) {
                     // Handle search pagination
                     const searchInput = document.getElementById('activitySearch');
@@ -2305,7 +2453,7 @@ try {
             if (e.target.classList.contains('page-input') && e.key === 'Enter') {
                 const page = parseInt(e.target.value);
                 const maxPages = parseInt(e.target.getAttribute('data-max-pages'));
-                
+
                 if (isSearching) {
                     // Handle search pagination
                     const searchInput = document.getElementById('activitySearch');
@@ -2534,6 +2682,29 @@ try {
         document.getElementById('addCabinetModal').querySelector('form').addEventListener('submit', function(e) {
             e.preventDefault();
 
+            // Handle N/A items - remove category and quantity requirements for N/A items
+            const itemNameInputs = this.querySelectorAll('input[name*="[name]"]');
+            itemNameInputs.forEach(input => {
+                const itemName = input.value.trim();
+                const isNA = itemName === 'N/A' || itemName === 'n/A' || itemName === 'N/a';
+                
+                if (isNA) {
+                    const categorySelect = input.closest('.item-row').querySelector('select[name*="[category]"]');
+                    const quantityInput = input.closest('.item-row').querySelector('input[name*="[quantity]"]');
+                    
+                    if (categorySelect) {
+                        categorySelect.required = false;
+                        categorySelect.disabled = false; // Re-enable for form submission
+                        categorySelect.value = ''; // Clear any value
+                    }
+                    
+                    if (quantityInput) {
+                        quantityInput.disabled = false; // Re-enable for form submission
+                        quantityInput.value = ''; // Clear quantity for N/A items
+                    }
+                }
+            });
+
             const formData = new FormData(this);
             formData.append('add_cabinet', '1'); // Ensure the add_cabinet flag is set
             formData.append('ajax', '1'); // Add AJAX flag for JSON response
@@ -2593,7 +2764,7 @@ try {
                 .catch(error => {
                     console.error('Error adding cabinet:', error);
                     formSubmissionError = 'Network error adding cabinet. Please try again.';
-                    
+
                     // Reset button
                     submitBtn.innerHTML = originalBtnText;
                     submitBtn.disabled = false;
@@ -3027,34 +3198,34 @@ try {
         function showExportLoadingAnimation(cabinetId, format) {
             const formatText = format === 'pdf' ? 'PDF' : 'Excel Spreadsheet';
             const cabinetText = cabinetId === 'all' ? 'All Cabinets' : 'Cabinet Data';
-            
+
             // Create loading modal
             const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
             const loadingVideo = document.getElementById('loadingVideo');
             const loadingMessage = document.getElementById('loadingMessage');
-            
+
             // First message: "Downloading (PDF or Excel Spreadsheet)! Please Wait..."
             loadingMessage.textContent = `Downloading ${formatText}! Please Wait...`;
             loadingVideo.src = '../assets/images/Trail-Loading.webm';
             loadingVideo.loop = true;
             loadingVideo.style.display = 'block';
             loadingModal.show();
-            
+
             // After 3 seconds, show second message
             setTimeout(() => {
                 loadingMessage.textContent = `Exporting ${cabinetText}! Please Wait...`;
                 // Keep same loading animation
             }, 3000);
-            
+
             // After 6 seconds, show third message with success animation
             setTimeout(() => {
                 loadingMessage.textContent = `Data Export Success! Downloading File...`;
                 loadingVideo.src = '../assets/images/Success_Check.webm';
                 loadingVideo.loop = false;
-                
+
                 // Start the actual download
                 const url = `../includes/export.php?cabinet_id=${cabinetId}&format=${format}`;
-                
+
                 try {
                     if (format === 'pdf') {
                         // For PDF, open in new window which will trigger print dialog
@@ -3070,7 +3241,7 @@ try {
                         link.click();
                         document.body.removeChild(link);
                     }
-                    
+
                     // Close modal after 3 seconds
                     setTimeout(() => {
                         loadingModal.hide();
@@ -3079,7 +3250,7 @@ try {
                     // Handle export failure
                     showExportError(loadingModal, loadingVideo, loadingMessage);
                 }
-                
+
             }, 6000);
         }
 
@@ -3088,7 +3259,7 @@ try {
             loadingMessage.textContent = `Data Export Failed! Please Try Again Later...`;
             loadingVideo.src = '../assets/images/Cross.webm';
             loadingVideo.loop = false;
-            
+
             // Close modal after 3 seconds
             setTimeout(() => {
                 loadingModal.hide();
@@ -3100,67 +3271,67 @@ try {
             // Close edit modal first
             const editModal = bootstrap.Modal.getInstance(document.getElementById('editCabinetModal'));
             editModal.hide();
-            
+
             // Show loading animation immediately after edit modal closes
             // Create loading modal
             const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
             const loadingVideo = document.getElementById('loadingVideo');
             const loadingMessage = document.getElementById('loadingMessage');
-            
+
             // First message: "Updating Cabinet! Please Wait..."
             loadingMessage.textContent = 'Updating Cabinet! Please Wait...';
             loadingVideo.src = '../assets/images/Trail-Loading.webm';
             loadingVideo.loop = true;
             loadingVideo.style.display = 'block';
             loadingModal.show();
-            
+
             // After 3 seconds, show success message with success animation
             setTimeout(() => {
                 loadingMessage.textContent = 'Cabinet Updated Successfully!';
                 loadingVideo.src = '../assets/images/Success_Check.webm';
                 loadingVideo.loop = false;
-                
+
                 // Start the actual update
                 fetch('../admin/cabinet.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // Reset button
-                    submitBtn.innerHTML = originalBtnText;
-                    submitBtn.disabled = false;
-                    
-                    if (data.success) {
-                        // Close loading modal after 3 seconds and refresh
-                        setTimeout(() => {
-                            loadingModal.hide();
-                            window.location.reload();
-                        }, 3000);
-                    } else {
-                        // Handle error
-                        loadingMessage.textContent = 'Update Failed! Please Try Again...';
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Reset button
+                        submitBtn.innerHTML = originalBtnText;
+                        submitBtn.disabled = false;
+
+                        if (data.success) {
+                            // Close loading modal after 3 seconds and refresh
+                            setTimeout(() => {
+                                loadingModal.hide();
+                                window.location.reload();
+                            }, 3000);
+                        } else {
+                            // Handle error
+                            loadingMessage.textContent = 'Update Failed! Please Try Again...';
+                            loadingVideo.src = '../assets/images/Cross.webm';
+                            loadingVideo.loop = false;
+
+                            setTimeout(() => {
+                                loadingModal.hide();
+                            }, 3000);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error updating cabinet:', error);
+
+                        // Handle network error
+                        loadingMessage.textContent = 'Network Error! Please Try Again...';
                         loadingVideo.src = '../assets/images/Cross.webm';
                         loadingVideo.loop = false;
-                        
+
                         setTimeout(() => {
                             loadingModal.hide();
                         }, 3000);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error updating cabinet:', error);
-                    
-                    // Handle network error
-                    loadingMessage.textContent = 'Network Error! Please Try Again...';
-                    loadingVideo.src = '../assets/images/Cross.webm';
-                    loadingVideo.loop = false;
-                    
-                    setTimeout(() => {
-                        loadingModal.hide();
-                    }, 3000);
-                });
-                
+                    });
+
             }, 3000);
         }
 
@@ -3324,23 +3495,23 @@ try {
         // Activity Search Functionality
         let isSearching = false; // Track if we're in search mode
         let searchTimeout; // For debouncing search requests
-        
+
         document.getElementById('activitySearch').addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
             console.log('Dashboard searching for:', searchTerm);
-            
+
             // Clear previous timeout
             if (searchTimeout) {
                 clearTimeout(searchTimeout);
             }
-            
+
             if (searchTerm === '') {
                 // Clear search - restore original pagination
                 isSearching = false;
                 loadRecentActivity(1, currentSort, currentOrder);
                 return;
             }
-            
+
             // Debounce search to avoid too many requests
             searchTimeout = setTimeout(() => {
                 performGlobalSearch(searchTerm);
@@ -3351,7 +3522,7 @@ try {
             isSearching = true;
             const container = document.getElementById('recent-activity-container');
             if (!container) return;
-            
+
             // Show loading state with Trail-Loading.webm
             container.innerHTML = `
                 <div class="text-center py-4">
@@ -3363,7 +3534,7 @@ try {
                     </div>
                 </div>
             `;
-            
+
             // Fetch activities from database with search term and pagination
             fetch(`dashboard.php?ajax=search_activities&search=${encodeURIComponent(searchTerm)}&page=${page}&limit=5`)
                 .then(response => response.json())
@@ -3371,7 +3542,7 @@ try {
                     if (data.success) {
                         console.log('Search results:', data.activities.length);
                         renderRecentActivityTable(data.activities, currentSort, currentOrder);
-                        
+
                         // Show pagination for search results
                         if (data.activities.length > 0) {
                             const pagination = {
@@ -3404,7 +3575,7 @@ try {
             if (isSearching) {
                 return;
             }
-            
+
             currentPage = page;
             currentSort = sort;
             currentOrder = order;

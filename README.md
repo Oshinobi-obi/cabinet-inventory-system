@@ -17,6 +17,8 @@ A comprehensive web-based inventory management system designed for the **Departm
 - **📊 Advanced Analytics**: Enhanced dashboard with role-based permissions
 - **📱 Mobile Optimization**: Improved responsive design with landscape scrolling
 - **🎨 UI/UX Enhancements**: Modern loading animations and blur effects
+- **🔐 Password Reset System**: Complete forgot password functionality with email integration
+- **🎯 Enhanced Public Interface**: Improved search experience with QR code integration
 
 ### 🚀 **New Features Added**
 
@@ -39,6 +41,8 @@ A comprehensive web-based inventory management system designed for the **Departm
 - **Touch-Friendly**: Optimized for touch interactions
 - **Landscape Support**: Proper orientation handling
 - **Loading States**: Transparent loading animations for mobile
+- **Device Detection**: Automatic mobile device detection and status
+- **Network Configuration**: Dynamic network settings for mobile access
 
 #### **🎨 UI/UX Improvements**
 - **Loading Animations**: 
@@ -58,7 +62,9 @@ A comprehensive web-based inventory management system designed for the **Departm
 #### **🔐 Security & Authentication**
 - **Role-based Access**: Admin and Encoder permission levels
 - **Session Management**: Secure user sessions
-- **Email Integration**: Automated user account creation emails
+- **Password Reset System**: Complete forgot password functionality
+- **Email Integration**: Automated user account creation and password reset emails
+- **Token-based Security**: Secure, time-limited password reset tokens
 - **Dynamic URLs**: Auto-detecting server URLs for email links
 
 ## 🏛️ About
@@ -76,15 +82,18 @@ This Cabinet Inventory System is specifically developed for the **Department of 
 
 ## ✨ Features
 
-- 🔐 **User Authentication System** - Secure login/logout functionality
+- 🔐 **User Authentication System** - Secure login/logout functionality with password reset
 - 📱 **QR Code Integration** - Generate and scan QR codes for quick cabinet access
 - 📊 **Dashboard Analytics** - Real-time overview of inventory status and recent activities
 - 🗄️ **Cabinet Management** - Create, update, and organize cabinet information
 - 📦 **Item Categorization** - Organize items by categories for better inventory control
-- 🔍 **Advanced Search** - Search by cabinet number, name, or item details
-- 📄 **Export Functionality** - Export inventory data for reporting
+- 🔍 **Real-time Search** - Instant search across all cabinets and items with pagination
+- 📄 **Export Functionality** - Export inventory data for reporting (CSV/PDF)
 - 🔗 **Public API** - RESTful API endpoints for external integrations
 - 📱 **Responsive Design** - Mobile-friendly interface for on-the-go access
+- 🎨 **Loading Animations** - Beautiful webm animations for better user experience
+- 🔐 **Password Reset** - Complete forgot password functionality with email integration
+- 🎯 **Enhanced UI/UX** - Modern design with blur effects and improved accessibility
 
 ## 🛠️ Technology Stack
 
@@ -93,7 +102,7 @@ This Cabinet Inventory System is specifically developed for the **Department of 
 | ![PHP](https://img.shields.io/badge/PHP-777BB4?style=flat&logo=php&logoColor=white)                      | Server-side logic, API endpoints, authentication | `*.php` files             |
 | ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat&logo=css3&logoColor=white)                   | Styling and responsive design                    | `assets/css/*.css`        |
 | ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black) | Client-side interactivity, AJAX requests         | `assets/js/*.js`          |
-| ![MySQL](https://img.shields.io/badge/MySQL-005C84?style=flat&logo=mysql&logoColor=white)                | Database management                              | `cabinet_info_system.sql` |
+| ![MySQL](https://img.shields.io/badge/MySQL-005C84?style=flat&logo=mysql&logoColor=white)                | Database management                              | `sql/cabinet_info_system.sql` |
 
 ## 🚀 Installation
 
@@ -119,7 +128,7 @@ This Cabinet Inventory System is specifically developed for the **Department of 
    - Import the database schema:
 
    ```bash
-   mysql -u username -p database_name < cabinet_info_system.sql
+   mysql -u username -p database_name < sql/cabinet_info_system.sql
    ```
 
 3. **Configuration**
@@ -166,12 +175,15 @@ This Cabinet Inventory System is specifically developed for the **Department of 
 - **`admin/cabinet.php`** - Cabinet management interface
 - **`admin/users.php`** - User management (admin only)
 - **`admin/profile.php`** - User profile management
-- **`admin/login.php`** - Admin authentication
+- **`admin/login.php`** - Admin authentication with password reset
+- **`admin/forgot-password.php`** - Password reset request page
+- **`admin/reset-password.php`** - Password reset completion page
 
 #### **Core System**
 - **`includes/export.php`** - Data export functionality
 - **`includes/email_service.php`** - Email notifications
 - **`includes/cabinet_api.php`** - Cabinet API endpoints
+- **`includes/mobile-status.php`** - Mobile device detection and status
 
 ### 🔍 **Search Features**
 
@@ -213,6 +225,21 @@ This Cabinet Inventory System is specifically developed for the **Department of 
 - **Scan QR Codes**: Mobile-friendly QR code scanning
 - **Quick Access**: Direct access to cabinet information via QR codes
 
+### 🔐 **Password Reset System**
+
+#### **Complete Authentication Flow**
+- **Forgot Password**: Secure password reset request via email
+- **Token-based Security**: Time-limited, single-use reset tokens
+- **Email Integration**: Automated password reset emails
+- **Secure Reset**: New password creation with validation
+- **Session Management**: Automatic login after successful reset
+
+#### **Security Features**
+- **Token Expiration**: Reset tokens expire after 1 hour
+- **One-time Use**: Tokens are invalidated after use
+- **Email Validation**: Only registered email addresses can request reset
+- **Secure Generation**: Cryptographically secure token generation
+
 ### API Endpoints
 
 The system provides several API endpoints for integration:
@@ -227,10 +254,12 @@ The system provides several API endpoints for integration:
 cabinet-inventory-system/
 ├── admin/                 # Admin panel files
 │   ├── dashboard.php     # Main admin dashboard
-│   ├── login.php         # Admin login page
+│   ├── login.php         # Admin login page with password reset
 │   ├── cabinet.php       # Cabinet management
 │   ├── users.php         # User management
 │   ├── profile.php       # User profile management
+│   ├── forgot-password.php # Password reset request
+│   ├── reset-password.php # Password reset completion
 │   └── index.php         # Admin redirect
 ├── public/               # Public-facing files
 │   ├── index.php         # Main public interface
@@ -245,7 +274,10 @@ cabinet-inventory-system/
 │   ├── cabinet_api.php  # Cabinet API endpoints
 │   ├── export.php       # Data export functionality
 │   ├── simple_pdf.php   # PDF generation
-│   └── pdf_generator.php # Advanced PDF generation
+│   ├── pdf_generator.php # Advanced PDF generation
+│   ├── mobile-status.php # Mobile device detection
+│   ├── network_config.json # Network configuration
+│   └── email_config_user.json # Email configuration
 ├── assets/               # Static assets
 │   ├── css/             # Stylesheets
 │   │   ├── cabinet.css
@@ -261,12 +293,12 @@ cabinet-inventory-system/
 │       ├── Success_Check.webm
 │       ├── Cross.webm
 │       └── cabinet-icon.svg
+├── sql/                 # Database schema files
+│   └── cabinet_info_system.sql # Main database schema
 ├── qrcodes/             # Generated QR code images
 ├── uploads/             # File upload directory
 ├── logs/                # System logs
 ├── phpmailer/           # Email library
-├── cabinet_info_system.sql # Database schema
-├── network_config.json  # Network configuration
 ├── server.php           # Development server
 ├── index.php            # Root redirect
 └── favicon.ico          # Browser icon
@@ -288,6 +320,24 @@ $password = '';             // Database password
 ### QR Code Settings
 
 QR codes are automatically generated and stored in the `qrcodes/` directory. Ensure this directory has write permissions.
+
+### Network Configuration
+
+The system automatically detects and configures network settings:
+
+- **`includes/network_config.json`** - Dynamic network configuration
+- **Mobile Detection** - Automatic device detection via `includes/mobile-status.php`
+- **Server Configuration** - Auto-detected IP and port settings
+- **Cross-Platform Access** - Works on desktop, tablet, and mobile devices
+
+### Password Reset Configuration
+
+The password reset system requires the `password_reset_tokens` table. This table is automatically created when you run the system for the first time. The table includes:
+
+- **Token Management**: Secure token generation and validation
+- **Expiration Handling**: Automatic cleanup of expired tokens
+- **User Association**: Links reset requests to user accounts
+- **Security Features**: One-time use tokens with time limits
 
 ## 🤝 Contributing
 

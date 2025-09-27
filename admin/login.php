@@ -50,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <title>Login</title>
     <link rel="icon" type="image/x-icon" href="../assets/images/DepEd_Logo.webp">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         ::-webkit-scrollbar {
             width: 8px;
@@ -70,80 +71,166 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         body {
-            background-color: #f8f9fa;
-            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             display: flex;
             align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         .login-container {
-            max-width: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
             width: 100%;
-            padding: 20px;
-            margin: auto;
+            max-width: 450px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .login-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-        }
-
-        .logo {
+        .logo-section {
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
         }
 
-        .logo img {
-            width: 64px;
-            height: 64px;
+        .logo-section i {
+            font-size: 3rem;
+            color: #667eea;
             margin-bottom: 15px;
         }
 
-        .btn-primary {
-            background-color: #0d6efd;
-            border-color: #0d6efd;
+        .logo-section h2 {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 0;
         }
 
-        .input-group-text {
-            background-color: #f8f9fa;
+        .logo-section p {
+            color: #6c757d;
+            margin-top: 8px;
+            font-size: 0.95rem;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .footer-links {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .footer-links a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-block;
+            margin: 8px 15px;
+            transition: all 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+            color: #5a67d8;
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+        }
+
+        /* Loading animation improvements */
+        .spinner-border {
+            border-color: #667eea;
+            border-right-color: transparent;
         }
     </style>
 </head>
 
 <body>
     <div class="login-container">
-        <div class="login-card">
-            <div class="logo">
-                <i class="bi bi-archive-fill text-primary" style="font-size: 64px;"></i>
-                <h3 class="mt-2">Cabinet Management System</h3>
-            </div>
+        <div class="logo-section">
+            <i class="fas fa-archive"></i>
+            <h2>Cabinet Management System</h2>
+            <p>Welcome back! Please sign in to continue</p>
+        </div>
 
-            <div id="loginError" class="alert alert-danger d-none"></div>
-            <form method="POST" action="" autocomplete="off">
-                <div class="mb-3">
-                    <label for="username" class="form-label">Username</label>
-                    <div class="input-group">
-                        <span class="input-group-text">👤</span>
-                        <input type="text" class="form-control" id="username" name="username" required autocomplete="username">
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label for="password" class="form-label">Password</label>
-                    <div class="input-group">
-                        <span class="input-group-text">🔒</span>
-                        <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary w-100">Login</button>
-            </form>
-
-            <div class="text-center mt-3">
-                <a href="../public/index.php" class="text-decoration-none">
-                    ← Back to Viewer
-                </a>
+        <div id="loginError" class="alert alert-danger d-none"></div>
+        
+        <form method="POST" action="" autocomplete="off" id="loginForm">
+            <div class="mb-3">
+                <label for="username" class="form-label">
+                    <i class="fas fa-user me-2"></i>Username
+                </label>
+                <input type="text" class="form-control" id="username" name="username" 
+                       placeholder="Enter your username" required autocomplete="username">
             </div>
+            
+            <div class="mb-3">
+                <label for="password" class="form-label">
+                    <i class="fas fa-lock me-2"></i>Password
+                </label>
+                <input type="password" class="form-control" id="password" name="password" 
+                       placeholder="Enter your password" required autocomplete="current-password">
+            </div>
+            
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </button>
+            </div>
+        </form>
+
+        <div class="footer-links">
+            <a href="#" id="forgotPasswordLink">
+                <i class="fas fa-key me-1"></i>Forgot Password?
+            </a>
+            <br>
+            <a href="../public/index.php">
+                <i class="fas fa-arrow-left me-1"></i>Back to Viewer
+            </a>
         </div>
     </div>
 
@@ -180,51 +267,74 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 });
             }
 
-            // Login modal logic
-            const loginForm = document.querySelector('form');
-            const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'), {
-                backdrop: 'static',
-                keyboard: false
-            });
+            // Initialize loading modal and elements GLOBALLY (accessible to all functions)
+            const loadingModalElement = document.getElementById('loadingModal');
             const loadingMessage = document.getElementById('loadingMessage');
             const loadingVideo = document.getElementById('loadingVideo');
             const loadingSpinner = document.getElementById('loadingSpinner');
+            let loadingModal = null;
+            
+            // Ensure Bootstrap is loaded before creating modal
+            if (loadingModalElement && typeof bootstrap !== 'undefined') {
+                try {
+                    loadingModal = new bootstrap.Modal(loadingModalElement, {
+                        backdrop: 'static',
+                        keyboard: false
+                    });
+                } catch (error) {
+                    console.log('Bootstrap Modal creation failed:', error);
+                }
+            }
 
+            // Function to setup video with spinner fallback
+            function setupLoadingVideo() {
+                if (loadingVideo) {
+                    loadingVideo.style.display = 'block';
+                    loadingSpinner.style.display = 'none';
+                    loadingVideo.src = '../assets/images/Trail-Loading.webm';
+                    loadingVideo.loop = true;
+                    loadingVideo.load();
+
+                    // Handle video load errors - fallback to spinner
+                    loadingVideo.onerror = function() {
+                        console.log('Video failed to load, using spinner fallback');
+                        loadingVideo.style.display = 'none';
+                        loadingSpinner.style.display = 'block';
+                    };
+
+                    // Also check if video can play
+                    loadingVideo.addEventListener('loadeddata', function() {
+                        console.log('Video loaded successfully');
+                    }, { once: true });
+
+                    // Fallback timer - if video doesn't load in 500ms, show spinner
+                    setTimeout(function() {
+                        if (loadingVideo.readyState < 2) {
+                            console.log('Video loading timeout, using spinner');
+                            loadingVideo.style.display = 'none';
+                            loadingSpinner.style.display = 'block';
+                        }
+                    }, 500);
+                }
+            }
+
+            // Login form logic
+            const loginForm = document.getElementById('loginForm');
             if (loginForm) {
                 loginForm.addEventListener('submit', function(e) {
                     e.preventDefault();
+                    
+                    // Check if modal is available
+                    if (!loadingModal) {
+                        console.error('Loading modal not initialized');
+                        return;
+                    }
+                    
                     // Hide previous error
                     document.getElementById('loginError').classList.add('d-none');
 
                     // Setup video with fallback to spinner
-                    if (loadingVideo) {
-                        loadingVideo.style.display = 'block';
-                        loadingSpinner.style.display = 'none';
-
-                        // Handle video load errors - fallback to spinner
-                        loadingVideo.onerror = function() {
-                            console.log('Video failed to load, using spinner fallback');
-                            loadingVideo.style.display = 'none';
-                            loadingSpinner.style.display = 'block';
-                        };
-
-                        // Also check if video can play
-                        loadingVideo.addEventListener('loadeddata', function() {
-                            console.log('Video loaded successfully');
-                        }, {
-                            once: true
-                        });
-
-                        // Fallback timer - if video doesn't load in 500ms, show spinner
-                        setTimeout(function() {
-                            if (loadingVideo.readyState < 2) {
-                                console.log('Video loading timeout, using spinner');
-                                loadingVideo.style.display = 'none';
-                                loadingSpinner.style.display = 'block';
-                            }
-                        }, 500);
-                    }
-
+                    setupLoadingVideo();
                     loadingMessage.textContent = "Verifying Credentials. This won't take long...";
                     loadingModal.show();
 
@@ -298,7 +408,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     
                                     // Reset video for next attempt
                                     if (loadingVideo) {
-                                        loadingVideo.src = 'assets/images/Trail-Loading.webm';
+                                        loadingVideo.src = '../assets/images/Trail-Loading.webm';
                                         loadingVideo.loop = true;
                                         loadingVideo.load();
                                     }
@@ -310,6 +420,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             document.getElementById('loginError').textContent = 'An error occurred. Please try again.';
                             document.getElementById('loginError').classList.remove('d-none');
                         });
+                });
+            }
+
+            // Forgot Password Link functionality
+            const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+            if (forgotPasswordLink) {
+                forgotPasswordLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Check if modal is available
+                    if (!loadingModal) {
+                        console.error('Loading modal not initialized');
+                        // Fallback - direct redirect
+                        window.location.href = 'forgot-password.php';
+                        return;
+                    }
+                    
+                    // Setup video with fallback to spinner
+                    setupLoadingVideo();
+                    loadingMessage.textContent = "Redirecting! Please Wait...";
+                    loadingModal.show();
+
+                    // Redirect after 3 seconds
+                    setTimeout(function() {
+                        window.location.href = 'forgot-password.php';
+                    }, 3000);
                 });
             }
         });

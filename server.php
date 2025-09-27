@@ -99,7 +99,7 @@ $config = [
     'started_at' => date('Y-m-d H:i:s')
 ];
 
-file_put_contents('network_config.json', json_encode($config, JSON_PRETTY_PRINT));
+file_put_contents('includes/network_config.json', json_encode($config, JSON_PRETTY_PRINT));
 
 // Start the PHP development server
 $command = "php -S $host:$port";

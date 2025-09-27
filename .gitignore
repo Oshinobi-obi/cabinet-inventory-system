@@ -1,3 +1,4 @@
 uploads/*.jpg
 qrcodes/*.png
+public/index.php.backup
 .vscode

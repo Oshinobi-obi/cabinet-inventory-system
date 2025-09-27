@@ -52,7 +52,6 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'search') {
             ");
             $stmt->execute([$searchPattern, $searchPattern, $limit, $offset]);
             $results = $stmt->fetchAll();
-            
         } else if ($searchType === 'item') {
             // Search items
             $countStmt = $pdo->prepare("
@@ -209,9 +208,630 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
     <link rel="icon" type="image/x-icon" href="../assets/images/DepEd_Logo.webp">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="../assets/css/navbar.css" rel="stylesheet">
-    <link href="../assets/css/index.css" rel="stylesheet">
-    <link href="../assets/css/mobile-enhancements.css" rel="stylesheet">
+    <style nonce="<?php echo isset($GLOBALS['csp_nonce']) ? $GLOBALS['csp_nonce'] : ''; ?>">
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Navbar Styles */
+        .public-navbar {
+            background: rgba(13, 27, 62, 0.95) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand {
+            font-weight: 600;
+            color: white !important;
+            font-size: 1.3rem;
+        }
+
+        .btn-outline-light {
+            border-width: 2px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-light:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: white;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+        }
+
+        .viewer-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header i {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #6c757d;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .search-box {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .search-results {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .cabinet-result {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Form Styling */
+        .form-control {
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+            padding: 12px 20px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            background: white;
+        }
+
+        .input-group-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 2px solid #667eea;
+            color: white;
+            border-radius: 12px 0 0 12px;
+            font-weight: 500;
+        }
+
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 12px 12px 0;
+        }
+
+        /* Button Styling */
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-outline-primary {
+            border: 2px solid #667eea;
+            color: #667eea;
+            border-radius: 12px;
+            padding: 10px 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-primary:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-outline-success {
+            border: 2px solid #28a745;
+            color: #28a745;
+            border-radius: 12px;
+            padding: 10px 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-success:hover {
+            background: #28a745;
+            border-color: #28a745;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(40, 167, 69, 0.3);
+        }
+
+        /* Card Styling */
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-img-top {
+            border-radius: 15px 15px 0 0;
+        }
+
+        .cabinet-card.selected {
+            border: 3px solid #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Form Check Styling */
+        .form-check-label {
+            font-weight: 500;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+
+        /* Alert Styling */
+        .alert {
+            border-radius: 15px;
+            border: none;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            color: #856404;
+        }
+
+        /* Badge Styling */
+        .badge {
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .badge.bg-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        }
+
+        /* Modal Styling */
+        .modal-content {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px 20px 0 0;
+            border-bottom: none;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #e9ecef;
+            border-radius: 0 0 20px 20px;
+        }
+
+        /* What's New Button */
+        #whatsNewBtn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        #whatsNewBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Pagination Styling */
+        .pagination .page-link {
+            border: 2px solid #e9ecef;
+            color: #667eea;
+            border-radius: 10px;
+            margin: 0 2px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .pagination .page-link:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .pagination .page-item.active .page-link {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+        }
+
+        /* Loading Animation Styles */
+        .search-loading {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .search-loading-animation {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px auto;
+        }
+
+        .search-loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            color: #667eea;
+            width: 3rem;
+            height: 3rem;
+        }
+
+        .search-loading-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: transparent;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .viewer-container {
+                margin: 15px auto;
+                padding: 15px;
+            }
+
+            .search-box,
+            .search-results,
+            .header,
+            .cabinet-result {
+                padding: 25px;
+                margin-bottom: 20px;
+            }
+
+            .header i {
+                font-size: 2.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .btn {
+                display: block;
+                width: 100%;
+                margin: 5px 0;
+            }
+
+            .btn.me-2 {
+                margin-right: 0 !important;
+            }
+
+            #whatsNewBtn {
+                right: 12px;
+                bottom: 12px;
+                width: 48px;
+                height: 48px;
+                font-size: 1.2rem;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(241, 241, 241, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+
+        /* What's New Modal Fixes */
+        #whatsNewModal .modal-dialog {
+            margin: 1.75rem auto;
+            max-width: 400px;
+            width: 90vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #whatsNewModal .modal-content {
+            border-radius: 16px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        #whatsNewModal .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 16px 16px 0 0;
+        }
+        
+        #whatsNewModal .modal-body {
+            padding: 0;
+            background: white;
+        }
+        
+        #whatsNewModal .modal-footer {
+            border: none;
+            padding: 0;
+            background: white;
+        }
+        
+        #whatsNewModal .list-group-item {
+            border: none;
+            border-bottom: 1px solid #f0f0f0;
+            padding: 12px 20px;
+        }
+        
+        #whatsNewModal .list-group-item:last-child {
+            border-bottom: none;
+        }
+        
+        #whatsNewModal .whats-new-list {
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        
+        #whatsNewModal .whats-new-toggle {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        #whatsNewModal .toggle-arrow {
+            display: inline-block;
+            width: 18px;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        
+        #whatsNewModal .toggle-label {
+            vertical-align: middle;
+        }
+
+        /* Additional Card Enhancements */
+        .cabinet-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cabinet-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1;
+        }
+
+        .cabinet-card:hover::before {
+            opacity: 1;
+        }
+
+        .cabinet-card .card-body {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Enhanced Button Interactions */
+        .btn:active {
+            transform: translateY(0) !important;
+        }
+
+        /* Improved form styling */
+        .form-check {
+            padding: 10px 15px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .form-check:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .form-check-input:focus {
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        /* Transparent modal background for loading animations - only when loading */
+        #viewCabinetModal .modal-content.loading {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        #viewCabinetModal .modal-header.loading {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        #viewCabinetModal .modal-body.loading {
+            background: transparent !important;
+        }
+
+        #viewCabinetModal .modal-footer.loading {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        /* Normal modal styling when not loading */
+        #viewCabinetModal .modal-content:not(.loading) {
+            background: white !important;
+            border: 1px solid #dee2e6 !important;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+
+        #viewCabinetModal .modal-header:not(.loading) {
+            background: #0d6efd !important;
+            color: white !important;
+            border-bottom: 1px solid #dee2e6 !important;
+        }
+
+        #viewCabinetModal .modal-body:not(.loading) {
+            background: white !important;
+        }
+
+        #viewCabinetModal .modal-footer:not(.loading) {
+            background: #f8f9fa !important;
+            border-top: 1px solid #dee2e6 !important;
+        }
+
+        /* Remove any background from loading video */
+        #viewCabinetModal video {
+            background: transparent !important;
+        }
+
+        /* Make loading container transparent */
+        #viewCabinetModal .loading-container {
+            background: transparent !important;
+        }
+
+        /* QR display modal - normal styling */
+        #qrDisplayModal .modal-content {
+            background: white !important;
+            border: 1px solid #dee2e6 !important;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+
+        #qrDisplayModal .modal-header {
+            background: #0d6efd !important;
+            color: white !important;
+            border-bottom: 1px solid #dee2e6 !important;
+        }
+
+        #qrDisplayModal .modal-body {
+            background: white !important;
+        }
+
+        #qrDisplayModal .modal-footer {
+            background: #f8f9fa !important;
+            border-top: 1px solid #dee2e6 !important;
+        }
+
+        #qrDisplayModal video {
+            background: transparent !important;
+        }
+
+        /* Ensure loading videos are visible */
+        .video-loader {
+            display: block !important;
+            opacity: 1 !important;
+        }
+
+        /* Loading container styling */
+        .loading-container {
+            position: relative;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
 </head>
 
 <body>
@@ -227,6 +847,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             </div>
         </div>
     </nav>
+
     <div class="viewer-container">
         <div class="header">
             <i class="fas fa-cabinet-filing"></i>
@@ -236,26 +857,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
 
         <div class="search-box">
             <form method="POST" action="" id="searchForm">
-                <div class="row mb-3">
+                <div class="row mb-4">
                     <div class="col-12">
                         <div class="d-flex justify-content-center gap-4">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="search_type" id="search_cabinet" value="cabinet" <?php echo $searchType === 'cabinet' ? 'checked' : ''; ?>>
                                 <label class="form-check-label" for="search_cabinet">
-                                    <i class="fas fa-cabinet-filing me-1"></i> Search Cabinet
+                                    <i class="fas fa-cabinet-filing me-2"></i> Search Cabinet
                                 </label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="search_type" id="search_item" value="item" <?php echo $searchType === 'item' ? 'checked' : ''; ?>>
                                 <label class="form-check-label" for="search_item">
-                                    <i class="fas fa-box me-1"></i> Search Item
+                                    <i class="fas fa-box me-2"></i> Search Item
                                 </label>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="input-group">
+                <div class="input-group mb-4">
                     <span class="input-group-text">
                         <i class="fas fa-search"></i>
                     </span>
@@ -263,37 +884,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                         placeholder="Cabinet Number or Name..."
                         name="search_term"
                         value="<?php echo htmlspecialchars($searchTerm); ?>"
-                        style="outline: none !important; box-shadow: none !important; border-color: #ced4da !important;"
                         autocomplete="off">
                 </div>
-            </form>
 
-            <div class="text-center mt-3">
-                <button id="qrCodeBtn" class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#qrDisplayModal" disabled>
-                    <i class="fas fa-qrcode me-1"></i> <span id="qrBtnText">Select a Cabinet First</span>
+                <div class="text-center">
+                    <button type="button" id="qrCodeBtn" class="btn btn-outline-primary me-3" data-bs-toggle="modal" data-bs-target="#qrDisplayModal" disabled>
+                        <i class="fas fa-qrcode me-2"></i> <span id="qrBtnText">Select a Cabinet First</span>
                 </button>
-                <button id="qrScanBtn" class="btn btn-outline-success">
-                    <i class="fas fa-camera me-1"></i> Scan QR Code
+                    <button type="button" id="qrScanBtn" class="btn btn-outline-success">
+                        <i class="fas fa-camera me-2"></i> Scan QR Code
                 </button>
             </div>
+            </form>
         </div>
 
         <?php if ($error): ?>
-            <div class="alert alert-danger"><?php echo $error; ?></div>
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <?php echo $error; ?>
+            </div>
         <?php endif; ?>
 
         <?php if (!empty($searchResults)): ?>
             <div class="search-results">
                 <h4 class="mb-4">
-                    <i class="fas fa-list me-2"></i>Search Results
-                    <span class="badge bg-primary"><?php echo count($searchResults); ?> cabinet(s) found</span>
+                    <i class="fas fa-list me-2 text-primary"></i>Search Results
+                    <span class="badge bg-primary ms-2"><?php echo count($searchResults); ?> cabinet(s) found</span>
                 </h4>
 
                 <div class="row">
                     <?php foreach ($searchResults as $cabinet): ?>
                         <div class="col-md-6 col-lg-4 mb-4">
                             <div class="card h-100 shadow-sm cabinet-card" data-cabinet-id="<?php echo $cabinet['id']; ?>" data-cabinet-number="<?php echo htmlspecialchars($cabinet['cabinet_number']); ?>" data-cabinet-name="<?php echo htmlspecialchars($cabinet['name']); ?>" data-qr-path="<?php echo htmlspecialchars($cabinet['qr_path'] ?? ''); ?>">
-                                <div class="position-absolute top-0 end-0 p-2">
+                                <div class="position-absolute top-0 end-0 p-2" style="z-index: 10;">
                                     <input class="form-check-input cabinet-selector" type="radio" name="selected_cabinet" value="<?php echo $cabinet['id']; ?>" id="cabinet_<?php echo $cabinet['id']; ?>">
                                 </div>
 
@@ -310,11 +933,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
 
                                 <div class="card-body d-flex flex-column">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h5 class="card-title mb-0">Cabinet <?php echo htmlspecialchars($cabinet['cabinet_number']); ?></h5>
+                                        <h5 class="card-title mb-0 text-primary">Cabinet <?php echo htmlspecialchars($cabinet['cabinet_number']); ?></h5>
                                         <i class="fas fa-eye text-primary" style="cursor: pointer;" title="View Details"></i>
                                     </div>
 
-                                    <h6 class="text-muted mb-2"><?php echo htmlspecialchars($cabinet['name']); ?></h6>
+                                    <h6 class="text-muted mb-3"><?php echo htmlspecialchars($cabinet['name']); ?></h6>
 
                                     <div class="mb-3">
                                         <small class="text-muted">
@@ -414,10 +1037,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         <?php endif; ?>
     </div>
 
+    <!-- View Cabinet Modal -->
     <div class="modal fade" id="viewCabinetModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
+                <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="fas fa-cabinet-filing me-2"></i>Cabinet Details
                     </h5>
@@ -425,7 +1049,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                 <div class="modal-body">
                     <div id="viewCabinetContent">
                         <div class="text-center py-4">
-                            <video src="../assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
+                            <div class="search-loading-animation">
+                                <div class="search-loading-spinner spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <video class="search-loading-video" autoplay loop muted playsinline style="display:none;">
+                                    <source src="../assets/images/Trail-Loading.webm" type="video/webm">
+                                </video>
+                            </div>
                             <h5 class="mt-3 text-muted" id="viewLoadingMessage">Loading Cabinet Details...</h5>
                         </div>
                     </div>
@@ -437,17 +1068,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         </div>
     </div>
 
+    <!-- QR Display Modal -->
     <div class="modal fade" id="qrDisplayModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
+                <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="fas fa-qrcode me-2"></i><span id="qrModalTitle">QR Code for Cabinet</span>
                     </h5>
                 </div>
                 <div class="modal-body text-center" id="qrModalBody">
                     <div class="text-center py-4">
-                        <video src="../assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
+                        <div class="search-loading-animation">
+                            <div class="search-loading-spinner spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <video class="search-loading-video" autoplay loop muted playsinline style="display:none;">
+                                <source src="../assets/images/Trail-Loading.webm" type="video/webm">
+                            </video>
+                        </div>
                         <h5 class="mt-3 text-muted">Loading QR Code...</h5>
                     </div>
                 </div>
@@ -458,6 +1097,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         </div>
     </div>
 
+    <!-- QR Scanner Modal -->
     <div class="modal fade" id="qrScannerModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -479,10 +1119,150 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         </div>
     </div>
 
+    <!-- What's New Button -->
+    <button id="whatsNewBtn" type="button" class="btn btn-primary rounded-circle shadow-lg" style="position:fixed;bottom:24px;right:24px;z-index:1055;width:56px;height:56px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;">
+        <i class="fas fa-question"></i>
+    </button>
+
+    <!-- What's New Modal -->
+    <div class="modal fade" id="whatsNewModal" tabindex="-1" aria-labelledby="whatsNewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="whatsNewModalLabel"><i class="fas fa-bolt text-warning me-2"></i>What's New?</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group list-group-flush whats-new-list" id="whatsNewAccordion">
+                        <li class="list-group-item whats-new-toggle" data-version="wn-v20">
+                            <span class="toggle-arrow">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v2.0</strong> - Real-time search & mobile optimization</span>
+                            <div class="collapse mt-1" id="wn-v20" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">Added instant search across all cabinets, mobile-friendly tables with horizontal scrolling, and beautiful loading animations.</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item whats-new-toggle" data-version="wn-v19">
+                            <span class="toggle-arrow">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.9</strong> - Enhanced search with pagination</span>
+                            <div class="collapse mt-1" id="wn-v19" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">Search now maintains pagination (9 items per page) and includes loading animations for better user experience.</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item whats-new-toggle" data-version="wn-v18">
+                            <span class="toggle-arrow">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.8</strong> - Improved search interface</span>
+                            <div class="collapse mt-1" id="wn-v18" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">Removed search button highlight and added dynamic placeholder text for better usability.</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item whats-new-toggle" data-version="wn-v17">
+                            <span class="toggle-arrow">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.7</strong> - Loading animations</span>
+                            <div class="collapse mt-1" id="wn-v17" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">Added beautiful loading animations using Trail-Loading.webm for search operations.</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item whats-new-toggle" data-version="wn-v16">
+                            <span class="toggle-arrow">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.6</strong> - Global search functionality</span>
+                            <div class="collapse mt-1" id="wn-v16" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">Search now works across all cabinets regardless of current page, making it easier to find specific cabinets.</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item whats-new-toggle" data-version="wn-v15" >
+                            <span class="toggle-arrow">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.5</strong> - Real-time search</span>
+                            <div class="collapse mt-1" id="wn-v15" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">Added type-as-you-search functionality for instant results without clicking search button.</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item whats-new-toggle" data-version="wn-v14" >
+                            <span class="toggle-arrow">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.4</strong> - Added QR code scanning for cabinets</span>
+                            <div class="collapse mt-1" id="wn-v14" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">You can now scan QR codes to quickly access cabinet details using your device camera.</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item whats-new-toggle" data-version="wn-v13" >
+                            <span class="toggle-arrow">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.3</strong> - Improved mobile responsiveness</span>
+                            <div class="collapse mt-1" id="wn-v13" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">The interface now adapts better to phones and tablets for easier use on the go.</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item whats-new-toggle" data-version="wn-v12" >
+                            <span class="toggle-arrow">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.2</strong> - User-friendly error messages</span>
+                            <div class="collapse mt-1" id="wn-v12" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">Clearer error messages help you understand and fix issues faster.</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item whats-new-toggle" data-version="wn-v11" >
+                            <span class="toggle-arrow">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.1</strong> - Initial public viewer release</span>
+                            <div class="collapse mt-1" id="wn-v11" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">First release of the public cabinet viewer for easy access to cabinet information.</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item whats-new-toggle" data-version="wn-v10" >
+                            <span class="toggle-arrow">
+                                <svg width="16" height="16" viewBox="0 0 16 16">
+                                    <polygon points="5,3 13,8 5,13" fill="#555" />
+                                </svg>
+                            </span>
+                            <span class="toggle-label"><strong>v1.0</strong> - Project launched 🚀</span>
+                            <div class="collapse mt-1" id="wn-v10" data-parent="#whatsNewAccordion">
+                                <div class="text-secondary small ms-4">The Cabinet Inventory System project is live!</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script src="../assets/js/index.js"></script>
     <script nonce="<?php echo isset($GLOBALS['csp_nonce']) ? $GLOBALS['csp_nonce'] : ''; ?>">
         document.addEventListener('DOMContentLoaded', function() {
             updateQRButtonState();
@@ -638,9 +1418,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                         spinner.style.display = 'inline-block';
                     };
                     
-                    video.addEventListener('loadeddata', onVideoReady, { once: true });
-                    video.addEventListener('canplaythrough', onVideoReady, { once: true });
-                    video.addEventListener('error', onVideoError, { once: true });
+                    video.addEventListener('loadeddata', onVideoReady, {
+                        once: true
+                    });
+                    video.addEventListener('canplaythrough', onVideoReady, {
+                        once: true
+                    });
+                    video.addEventListener('error', onVideoError, {
+                        once: true
+                    });
                     
                     // Fallback if video doesn't load within 3 seconds
                     setTimeout(() => {
@@ -682,14 +1468,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                 // Generate results HTML
                 const resultsHTML = `
                     <h4 class="mb-4">
-                        <i class="fas fa-list me-2"></i>Search Results
-                        <span class="badge bg-primary">${results.length} ${currentSearchType}(s) found</span>
+                        <i class="fas fa-list me-2 text-primary"></i>Search Results
+                        <span class="badge bg-primary ms-2">${results.length} ${currentSearchType}(s) found</span>
                     </h4>
                     <div class="row">
                         ${results.map(cabinet => `
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card h-100 shadow-sm cabinet-card" data-cabinet-id="${cabinet.id}" data-cabinet-number="${cabinet.cabinet_number}" data-cabinet-name="${cabinet.name}" data-qr-path="${cabinet.qr_path || ''}">
-                                    <div class="position-absolute top-0 end-0 p-2">
+                                    <div class="position-absolute top-0 end-0 p-2" style="z-index: 10;">
                                         <input class="form-check-input cabinet-selector" type="radio" name="selected_cabinet" value="${cabinet.id}" id="cabinet_${cabinet.id}">
                                     </div>
                                     ${cabinet.photo_path ? 
@@ -700,10 +1486,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                                     }
                                     <div class="card-body d-flex flex-column">
                                         <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <h5 class="card-title mb-0">Cabinet ${cabinet.cabinet_number}</h5>
+                                            <h5 class="card-title mb-0 text-primary">Cabinet ${cabinet.cabinet_number}</h5>
                                             <i class="fas fa-eye text-primary" style="cursor: pointer;" title="View Details"></i>
                                         </div>
-                                        <h6 class="text-muted mb-2">${cabinet.name}</h6>
+                                        <h6 class="text-muted mb-3">${cabinet.name}</h6>
                                         <div class="mb-3">
                                             <small class="text-muted">
                                                 <i class="fas fa-box me-1"></i>${cabinet.item_count} items
@@ -847,7 +1633,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             let html5QrCode = null;
             let isScanning = false;
 
-            document.getElementById('qrScanBtn').addEventListener('click', function() {
+            document.getElementById('qrScanBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('QR Scan button clicked');
                 const modal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
                 modal.show();
 
@@ -886,7 +1675,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     window.location.hostname.match(/^10\./) ||
                     window.location.hostname.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./);
 
-                if (!isHTTPS && !isLocalhost && isLocalNetwork) {
+                if (!isHTTPS && !isLocalhost && !isLocalNetwork) {
+                    qrReaderResults.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>HTTPS Required</strong><br>
+                            Camera access requires HTTPS for security.<br>
+                            <div class="bg-light p-2 mt-2 rounded">
+                                <strong>Quick Solutions:</strong><br>
+                                1. <strong>ngrok (Easiest):</strong> Creates HTTPS tunnel<br>
+                                   • Download from ngrok.com<br>
+                                   • Run: <code>ngrok http 8080</code><br>
+                                   • Use the HTTPS URL<br><br>
+                                2. <strong>Self-signed HTTPS:</strong> Add to server.php
+                            </div>
+                        </div>
+                    `;
+                    return;
+                } else if (!isHTTPS && !isLocalhost && isLocalNetwork) {
                     qrReaderResults.innerHTML = `
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
@@ -904,23 +1710,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                             Attempting to start camera... Please allow access if prompted.
                         </div>
                     `;
-                } else if (!isHTTPS && !isLocalhost) {
-                    qrReaderResults.innerHTML = `
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>HTTPS Required</strong><br>
-                            Camera access requires HTTPS for security.<br>
-                            <div class="bg-light p-2 mt-2 rounded">
-                                <strong>Quick Solutions:</strong><br>
-                                1. <strong>ngrok (Easiest):</strong> Creates HTTPS tunnel<br>
-                                   • Download from ngrok.com<br>
-                                   • Run: <code>ngrok http 8080</code><br>
-                                   • Use the HTTPS URL<br><br>
-                                2. <strong>Self-signed HTTPS:</strong> Add to server.php
-                            </div>
-                        </div>
-                    `;
-                    return;
                 } else {
                     qrReaderResults.innerHTML = `
                         <div class="alert alert-info">
@@ -1175,6 +1964,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
 
             document.addEventListener('change', function(e) {
                 if (e.target.classList.contains('cabinet-selector')) {
+                    console.log('Cabinet selector changed:', e.target.value);
                     updateQRButtonState();
                     updateSelectedCabinetVisual();
                 }
@@ -1185,6 +1975,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     const card = e.target.closest('.cabinet-card');
                     const radio = card.querySelector('.cabinet-selector');
                     if (radio) {
+                        console.log('Cabinet card clicked, selecting:', radio.value);
                         radio.checked = true;
                         updateQRButtonState();
                         updateSelectedCabinetVisual();
@@ -1274,9 +2065,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     if (content) {
                         content.innerHTML = `
                             <div class="text-center py-4">
-                                <video src="../assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline><\/video>
-                                <h5 class="mt-3 text-muted">Loading Cabinet Details...<\/h5>
-                            <\/div>
+                                <video src="../assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
+                                <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
+                            </div>
                         `;
                     }
                 });
@@ -1290,13 +2081,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             const qrBtn = document.getElementById('qrCodeBtn');
             const qrBtnText = document.getElementById('qrBtnText');
 
+            console.log('updateQRButtonState called', selectedCabinet);
+
             if (selectedCabinet) {
                 const card = selectedCabinet.closest('.cabinet-card');
                 const cabinetNumber = card.getAttribute('data-cabinet-number');
                 const cabinetName = card.getAttribute('data-cabinet-name');
 
                 qrBtn.disabled = false;
-                qrBtn.className = 'btn btn-primary';
+                qrBtn.className = 'btn btn-primary me-3';
                 qrBtnText.textContent = `Show QR Code for Cabinet ${cabinetNumber}`;
 
                 window.selectedCabinetData = {
@@ -1305,11 +2098,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     name: cabinetName,
                     qr_path: card.getAttribute('data-qr-path')
                 };
+                
+                console.log('Cabinet selected:', window.selectedCabinetData);
             } else {
                 qrBtn.disabled = true;
-                qrBtn.className = 'btn btn-outline-primary';
+                qrBtn.className = 'btn btn-outline-primary me-3';
                 qrBtnText.textContent = 'Select a Cabinet First';
                 window.selectedCabinetData = null;
+                
+                console.log('No cabinet selected');
             }
         }
 
@@ -1333,8 +2130,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             window.location.href = url.toString();
         }
 
+        // Add click handler for QR Code button to prevent form submission
+        document.getElementById('qrCodeBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('QR Code button clicked');
+        });
+
         document.addEventListener('show.bs.modal', function(e) {
             if (e.target.id === 'qrDisplayModal') {
+                console.log('QR Display Modal opening, selected cabinet data:', window.selectedCabinetData);
                 loadQRModalContent();
             }
         });
@@ -1359,10 +2164,41 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
 
             modalBody.innerHTML = `
                 <div class="text-center py-4">
-                    <video src="../assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline><\/video>
+                    <div class="search-loading-animation">
+                        <div class="search-loading-spinner spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <video class="search-loading-video" autoplay loop muted playsinline style="display:none;">
+                            <source src="../assets/images/Trail-Loading.webm" type="video/webm">
+                        </video>
+                    </div>
                     <h5 class="mt-3 text-muted">Loading QR Code...</h5>
                 </div>
             `;
+
+            // Handle video loading for QR modal
+            const video = modalBody.querySelector('.search-loading-video');
+            const spinner = modalBody.querySelector('.search-loading-spinner');
+            if (video && spinner) {
+                spinner.style.display = 'none';
+                video.style.display = 'block';
+                video.style.opacity = '1';
+
+                const onVideoReady = () => {
+                    video.style.opacity = '1';
+                    spinner.style.display = 'none';
+                };
+                const onVideoError = () => {
+                    video.style.display = 'none';
+                    spinner.style.display = 'inline-block';
+                };
+                video.addEventListener('loadeddata', onVideoReady, {
+                    once: true
+                });
+                video.addEventListener('error', onVideoError, {
+                    once: true
+                });
+            }
 
             setTimeout(() => {
                 modalBody.innerHTML = `
@@ -1397,7 +2233,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                         This QR code links to: ${window.location.origin}/cabinet-inventory-system/index.php?cabinet=${encodeURIComponent(cabinet.cabinet_number)}
                     </small>
                 `;
-            }, 3000);
+            }, 2000); // Shorter delay for QR modal
         }
 
         function loadCabinetDetails(cabinetId, searchType = '', searchTerm = '') {
@@ -1409,20 +2245,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             
             const content = document.getElementById('viewCabinetContent');
             const modal = new bootstrap.Modal(document.getElementById('viewCabinetModal'));
-            
-            // Simple modal loading - no special classes needed
 
             content.innerHTML = `
                 <div class="text-center py-4">
-                    <video src="../assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
+                    <div class="search-loading-animation">
+                        <div class="search-loading-spinner spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <video class="search-loading-video" autoplay loop muted playsinline style="display:none;">
+                            <source src="../assets/images/Trail-Loading.webm" type="video/webm">
+                        </video>
+                    </div>
                     <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
                 </div>
             `;
             modal.show();
-            console.log('Cabinet modal opened with dual loading system');
 
-            // Simple loading animation - no complex logic needed
-            console.log('Cabinet modal opened with simple loading animation');
+            // Handle initial loading video/spinner
+            const video = content.querySelector('.search-loading-video');
+            const spinner = content.querySelector('.search-loading-spinner');
+            if (video && spinner) {
+                spinner.style.display = 'none';
+                video.style.display = 'block';
+                video.style.opacity = '1';
+
+                const onVideoReady = () => {
+                    video.style.opacity = '1';
+                    spinner.style.display = 'none';
+                };
+                const onVideoError = () => {
+                    video.style.display = 'none';
+                    spinner.style.display = 'inline-block';
+                };
+                video.addEventListener('loadeddata', onVideoReady, {
+                    once: true
+                });
+                video.addEventListener('error', onVideoError, {
+                    once: true
+                });
+            }
 
             fetch(`public_api.php?action=get_cabinet&cabinet_id=${cabinetId}`)
                 .then(response => response.json())
@@ -1440,19 +2301,44 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
 
                         content.innerHTML = `
                             <div class="text-center py-4">
-                                <video src="../assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
-                                <h5 class="mt-3 text-muted">${loadingMessage}</h5>
+                                <div class="search-loading-animation">
+                                    <div class="search-loading-spinner spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <video class="search-loading-video" autoplay loop muted playsinline style="display:none;">
+                                        <source src="../assets/images/Trail-Loading.webm" type="video/webm">
+                                    </video>
+                                </div>
+                                <h5 class="mt-3 text-muted" id="viewLoadingMessage">${loadingMessage}</h5>
                             </div>
                         `;
 
-                        console.log('Starting second phase loading with personalized message:', loadingMessage);
+                        // Handle second-phase loading video/spinner
+                        const phase2Video = content.querySelector('.search-loading-video');
+                        const phase2Spinner = content.querySelector('.search-loading-spinner');
+                        if (phase2Video && phase2Spinner) {
+                            phase2Spinner.style.display = 'none';
+                            phase2Video.style.display = 'block';
+                            phase2Video.style.opacity = '1';
+
+                            const onPhase2Ready = () => {
+                                phase2Video.style.opacity = '1';
+                                phase2Spinner.style.display = 'none';
+                            };
+                            const onPhase2Error = () => {
+                                phase2Video.style.display = 'none';
+                                phase2Spinner.style.display = 'inline-block';
+                            };
+                            phase2Video.addEventListener('loadeddata', onPhase2Ready, {
+                                once: true
+                            });
+                            phase2Video.addEventListener('error', onPhase2Error, {
+                                once: true
+                            });
+                        }
 
                         setTimeout(() => {
-                            dataLoaded = true;
-
                             const shouldHighlight = searchType === 'item' && searchTerm;
-
-                            // Simple modal content replacement
                             
                             content.innerHTML = `
                                 <div class="row mb-4">
@@ -1550,295 +2436,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     `;
                 });
         }
-    </script>
-    <button id="whatsNewBtn" type="button" class="btn btn-primary rounded-circle shadow-lg" style="position:fixed;bottom:24px;right:24px;z-index:1055;width:56px;height:56px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;">
-        <i class="fas fa-question"></i>
-    </button>
-    <div class="modal fade" id="whatsNewModal" tabindex="-1" aria-labelledby="whatsNewModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width:400px; width:90vw;">
-            <div class="modal-content" style="border-radius:16px;">
-                <div class="modal-header py-2">
-                    <h5 class="modal-title" id="whatsNewModalLabel"><i class="fas fa-bolt text-warning me-2"></i>What's New?</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body py-2 px-2">
-                    <ul class="list-group list-group-flush whats-new-list" style="max-height:180px;overflow-y:auto;" id="whatsNewAccordion">
-                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v20" style="cursor:pointer;user-select:none;">
-                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                <svg width="16" height="16" viewBox="0 0 16 16">
-                                    <polygon points="5,3 13,8 5,13" fill="#555" />
-                                </svg>
-                            </span>
-                            <span class="toggle-label"><strong>v2.0</strong> - Real-time search & mobile optimization</span>
-                            <div class="collapse mt-1" id="wn-v20" data-parent="#whatsNewAccordion">
-                                <div class="text-secondary small ms-4">Added instant search across all cabinets, mobile-friendly tables with horizontal scrolling, and beautiful loading animations.</div>
-                            </div>
-                        </li>
-                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v19" style="cursor:pointer;user-select:none;">
-                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                <svg width="16" height="16" viewBox="0 0 16 16">
-                                    <polygon points="5,3 13,8 5,13" fill="#555" />
-                                </svg>
-                            </span>
-                            <span class="toggle-label"><strong>v1.9</strong> - Enhanced search with pagination</span>
-                            <div class="collapse mt-1" id="wn-v19" data-parent="#whatsNewAccordion">
-                                <div class="text-secondary small ms-4">Search now maintains pagination (9 items per page) and includes loading animations for better user experience.</div>
-                            </div>
-                        </li>
-                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v18" style="cursor:pointer;user-select:none;">
-                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                <svg width="16" height="16" viewBox="0 0 16 16">
-                                    <polygon points="5,3 13,8 5,13" fill="#555" />
-                                </svg>
-                            </span>
-                            <span class="toggle-label"><strong>v1.8</strong> - Improved search interface</span>
-                            <div class="collapse mt-1" id="wn-v18" data-parent="#whatsNewAccordion">
-                                <div class="text-secondary small ms-4">Removed search button highlight and added dynamic placeholder text for better usability.</div>
-                            </div>
-                        </li>
-                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v17" style="cursor:pointer;user-select:none;">
-                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                <svg width="16" height="16" viewBox="0 0 16 16">
-                                    <polygon points="5,3 13,8 5,13" fill="#555" />
-                                </svg>
-                            </span>
-                            <span class="toggle-label"><strong>v1.7</strong> - Loading animations</span>
-                            <div class="collapse mt-1" id="wn-v17" data-parent="#whatsNewAccordion">
-                                <div class="text-secondary small ms-4">Added beautiful loading animations using Trail-Loading.webm for search operations.</div>
-                            </div>
-                        </li>
-                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v16" style="cursor:pointer;user-select:none;">
-                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                <svg width="16" height="16" viewBox="0 0 16 16">
-                                    <polygon points="5,3 13,8 5,13" fill="#555" />
-                                </svg>
-                            </span>
-                            <span class="toggle-label"><strong>v1.6</strong> - Global search functionality</span>
-                            <div class="collapse mt-1" id="wn-v16" data-parent="#whatsNewAccordion">
-                                <div class="text-secondary small ms-4">Search now works across all cabinets regardless of current page, making it easier to find specific cabinets.</div>
-                            </div>
-                        </li>
-                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v15" style="cursor:pointer;user-select:none;">
-                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                <svg width="16" height="16" viewBox="0 0 16 16">
-                                    <polygon points="5,3 13,8 5,13" fill="#555" />
-                                </svg>
-                            </span>
-                            <span class="toggle-label"><strong>v1.5</strong> - Real-time search</span>
-                            <div class="collapse mt-1" id="wn-v15" data-parent="#whatsNewAccordion">
-                                <div class="text-secondary small ms-4">Added type-as-you-search functionality for instant results without clicking search button.</div>
-                            </div>
-                        </li>
-                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v14" style="cursor:pointer;user-select:none;">
-                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                <svg width="16" height="16" viewBox="0 0 16 16">
-                                    <polygon points="5,3 13,8 5,13" fill="#555" />
-                                </svg>
-                            </span>
-                            <span class="toggle-label"><strong>v1.4</strong> - Added QR code scanning for cabinets</span>
-                            <div class="collapse mt-1" id="wn-v14" data-parent="#whatsNewAccordion">
-                                <div class="text-secondary small ms-4">You can now scan QR codes to quickly access cabinet details using your device camera.</div>
-                            </div>
-                        </li>
-                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v13" style="cursor:pointer;user-select:none;">
-                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                <svg width="16" height="16" viewBox="0 0 16 16">
-                                    <polygon points="5,3 13,8 5,13" fill="#555" />
-                                </svg>
-                            </span>
-                            <span class="toggle-label"><strong>v1.3</strong> - Improved mobile responsiveness</span>
-                            <div class="collapse mt-1" id="wn-v13" data-parent="#whatsNewAccordion">
-                                <div class="text-secondary small ms-4">The interface now adapts better to phones and tablets for easier use on the go.</div>
-                            </div>
-                        </li>
-                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v12" style="cursor:pointer;user-select:none;">
-                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                <svg width="16" height="16" viewBox="0 0 16 16">
-                                    <polygon points="5,3 13,8 5,13" fill="#555" />
-                                </svg>
-                            </span>
-                            <span class="toggle-label"><strong>v1.2</strong> - User-friendly error messages</span>
-                            <div class="collapse mt-1" id="wn-v12" data-parent="#whatsNewAccordion">
-                                <div class="text-secondary small ms-4">Clearer error messages help you understand and fix issues faster.</div>
-                            </div>
-                        </li>
-                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v11" style="cursor:pointer;user-select:none;">
-                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                <svg width="16" height="16" viewBox="0 0 16 16">
-                                    <polygon points="5,3 13,8 5,13" fill="#555" />
-                                </svg>
-                            </span>
-                            <span class="toggle-label"><strong>v1.1</strong> - Initial public viewer release</span>
-                            <div class="collapse mt-1" id="wn-v11" data-parent="#whatsNewAccordion">
-                                <div class="text-secondary small ms-4">First release of the public cabinet viewer for easy access to cabinet information.</div>
-                            </div>
-                        </li>
-                        <li class="list-group-item p-2 whats-new-toggle" data-version="wn-v10" style="cursor:pointer;user-select:none;">
-                            <span class="toggle-arrow" style="display:inline-block;width:18px;vertical-align:middle;">
-                                <svg width="16" height="16" viewBox="0 0 16 16">
-                                    <polygon points="5,3 13,8 5,13" fill="#555" />
-                                </svg>
-                            </span>
-                            <span class="toggle-label"><strong>v1.0</strong> - Project launched 🚀</span>
-                            <div class="collapse mt-1" id="wn-v10" data-parent="#whatsNewAccordion">
-                                <div class="text-secondary small ms-4">The Cabinet Inventory System project is live!</div>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-    <style>
-        #whatsNewBtn {
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
-            transition: background 0.2s;
-        }
 
-        #whatsNewBtn:active {
-            background: #0b5ed7;
-        }
-
-        .whats-new-list {
-            min-width: 200px;
-        }
-
-        @media (max-width: 600px) {
-            #whatsNewBtn {
-                right: 12px;
-                bottom: 12px;
-                width: 48px;
-                height: 48px;
-                font-size: 1.2rem;
-            }
-
-            .modal-dialog {
-                margin: 0 auto;
-            }
-
-            .whats-new-list {
-                max-height: 120px;
-                font-size: 0.98rem;
-            }
-        }
-    </style>
-    <style>
-        .toggle-arrow svg {
-            transition: transform 0.2s;
-        }
-
-        .toggle-arrow[aria-expanded="true"] svg {
-            transform: rotate(90deg);
-        }
-        
-        /* Remove search input focus highlight */
-        #searchInput:focus {
-            outline: none !important;
-            box-shadow: none !important;
-            border-color: #ced4da !important;
-        }
-        
-        /* Transparent modal background for loading animations - only when loading */
-        #viewCabinetModal .modal-content.loading {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-        
-        #viewCabinetModal .modal-header.loading {
-            background: transparent !important;
-            border: none !important;
-        }
-        
-        #viewCabinetModal .modal-body.loading {
-            background: transparent !important;
-        }
-        
-        #viewCabinetModal .modal-footer.loading {
-            background: transparent !important;
-            border: none !important;
-        }
-        
-        /* Normal modal styling when not loading */
-        #viewCabinetModal .modal-content:not(.loading) {
-            background: white !important;
-            border: 1px solid #dee2e6 !important;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-        }
-        
-        #viewCabinetModal .modal-header:not(.loading) {
-            background: #0d6efd !important;
-            color: white !important;
-            border-bottom: 1px solid #dee2e6 !important;
-        }
-        
-        #viewCabinetModal .modal-body:not(.loading) {
-            background: white !important;
-        }
-        
-        #viewCabinetModal .modal-footer:not(.loading) {
-            background: #f8f9fa !important;
-            border-top: 1px solid #dee2e6 !important;
-        }
-        
-        /* Remove any background from loading video */
-        #viewCabinetModal video {
-            background: transparent !important;
-        }
-        
-        /* Make loading container transparent */
-        #viewCabinetModal .loading-container {
-            background: transparent !important;
-        }
-        
-        /* QR display modal - normal styling */
-        #qrDisplayModal .modal-content {
-            background: white !important;
-            border: 1px solid #dee2e6 !important;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-        }
-        
-        #qrDisplayModal .modal-header {
-            background: #0d6efd !important;
-            color: white !important;
-            border-bottom: 1px solid #dee2e6 !important;
-        }
-        
-        #qrDisplayModal .modal-body {
-            background: white !important;
-        }
-        
-        #qrDisplayModal .modal-footer {
-            background: #f8f9fa !important;
-            border-top: 1px solid #dee2e6 !important;
-        }
-        
-        #qrDisplayModal video {
-            background: transparent !important;
-        }
-        
-        /* Ensure loading videos are visible */
-        .video-loader {
-            display: block !important;
-            opacity: 1 !important;
-        }
-        
-        /* Loading container styling */
-        .loading-container {
-            position: relative;
-            min-height: 150px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script nonce="<?php echo isset($GLOBALS['csp_nonce']) ? $GLOBALS['csp_nonce'] : ''; ?>">
+        // What's New Modal functionality
         document.getElementById('whatsNewBtn').addEventListener('click', function() {
             var modal = new bootstrap.Modal(document.getElementById('whatsNewModal'));
             modal.show();
         });
+
         document.querySelectorAll('.whats-new-toggle').forEach(function(row) {
             var versionId = row.getAttribute('data-version');
             var target = document.getElementById(versionId);
@@ -1858,12 +2462,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     if (isOpen) {
                         target.classList.remove('show');
                         row.setAttribute('aria-expanded', 'false');
+                        arrow.querySelector('svg').style.transform = 'rotate(0deg)';
                     } else {
                         target.classList.add('show');
                         row.setAttribute('aria-expanded', 'true');
+                        arrow.querySelector('svg').style.transform = 'rotate(90deg)';
                     }
                 });
             }
+        });
+
+        // Toggle arrow rotation for What's New
+        document.querySelectorAll('.toggle-arrow').forEach(arrow => {
+            arrow.style.transition = 'transform 0.2s ease';
         });
     </script>
 </body>
