@@ -33,7 +33,7 @@ define('DB_HOST', getDbHost());     // Smart host detection
 define('DB_PORT', '3306');          // Replace with your MySQL server port if different
 define('DB_NAME', 'cabinet_info_system');
 define('DB_USER', 'root'); // Replace with your MySQL username
-define('DB_PASS', 'Mico2025!'); // Replace with your MySQL password
+define('DB_PASS', ''); // Replace with your MySQL password
 
 // Security configuration
 define('SESSION_TIMEOUT', 3600); // 1 hour in seconds
