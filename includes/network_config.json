@@ -1,6 +1,6 @@
 {
-    "server_ip": "192.168.100.24",
+    "server_ip": "",
     "server_port": 8080,
-    "base_url": "http:\/\/192.168.100.24:8080",
-    "started_at": "2025-09-27 16:34:58"
+    "base_url": "",
+    "started_at": ""
 }
