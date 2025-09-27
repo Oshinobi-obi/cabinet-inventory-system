@@ -383,10 +383,23 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - ✅ **Modification** - Modify the source code as needed
 - ✅ **Distribution** - Distribute the software freely
 - ✅ **Private use** - Use the software privately
-- ❌ **Liability** - No warranty or liability protection
-- ❌ **Warranty** - Software provided "as is"
+- ❌ **Liability** - No liability protection for authors or copyright holders
+- ❌ **Warranty** - Software provided "as is" without any warranty
 
 **Full license text available in the [LICENSE](LICENSE) file.**
+
+### ⚠️ **Important Legal Notice**
+
+#### **Liability Disclaimer**
+- **No Liability**: Authors and copyright holders are not liable for any claims, damages, or other liability
+- **Use at Your Own Risk**: Software is provided "as is" without any guarantees
+- **No Support**: No operational support provided for third-party deployments
+- **Self-Hosting**: Implementers must use their own databases, servers, and configurations
+
+#### **Warranty Disclaimer**
+- **No Warranty**: Software provided without any warranty of any kind
+- **No Guarantees**: No guarantee of merchantability, fitness for purpose, or non-infringement
+- **As-Is Basis**: Software provided "as is" without any express or implied warranties
 
 ## 👥 Support
 
@@ -395,6 +408,22 @@ For support, bug reports, or feature requests:
 - Open an issue on GitHub
 - Review existing documentation
 - Check troubleshooting section above
+
+---
+
+## 👨‍💼 **Project Creators**
+
+### **Project Manager**
+**Vergel Jairus J. Emas**
+- Department of Education - Policy Planning and Research Division
+- Project oversight and requirements specification
+- System architecture and user experience design
+
+### **Developer**
+**Mico D. Intertas**
+- Full-stack development and implementation
+- Database design and API development
+- UI/UX implementation and mobile optimization
 
 ---
 
