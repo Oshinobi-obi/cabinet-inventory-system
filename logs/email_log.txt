@@ -1,8 +1,1 @@
-{"timestamp":"2025-09-24 14:56:06","recipient":"miccojirojibe25@gmail.com","username":"Micco","success":false,"message":"Gmail SMTP username and password are required"}
-{"timestamp":"2025-09-24 15:01:10","recipient":"miccojirojibe25@gmail.com","username":"Micco","success":true,"message":"Email sent successfully via Gmail SMTP"}
-{"timestamp":"2025-09-24 15:01:10","recipient":"miccojirojibe25@gmail.com","username":"Micco","success":true,"message":"Email sent successfully via Gmail SMTP"}
-{"timestamp":"2025-09-24 15:46:45","recipient":"miccojirojibe25@gmail.com","username":"Micco","success":true,"message":"Email sent successfully via Gmail SMTP"}
-{"timestamp":"2025-09-24 15:46:45","recipient":"miccojirojibe25@gmail.com","username":"Micco","success":true,"message":"Email sent successfully via Gmail SMTP"}
-{"timestamp":"2025-09-27 14:04:41","recipient":"intertas.mico.dichoso@gmail.com","username":"Oshinobi","success":true,"message":"Email sent successfully via Gmail SMTP"}
-{"timestamp":"2025-09-27 14:04:41","recipient":"intertas.mico.dichoso@gmail.com","username":"Oshinobi","success":true,"message":"Email sent successfully via Gmail SMTP"}
-{"timestamp":"2025-09-27 14:45:22","recipient":"intertas.mico.dichoso@gmail.com","username":"intertas.mico.dichoso@gmail.com","success":true,"message":"Email sent successfully via Gmail SMTP"}
+
