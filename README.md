@@ -5,8 +5,9 @@
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
 ![MySQL](https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&logo=bootstrap&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge&logo=opensourceinitiative&logoColor=white)
 
-A comprehensive web-based inventory management system designed for tracking and organizing cabinet contents with QR code integration, real-time search, advanced analytics, and role-based user authentication.
+A comprehensive web-based inventory management system designed for the **Department of Education - Policy Planning and Research Division** for tracking and organizing cabinet contents with QR code integration, real-time search, advanced analytics, and role-based user authentication.
 
 ## 🆕 Latest Updates (v2.0)
 
@@ -59,6 +60,17 @@ A comprehensive web-based inventory management system designed for tracking and 
 - **Session Management**: Secure user sessions
 - **Email Integration**: Automated user account creation emails
 - **Dynamic URLs**: Auto-detecting server URLs for email links
+
+## 🏛️ About
+
+This Cabinet Inventory System is specifically developed for the **Department of Education - Policy Planning and Research Division (PPRD)** to streamline and modernize their cabinet inventory management processes. The system provides a comprehensive solution for tracking, organizing, and managing cabinet contents with advanced features tailored for government office operations.
+
+### 🎯 **Purpose**
+- **Inventory Management**: Track and organize cabinet contents efficiently
+- **Documentation**: Maintain detailed records of cabinet items and their locations
+- **Accessibility**: Quick access to cabinet information via QR codes
+- **Reporting**: Generate reports for administrative and audit purposes
+- **User Management**: Role-based access for different staff levels
 
 ## ✨ Core Features
 
@@ -313,7 +325,18 @@ QR codes are automatically generated and stored in the `qrcodes/` directory. Ens
 
 ## 📄 License
 
-This project is open source. Please check the repository for specific license terms.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### MIT License Summary
+
+- ✅ **Commercial use** - Use this project in commercial applications
+- ✅ **Modification** - Modify the source code as needed
+- ✅ **Distribution** - Distribute the software freely
+- ✅ **Private use** - Use the software privately
+- ❌ **Liability** - No warranty or liability protection
+- ❌ **Warranty** - Software provided "as is"
+
+**Full license text available in the [LICENSE](LICENSE) file.**
 
 ## 👥 Support
 

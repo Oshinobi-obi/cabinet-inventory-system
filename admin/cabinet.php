@@ -471,7 +471,7 @@ $categories = $stmt->fetchAll();
                                             <td><?php echo $cabinet['name']; ?></td>
                                             <td><?php echo $cabinet['item_count']; ?></td>
                                             <td>
-                                                <?php if (!empty($cabinet['qr_path']) && file_exists($cabinet['qr_path'])): ?>
+                                                <?php if (!empty($cabinet['qr_path']) && file_exists(__DIR__ . '/../' . $cabinet['qr_path'])): ?>
                                                     <span class="badge bg-success">
                                                         <i class="fas fa-check me-1"></i>Generated
                                                     </span>
@@ -1656,7 +1656,20 @@ $categories = $stmt->fetchAll();
                         cabinet_id: cabinetId
                     })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    // Check if response is ok
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    // Check if response is JSON
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new Error('Response is not JSON');
+                    }
+                    
+                    return response.json();
+                })
                 .then(data => {
                     // Remove loading overlay
                     document.body.removeChild(overlay);
@@ -1686,8 +1699,18 @@ $categories = $stmt->fetchAll();
                         document.body.removeChild(overlay);
                         document.body.classList.remove('modal-open');
                     }
-                    console.error('Error:', error);
-                    alert('An error occurred while generating QR code. Please try again.');
+                    console.error('QR Generation Error:', error);
+                    console.error('Error details:', error.message);
+                    
+                    // Show more specific error message
+                    let errorMessage = 'An error occurred while generating QR code. Please try again.';
+                    if (error.message.includes('Response is not JSON')) {
+                        errorMessage = 'Server returned invalid response. Please check server logs.';
+                    } else if (error.message.includes('HTTP error')) {
+                        errorMessage = 'Server error occurred. Please try again.';
+                    }
+                    
+                    alert(errorMessage);
                 });
         }
     </script>

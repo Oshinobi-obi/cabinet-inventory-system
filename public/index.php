@@ -487,6 +487,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         document.addEventListener('DOMContentLoaded', function() {
             updateQRButtonState();
             
+            // Ensure modal is properly initialized and not auto-opened
+            const viewCabinetModal = document.getElementById('viewCabinetModal');
+            if (viewCabinetModal) {
+                // Hide modal if it's somehow shown
+                const modalInstance = bootstrap.Modal.getInstance(viewCabinetModal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                
+                // Remove any existing modal backdrops
+                const existingBackdrops = document.querySelectorAll('.modal-backdrop');
+                existingBackdrops.forEach(backdrop => backdrop.remove());
+                
+                // Reset body classes
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            }
+            
             // Real-time search functionality
             let searchTimeout;
             let currentSearchType = 'cabinet';
@@ -578,18 +597,60 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                 container.className = 'search-results';
                 viewerContainer.appendChild(container);
                 
-                // Show loading animation directly in the results area
+                // Show enhanced loading animation with proper styling and centering
                 container.innerHTML = `
-                    <div class="text-center py-5">
-                        <div class="d-flex justify-content-center align-items-center mb-3">
-                            <video autoplay loop muted playsinline style="width: 80px; height: 80px; border-radius: 50%; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    <div class="search-loading">
+                        <div class="search-loading-animation">
+                            <div class="spinner-border text-primary search-loading-spinner" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <video class="search-loading-video" autoplay loop muted playsinline>
                                 <source src="../assets/images/Trail-Loading.webm" type="video/webm">
                             </video>
                         </div>
-                        <h5 class="text-muted mb-2">Searching ${currentSearchType === 'cabinet' ? 'cabinets' : 'items'}...</h5>
-                        <p class="text-muted small">Looking for "${searchTerm}"</p>
+                        <div class="text-center">
+                            <h5 class="mb-2">Searching ${currentSearchType === 'cabinet' ? 'cabinets' : 'items'}...</h5>
+                            <p class="text-muted mb-0">Looking for "${searchTerm}"</p>
+                        </div>
                     </div>
                 `;
+                
+                // Handle video loading with improved logic
+                const video = container.querySelector('.search-loading-video');
+                const spinner = container.querySelector('.search-loading-spinner');
+                
+                if (video && spinner) {
+                    // Initially hide spinner and show video
+                    spinner.style.display = 'none';
+                    video.style.display = 'block';
+                    video.style.opacity = '1';
+                    
+                    const onVideoReady = () => {
+                        video.style.opacity = '1';
+                        video.style.display = 'block';
+                        spinner.style.display = 'none';
+                        console.log('Search loading video ready');
+                    };
+                    
+                    const onVideoError = () => {
+                        console.log('Search loading video failed, using spinner');
+                        video.style.display = 'none';
+                        spinner.style.display = 'inline-block';
+                    };
+                    
+                    video.addEventListener('loadeddata', onVideoReady, { once: true });
+                    video.addEventListener('canplaythrough', onVideoReady, { once: true });
+                    video.addEventListener('error', onVideoError, { once: true });
+                    
+                    // Fallback if video doesn't load within 3 seconds
+                    setTimeout(() => {
+                        if (video.style.display === 'block' && video.readyState < 2) {
+                            console.log('Search loading video timeout, using spinner');
+                            video.style.display = 'none';
+                            spinner.style.display = 'inline-block';
+                        }
+                    }, 3000);
+                }
             }
             
             function hideSearchLoading() {
@@ -1180,9 +1241,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                 }
             });
 
-            const viewCabinetModal = document.getElementById('viewCabinetModal');
-            if (viewCabinetModal) {
-                viewCabinetModal.addEventListener('hidden.bs.modal', function() {
+            const cabinetModal = document.getElementById('viewCabinetModal');
+            if (cabinetModal) {
+                // Ensure modal is not auto-opened
+                const modalInstance = bootstrap.Modal.getInstance(cabinetModal);
+                if (modalInstance && modalInstance._isShown) {
+                    modalInstance.hide();
+                }
+                
+                cabinetModal.addEventListener('hidden.bs.modal', function() {
                     const backdrops = document.querySelectorAll('.modal-backdrop');
                     backdrops.forEach(backdrop => {
                         backdrop.remove();
@@ -1191,6 +1258,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     document.body.classList.remove('modal-open');
                     document.body.style.overflow = '';
                     document.body.style.paddingRight = '';
+                    
+                    // Remove loading class when modal is closed
+                    const modalContent = document.querySelector('#viewCabinetModal .modal-content');
+                    const modalHeader = document.querySelector('#viewCabinetModal .modal-header');
+                    const modalBody = document.querySelector('#viewCabinetModal .modal-body');
+                    const modalFooter = document.querySelector('#viewCabinetModal .modal-footer');
+                    
+                    if (modalContent) modalContent.classList.remove('loading');
+                    if (modalHeader) modalHeader.classList.remove('loading');
+                    if (modalBody) modalBody.classList.remove('loading');
+                    if (modalFooter) modalFooter.classList.remove('loading');
 
                     const content = document.getElementById('viewCabinetContent');
                     if (content) {
@@ -1323,67 +1401,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         }
 
         function loadCabinetDetails(cabinetId, searchType = '', searchTerm = '') {
+            // Prevent automatic modal opening
+            if (!cabinetId || cabinetId === 'undefined' || cabinetId === 'null') {
+                console.log('Invalid cabinet ID, preventing modal opening');
+                return;
+            }
+            
             const content = document.getElementById('viewCabinetContent');
             const modal = new bootstrap.Modal(document.getElementById('viewCabinetModal'));
+            
+            // Simple modal loading - no special classes needed
 
             content.innerHTML = `
                 <div class="text-center py-4">
-                    <div class="loading-container position-relative">
-                        <!-- Primary loading (Bootstrap spinner) - always visible -->
-                        <div class="spinner-border text-primary primary-spinner" role="status" style="width: 3rem; height: 3rem;">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <!-- Secondary loading (Video) - overlay if available -->
-                        <video
-                            class="video-loader position-absolute top-0 start-50 translate-middle-x"
-                            src="../assets/images/Trail-Loading.webm"
-                            style="width: 150px; height: 150px; z-index: 10; opacity: 0; display:block;"
-                            autoplay muted loop playsinline>
-                        </video>
-                    </div>
+                    <video src="../assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
                     <h5 class="mt-3 text-muted">Loading Cabinet Details...</h5>
                 </div>
             `;
             modal.show();
             console.log('Cabinet modal opened with dual loading system');
 
-            let videoLoaded = false;
-            let dataLoaded = false;
-            const videoPlayer = content.querySelector('.video-loader');
-            const primarySpinner = content.querySelector('.primary-spinner');
-
-            const hideLoadingAnimations = () => {
-                if (dataLoaded && videoPlayer && primarySpinner) {
-                    videoPlayer.style.display = 'none';
-                    primarySpinner.style.display = 'none';
-                }
-            };
-
-            const onVideoReady = () => {
-                if (videoPlayer && primarySpinner && !videoLoaded) {
-                    videoLoaded = true;
-                    videoPlayer.style.opacity = '1';
-                    primarySpinner.style.display = 'none';
-                    console.log('Video animation loaded successfully');
-                }
-            };
-
-            if (videoPlayer) {
-                videoPlayer.addEventListener('loadeddata', onVideoReady, {
-                    once: true
-                });
-                videoPlayer.addEventListener('canplaythrough', onVideoReady, {
-                    once: true
-                });
-            }
-
-            setTimeout(() => {
-                if (!videoLoaded && videoPlayer && primarySpinner) {
-                    videoPlayer.style.display = 'none';
-                    primarySpinner.style.display = 'inline-block';
-                    console.log('Using fallback spinner for loading animation');
-                }
-            }, 2000);
+            // Simple loading animation - no complex logic needed
+            console.log('Cabinet modal opened with simple loading animation');
 
             fetch(`public_api.php?action=get_cabinet&cabinet_id=${cabinetId}`)
                 .then(response => response.json())
@@ -1401,59 +1440,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
 
                         content.innerHTML = `
                             <div class="text-center py-4">
-                                <div class="loading-container position-relative">
-                                    <!-- Primary loading (Bootstrap spinner) - always visible -->
-                                    <div class="spinner-border text-primary primary-spinner" role="status" style="width: 3rem; height: 3rem;">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                    <!-- Secondary loading (Video) - overlay if available -->
-                                    <video
-                                        class="video-loader position-absolute top-0 start-50 translate-middle-x"
-                                        src="../assets/images/Trail-Loading.webm"
-                                        style="width: 150px; height: 150px; z-index: 10; opacity: 0; display:block;"
-                                        autoplay muted loop playsinline>
-                                    </video>
-                                </div>
+                                <video src="../assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline></video>
                                 <h5 class="mt-3 text-muted">${loadingMessage}</h5>
                             </div>
                         `;
 
-                        const secondVideoPlayer = content.querySelector('.video-loader');
-                        const secondSpinner = content.querySelector('.primary-spinner');
-                        let secondVideoLoaded = false;
-
                         console.log('Starting second phase loading with personalized message:', loadingMessage);
-
-                        const onSecondVideoReady = () => {
-                            if (secondVideoPlayer && secondSpinner && !secondVideoLoaded) {
-                                secondVideoLoaded = true;
-                                secondVideoPlayer.style.opacity = '1';
-                                secondSpinner.style.display = 'none';
-                                console.log('Second phase video animation loaded successfully');
-                            }
-                        };
-
-                        if (secondVideoPlayer) {
-                            secondVideoPlayer.addEventListener('loadeddata', onSecondVideoReady, {
-                                once: true
-                            });
-                            secondVideoPlayer.addEventListener('canplaythrough', onSecondVideoReady, {
-                                once: true
-                            });
-                        }
-                        setTimeout(() => {
-                            if (!secondVideoLoaded && secondVideoPlayer && secondSpinner) {
-                                secondVideoPlayer.style.display = 'none';
-                                secondSpinner.style.display = 'inline-block';
-                                console.log('Using fallback spinner for second phase loading');
-                            }
-                        }, 2000);
 
                         setTimeout(() => {
                             dataLoaded = true;
 
                             const shouldHighlight = searchType === 'item' && searchTerm;
 
+                            // Simple modal content replacement
+                            
                             content.innerHTML = `
                                 <div class="row mb-4">
                                     <div class="col-md-8">
@@ -1738,25 +1738,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             border-color: #ced4da !important;
         }
         
-        /* Transparent modal background for loading animations */
-        #viewCabinetModal .modal-content {
+        /* Transparent modal background for loading animations - only when loading */
+        #viewCabinetModal .modal-content.loading {
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
         }
         
-        #viewCabinetModal .modal-header {
+        #viewCabinetModal .modal-header.loading {
             background: transparent !important;
             border: none !important;
         }
         
-        #viewCabinetModal .modal-body {
+        #viewCabinetModal .modal-body.loading {
             background: transparent !important;
         }
         
-        #viewCabinetModal .modal-footer {
+        #viewCabinetModal .modal-footer.loading {
             background: transparent !important;
             border: none !important;
+        }
+        
+        /* Normal modal styling when not loading */
+        #viewCabinetModal .modal-content:not(.loading) {
+            background: white !important;
+            border: 1px solid #dee2e6 !important;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        #viewCabinetModal .modal-header:not(.loading) {
+            background: #0d6efd !important;
+            color: white !important;
+            border-bottom: 1px solid #dee2e6 !important;
+        }
+        
+        #viewCabinetModal .modal-body:not(.loading) {
+            background: white !important;
+        }
+        
+        #viewCabinetModal .modal-footer:not(.loading) {
+            background: #f8f9fa !important;
+            border-top: 1px solid #dee2e6 !important;
         }
         
         /* Remove any background from loading video */
@@ -1769,29 +1791,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             background: transparent !important;
         }
         
-        /* Transparent modal background for QR display modal */
+        /* QR display modal - normal styling */
         #qrDisplayModal .modal-content {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
+            background: white !important;
+            border: 1px solid #dee2e6 !important;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
         }
         
         #qrDisplayModal .modal-header {
-            background: transparent !important;
-            border: none !important;
+            background: #0d6efd !important;
+            color: white !important;
+            border-bottom: 1px solid #dee2e6 !important;
         }
         
         #qrDisplayModal .modal-body {
-            background: transparent !important;
+            background: white !important;
         }
         
         #qrDisplayModal .modal-footer {
-            background: transparent !important;
-            border: none !important;
+            background: #f8f9fa !important;
+            border-top: 1px solid #dee2e6 !important;
         }
         
         #qrDisplayModal video {
             background: transparent !important;
+        }
+        
+        /* Ensure loading videos are visible */
+        .video-loader {
+            display: block !important;
+            opacity: 1 !important;
+        }
+        
+        /* Loading container styling */
+        .loading-container {
+            position: relative;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
     </style>

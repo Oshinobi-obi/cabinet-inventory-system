@@ -6,7 +6,7 @@ if (!defined('BASE_PATH')) {
 
 // Application configuration
 define('SITE_NAME', 'Cabinet Information System');
-define('BASE_URL', 'http://' . $_SERVER['HTTP_HOST'] . '/cabinet-inventory-system/');
+define('BASE_URL', 'http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/cabinet-inventory-system/');
 
 // Database configuration
 // Smart database host detection for network access
@@ -49,7 +49,7 @@ define('UPLOAD_PATH', BASE_PATH . 'uploads/');
 define('QRCODE_PATH', BASE_PATH . 'qrcodes/');
 
 // Set error reporting in production
-if ($_SERVER['SERVER_NAME'] !== 'localhost') {
+if (($_SERVER['SERVER_NAME'] ?? 'localhost') !== 'localhost') {
     error_reporting(0);
     ini_set('display_errors', 0);
 } else {

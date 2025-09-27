@@ -269,6 +269,12 @@ function validateEmail($email)
 // Generate a real QR Code using reliable external services
 function generateRealQRCode($data, $filename, $size = 300)
 {
+    // First, try to create a simple QR code using a local method
+    if (createSimpleQRCode($data, $filename, $size)) {
+        return true;
+    }
+
+    // If local method fails, try external APIs
     // Create context with proper headers to avoid blocking
     $context = stream_context_create([
         'http' => [
@@ -276,7 +282,7 @@ function generateRealQRCode($data, $filename, $size = 300)
             'header' => [
                 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             ],
-            'timeout' => 10
+            'timeout' => 5  // Reduced timeout
         ]
     ]);
 
@@ -322,6 +328,74 @@ function generateRealQRCode($data, $filename, $size = 300)
     }
 
     return false;
+}
+
+// Create a simple QR code using external APIs (PNG only)
+function createSimpleQRCode($data, $filename, $size = 300)
+{
+    try {
+        // Create directory if it doesn't exist
+        $qrDir = dirname($filename);
+        if (!is_dir($qrDir)) {
+            if (!mkdir($qrDir, 0755, true)) {
+                return false;
+            }
+        }
+
+        // Use external APIs to generate PNG QR codes directly
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'header' => [
+                    'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                ],
+                'timeout' => 10
+            ]
+        ]);
+
+        // Try QR Server API first (most reliable for PNG)
+        $qrServerUrl = "https://api.qrserver.com/v1/create-qr-code/?size={$size}x{$size}&format=png&data=" . urlencode($data);
+        $imageData = @file_get_contents($qrServerUrl, false, $context);
+
+        if ($imageData !== false && strlen($imageData) > 100) {
+            // Verify it's actually a PNG image by checking the header
+            if (substr($imageData, 0, 8) === "\x89PNG\r\n\x1a\n") {
+                if (file_put_contents($filename, $imageData)) {
+                    return true;
+                }
+            }
+        }
+
+        // Try Google Charts API as fallback
+        $googleUrl = "https://chart.googleapis.com/chart?chs={$size}x{$size}&cht=qr&chl=" . urlencode($data) . "&choe=UTF-8";
+        $imageData = @file_get_contents($googleUrl, false, $context);
+
+        if ($imageData !== false && strlen($imageData) > 100) {
+            // Verify it's actually a PNG image
+            if (substr($imageData, 0, 8) === "\x89PNG\r\n\x1a\n") {
+                if (file_put_contents($filename, $imageData)) {
+                    return true;
+                }
+            }
+        }
+
+        // Try QuickChart API as final fallback
+        $quickChartUrl = "https://quickchart.io/qr?text=" . urlencode($data) . "&size={$size}";
+        $imageData = @file_get_contents($quickChartUrl, false, $context);
+
+        if ($imageData !== false && strlen($imageData) > 100) {
+            if (substr($imageData, 0, 8) === "\x89PNG\r\n\x1a\n") {
+                if (file_put_contents($filename, $imageData)) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    } catch (Exception $e) {
+        error_log('Simple QR code creation failed: ' . $e->getMessage());
+        return false;
+    }
 }
 
 // Generate QR Code for cabinet and save to file

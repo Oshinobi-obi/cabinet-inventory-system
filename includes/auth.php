@@ -16,7 +16,7 @@ function authenticate()
     // Check for session hijacking
     if (
         !isset($_SESSION['user_agent']) ||
-        $_SESSION['user_agent'] !== $_SERVER['HTTP_USER_AGENT']
+        $_SESSION['user_agent'] !== ($_SERVER['HTTP_USER_AGENT'] ?? '')
     ) {
         session_destroy();
         $_SESSION['error'] = "Session invalid. Please login again.";
