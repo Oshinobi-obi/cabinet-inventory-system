@@ -383,7 +383,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - ✅ **Modification** - Modify the source code as needed
 - ✅ **Distribution** - Distribute the software freely
 - ✅ **Private use** - Use the software privately
-- ❌ **Liability** - No liability protection for authors or copyright holders
+- ✅ **Liability** - No liability protection for authors or copyright holders
 - ❌ **Warranty** - Software provided "as is" without any warranty
 
 **Full license text available in the [LICENSE](LICENSE) file.**
