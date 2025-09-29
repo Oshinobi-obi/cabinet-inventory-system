@@ -1,10 +1,10 @@
 {
-    "from_email": "intertas.mico.dichoso@gmail.com",
-    "from_name": "PPRD-DepEd",
-    "reply_to": "intertas.mico.dichoso@gmail.com",
+    "from_email": "",
+    "from_name": "",
+    "reply_to": "",
     "smtp_host": "smtp.gmail.com",
     "smtp_port": 587,
-    "smtp_username": "intertas.mico.dichoso@gmail.com",
-    "smtp_password": "zzdy flci xaoh fpco",
-    "updated_at": "2025-09-24 14:59:58"
+    "smtp_username": "",
+    "smtp_password": "",
+    "updated_at": ""
 }
