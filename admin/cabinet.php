@@ -271,71 +271,237 @@ $categories = $stmt->fetchAll();
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="../assets/css/navbar.css" rel="stylesheet">
     <link href="../assets/css/cabinet.css" rel="stylesheet">
-    <style>
-        /* Ensure sidebar is hidden on page load */
-        #sidebar {
-            left: -250px !important;
+    <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
+        /* Modern Dashboard Design - Matching Login Style */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
 
-        .modal-header {
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
         }
 
-        .alert {
-            border: none;
-            border-radius: 8px;
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
         }
 
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        #content {
+            background: transparent;
+        }
+
+        .container-fluid {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            padding: 30px !important;
+            max-width: calc(100% - 40px);
+        }
+
+        /* Navbar styling to match gradient theme */
+        .admin-navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Card improvements */
         .card {
+            border-radius: 15px;
             border: none;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
         }
 
         .card-header {
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            border-radius: 10px 10px 0 0 !important;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+            padding: 15px 20px;
         }
 
-        /* Glassmorphism overlay for logout modal */
-        #logoutConfirmModal {
-            background: rgba(255, 255, 255, 0.25) !important;
-            backdrop-filter: blur(8px) saturate(1.2);
-            -webkit-backdrop-filter: blur(8px) saturate(1.2);
-            transition: background 0.2s;
-            z-index: 2000;
+        /* Button improvements */
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
 
-        #logoutConfirmModal .modal-content,
-        #logoutConfirmModal .modal-title,
-        #logoutConfirmModal .modal-body,
-        #logoutConfirmModal .modal-footer,
-        #logoutConfirmModal .modal-content p,
-        #logoutConfirmModal .modal-content h5 {
-            color: #222 !important;
-            background: #fff !important;
-            user-select: none;
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
 
-        #logoutConfirmModal .modal-content {
-            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.18);
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
         }
 
-        #logoutConfirmModal .modal-title {
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(17, 153, 142, 0.3);
+        }
+
+        .btn-secondary {
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-info {
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Form controls */
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        /* Table improvements */
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .table thead th {
+            background: transparent;
+            color: white;
+            border: none;
             font-weight: 600;
         }
 
-        #logoutConfirmModal .modal-footer {
-            background: #fff !important;
+        /* Connected Action Buttons Styling */
+        .btn-group .view-cabinet-btn {
+            border-radius: 8px 0 0 8px !important;
+            border-right: none !important;
         }
 
-        #logoutConfirmModal .btn-danger,
-        #logoutConfirmModal .btn-secondary {
-            user-select: none;
+        .btn-group .qr-generate-btn {
+            border-radius: 0 8px 8px 0 !important;
+            border-left: none !important;
         }
-        
+
+        .btn-group .view-cabinet-btn:hover,
+        .btn-group .qr-generate-btn:hover {
+            z-index: 1;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+            transition: background-color 0.3s ease;
+        }
+
+        /* Badge improvements */
+        .badge {
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-weight: 500;
+        }
+
+        /* Modal improvements */
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            border-bottom: none;
+            padding: 25px 25px 15px;
+            border-radius: 20px 20px 0 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .modal-footer {
+            border-top: none;
+            padding: 15px 25px 25px;
+        }
+
+        /* Alert improvements */
+        .alert {
+            border-radius: 15px;
+            border: none;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        }
+
+        /* Pagination improvements */
+        .btn-outline-secondary {
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-secondary:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+
         /* Mobile-friendly table scrolling */
         .table-responsive {
             overflow-x: auto;
@@ -343,26 +509,21 @@ $categories = $stmt->fetchAll();
             border: 1px solid #dee2e6;
             border-radius: 0.375rem;
         }
-        
+
         .table-responsive::-webkit-scrollbar {
             height: 8px;
         }
-        
+
         .table-responsive::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 4px;
         }
-        
+
         .table-responsive::-webkit-scrollbar-thumb {
             background: #c1c1c1;
             border-radius: 4px;
         }
-        
-        .table-responsive::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
-        }
-        
-        /* Ensure table doesn't break on mobile */
+
         @media (max-width: 768px) {
             .table-responsive {
                 font-size: 0.875rem;
@@ -374,17 +535,6 @@ $categories = $stmt->fetchAll();
                 padding: 0.5rem 0.25rem;
             }
         }
-        
-        /* Mobile-friendly modal tables */
-        .modal .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .modal .table th,
-        .modal .table td {
-            white-space: nowrap;
-        }
     </style>
 </head>
 
@@ -395,12 +545,12 @@ $categories = $stmt->fetchAll();
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary admin-navbar">
             <div class="container-fluid">
                 <div class="d-flex align-items-center">
-                    <button id="sidebarToggle" class="btn btn-outline-light me-2">
-                        <i class="fas fa-bars"></i>
+                    <button id="sidebarToggle" class="btn btn-outline-light me-2" style="background-color: rgba(255,255,255,0.1); border: 2px solid #000; color: white;">
+                        <i class="fas fa-bars text-dark" style="color: #000 !important; text-shadow: none !important;"></i>
                     </button>
-                    <span class="navbar-brand d-flex align-items-center">
-                        <i class="fa fa-archive me-2"></i>
-                        Cabinet Management
+                    <span class="navbar-brand d-flex align-items-center mb-0 text-dark">
+                        <i class="fa fa-archive me-2 text-dark"></i>
+                        <span class="ms-2 text-dark">Cabinet Management</span>
                     </span>
                 </div>
             </div>
@@ -421,7 +571,7 @@ $categories = $stmt->fetchAll();
                     <div class="badge bg-danger fs-6">Admin Access</div>
                 </div>
             <?php else: ?>
-                <h2 class="mb-4">Cabinets</h2>
+                <h2 class="mb-4"><i class="bi bi-archive-fill me-2"></i>Cabinets</h2>
             <?php endif; ?>
 
             <?php if (isset($error)): ?>
@@ -448,7 +598,7 @@ $categories = $stmt->fetchAll();
             <!-- Cabinets List -->
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title">Existing Cabinets</h5>
+                    <h5 class="card-title"><i class="bi bi-archive-fill me-2"></i>Existing Cabinets</h5>
                 </div>
                 <div class="card-body">
                     <?php if ($cabinets): ?>
@@ -486,7 +636,7 @@ $categories = $stmt->fetchAll();
                                             <td><?php echo date('M j, Y', strtotime($cabinet['updated_at'])); ?></td>
                                             <td>
                                                 <div class="btn-group" role="group">
-                                                    <button type="button" class="btn btn-sm btn-info view-cabinet-btn me-1"
+                                                    <button type="button" class="btn btn-sm btn-info view-cabinet-btn"
                                                         data-cabinet-id="<?php echo $cabinet['id']; ?>"
                                                         title="View Cabinet Details"
                                                         data-bs-toggle="modal"
@@ -753,18 +903,27 @@ $categories = $stmt->fetchAll();
     </div>
 
     <!-- Logout Confirmation Modal (hidden by default) -->
-    <div class="modal" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" style="display:none;">
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius:12px;">
-                <div class="modal-header" style="border-bottom:none;">
-                    <h5 class="modal-title">Confirm Logout</h5>
+            <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px 15px 0 0; border-bottom: none;">
+                    <h5 class="modal-title text-white fw-bold">
+                        <i class="fas fa-sign-out-alt me-2"></i>Confirm Logout
+                    </h5>
                 </div>
-                <div class="modal-body">
-                    <p class="mb-0">Are you sure you want to logout?</p>
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="fas fa-question-circle text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <p class="mb-0 text-dark fw-semibold" style="font-size: 1.1rem;">Are you sure you want to logout?</p>
                 </div>
-                <div class="modal-footer" style="border-top:none;">
-                    <button type="button" class="btn btn-secondary" id="cancelLogoutBtn">Cancel</button>
-                    <button type="button" class="btn btn-danger" id="confirmLogoutBtn">Logout</button>
+                <div class="modal-footer" style="border-top: none; justify-content: center; padding: 1rem 2rem 2rem;">
+                    <button type="button" class="btn btn-outline-secondary me-2" id="cancelLogoutBtn" style="border-radius: 8px; padding: 8px 20px;">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmLogoutBtn" style="border-radius: 8px; padding: 8px 20px;">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </button>
                 </div>
             </div>
         </div>

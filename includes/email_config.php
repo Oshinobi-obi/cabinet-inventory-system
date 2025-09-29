@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Email Configuration for Cabinet Inventory System
+ * Email Configuration for Cabinet Management System
  * Configure SMTP settings for sending user credentials
  */
 
@@ -15,7 +15,7 @@ class EmailConfig
         'encryption' => 'tls',             // 'tls' or 'ssl'
         'username' => '',                  // Your email address
         'password' => '',                  // Your app password (not regular password)
-        'from_name' => 'Cabinet Inventory System',
+        'from_name' => 'Cabinet Management System',
         'from_email' => '',                // Same as username usually
         'reply_to' => '',                  // Reply-to email
     ];
@@ -56,7 +56,7 @@ class EmailConfig
         <body>
             <div class='container'>
                 <div class='header'>
-                    <h1>🏢 Welcome to Cabinet Inventory System</h1>
+                    <h1>🏢 Welcome to Cabinet Management System</h1>
                     <p>Your account has been successfully created!</p>
                 </div>
                 
@@ -97,7 +97,7 @@ class EmailConfig
                 
                 <div class='footer'>
                     <p>Best regards,<br>
-                    <strong>Cabinet Inventory System</strong><br>
+                    <strong>Cabinet Management System</strong><br>
                     Administrative Team</p>
                     
                     <p><small>This is an automated message. Please do not reply to this email.</small></p>
@@ -142,8 +142,8 @@ Important Security Notes:
 - Report any suspicious activity immediately
 
 Best regards,
-Cabinet Inventory System
-Administrative Team
+Cabinet Management System
+Policy Planning and Reasearch Division Team
 
 ---
 This is an automated message. Please do not reply to this email.

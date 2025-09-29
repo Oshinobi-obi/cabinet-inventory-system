@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Login - Cabinet Management System</title>
     <link rel="icon" type="image/x-icon" href="../assets/images/DepEd_Logo.webp">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -186,6 +186,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             border-color: #667eea;
             border-right-color: transparent;
         }
+
+        /* Video loading styles */
+        .video-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-video {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: white;
+            object-fit: cover;
+            z-index: 2;
+            position: absolute;
+        }
+
+        .loading-spinner {
+            position: absolute;
+            z-index: 1;
+            width: 120px;
+            height: 120px;
+        }
     </style>
 </head>
 
@@ -239,15 +267,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="background:transparent; border:none; box-shadow:none; align-items:center;">
                 <div class="modal-body text-center">
-                    <!-- Video with fallback spinner -->
-                    <div class="position-relative" style="width:120px; height:120px; margin:0 auto;">
-                        <video id="loadingVideo" style="width:120px; height:120px; border-radius:50%; background:#fff; display:none;" autoplay loop muted playsinline>
-                            <source src="../assets/images/Trail-Loading.webm" type="video/webm">
-                        </video>
-                        <!-- Fallback spinner -->
-                        <div id="loadingSpinner" class="spinner-border text-primary" style="width:120px; height:120px;" role="status">
+                    <div class="video-container">
+                        <!-- Fallback spinner (always present) -->
+                        <div id="loadingSpinner" class="spinner-border text-primary loading-spinner" role="status">
                             <span class="visually-hidden">Loading...</span>
                         </div>
+                        <!-- Video overlay -->
+                        <video id="loadingVideo" class="loading-video" autoplay loop muted playsinline preload="auto" style="display:none;">
+                            <source src="../assets/images/Trail-Loading.webm" type="video/webm">
+                            Your browser does not support the video tag.
+                        </video>
                     </div>
                     <div id="loadingMessage" class="mt-3 text-white fw-bold" style="font-size:1.2rem; text-shadow:0 1px 4px #000;">Verifying Credentials. This won't take long...</div>
                 </div>
@@ -257,74 +286,120 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
-        // Handle image load error (existing)
         document.addEventListener('DOMContentLoaded', function() {
-            const cabinetIcon = document.getElementById('cabinetIcon');
-            if (cabinetIcon) {
-                cabinetIcon.addEventListener('error', function() {
-                    const svgFallback = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'64\' height=\'64\' viewBox=\'0 0 24 24\'%3E%3Crect x=\'3\' y=\'2\' width=\'18\' height=\'20\' rx=\'1\' fill=\'%230d6efd\'/%3E%3Crect x=\'4\' y=\'3\' width=\'16\' height=\'6\' fill=\'%23ffffff\' fill-opacity=\'0.2\'/%3E%3Ccircle cx=\'18\' cy=\'6\' r=\'0.8\' fill=\'%23ffffff\'/%3E%3Crect x=\'4\' y=\'10\' width=\'16\' height=\'6\' fill=\'%23ffffff\' fill-opacity=\'0.2\'/%3E%3Ccircle cx=\'18\' cy=\'13\' r=\'0.8\' fill=\'%23ffffff\'/%3E%3Crect x=\'4\' y=\'17\' width=\'16\' height=\'4\' fill=\'%23ffffff\' fill-opacity=\'0.2\'/%3E%3Ccircle cx=\'18\' cy=\'19\' r=\'0.8\' fill=\'%23ffffff\'/%3E%3C/svg%3E';
-                    this.src = svgFallback;
-                });
-            }
+            console.log('Login page initialized');
 
-            // Initialize loading modal and elements GLOBALLY (accessible to all functions)
+            // Initialize loading modal and elements
             const loadingModalElement = document.getElementById('loadingModal');
             const loadingMessage = document.getElementById('loadingMessage');
             const loadingVideo = document.getElementById('loadingVideo');
             const loadingSpinner = document.getElementById('loadingSpinner');
             let loadingModal = null;
             
-            // Ensure Bootstrap is loaded before creating modal
+            // Create modal instance
             if (loadingModalElement && typeof bootstrap !== 'undefined') {
                 try {
                     loadingModal = new bootstrap.Modal(loadingModalElement, {
                         backdrop: 'static',
                         keyboard: false
                     });
+                    console.log('Loading modal created successfully');
                 } catch (error) {
-                    console.log('Bootstrap Modal creation failed:', error);
+                    console.error('Bootstrap Modal creation failed:', error);
                 }
             }
 
-            // Function to setup video with spinner fallback
-            function setupLoadingVideo() {
-                if (loadingVideo) {
+            // Pre-load videos for better performance
+            function preloadVideos() {
+                const videos = [
+                    '../assets/images/Trail-Loading.webm',
+                    '../assets/images/Success_Check.webm',
+                    '../assets/images/Cross.webm'
+                ];
+                
+                videos.forEach(src => {
+                    const video = document.createElement('video');
+                    video.preload = 'auto';
+                    video.src = src;
+                    video.load();
+                });
+                console.log('Videos preloaded');
+            }
+
+            // Function to setup video with better error handling
+            function setupLoadingVideo(videoSrc = '../assets/images/Trail-Loading.webm', loop = true) {
+                console.log('Setting up video:', videoSrc);
+                
+                if (!loadingVideo) {
+                    console.error('Loading video element not found');
+                    return;
+                }
+
+                // Reset video state
+                loadingVideo.style.display = 'none';
+                loadingSpinner.style.display = 'block';
+                
+                // Set video properties
+                loadingVideo.src = videoSrc;
+                loadingVideo.loop = loop;
+                loadingVideo.muted = true;
+                loadingVideo.autoplay = true;
+                loadingVideo.preload = 'auto';
+
+                // Clear any existing event listeners
+                loadingVideo.onloadeddata = null;
+                loadingVideo.oncanplaythrough = null;
+                loadingVideo.onerror = null;
+                loadingVideo.onended = null;
+
+                // Video success handler
+                const onVideoReady = () => {
+                    console.log('Video ready to play:', videoSrc);
                     loadingVideo.style.display = 'block';
                     loadingSpinner.style.display = 'none';
-                    loadingVideo.src = '../assets/images/Trail-Loading.webm';
-                    loadingVideo.loop = true;
-                    loadingVideo.load();
-
-                    // Handle video load errors - fallback to spinner
-                    loadingVideo.onerror = function() {
-                        console.log('Video failed to load, using spinner fallback');
+                    
+                    // Ensure video plays
+                    loadingVideo.play().catch(e => {
+                        console.log('Video play failed, using spinner:', e);
                         loadingVideo.style.display = 'none';
                         loadingSpinner.style.display = 'block';
-                    };
+                    });
+                };
 
-                    // Also check if video can play
-                    loadingVideo.addEventListener('loadeddata', function() {
-                        console.log('Video loaded successfully');
-                    }, { once: true });
+                // Video error handler
+                const onVideoError = (e) => {
+                    console.log('Video failed to load:', videoSrc, e);
+                    loadingVideo.style.display = 'none';
+                    loadingSpinner.style.display = 'block';
+                };
 
-                    // Fallback timer - if video doesn't load in 500ms, show spinner
-                    setTimeout(function() {
-                        if (loadingVideo.readyState < 2) {
-                            console.log('Video loading timeout, using spinner');
-                            loadingVideo.style.display = 'none';
-                            loadingSpinner.style.display = 'block';
-                        }
-                    }, 500);
-                }
+                // Set up event listeners
+                loadingVideo.addEventListener('loadeddata', onVideoReady, { once: true });
+                loadingVideo.addEventListener('canplaythrough', onVideoReady, { once: true });
+                loadingVideo.addEventListener('error', onVideoError, { once: true });
+
+                // Load the video
+                loadingVideo.load();
+
+                // Timeout fallback
+                setTimeout(() => {
+                    if (loadingVideo.readyState < 2) {
+                        console.log('Video loading timeout, using spinner fallback');
+                        onVideoError('timeout');
+                    }
+                }, 2000);
             }
 
-            // Login form logic
+            // Pre-load videos on page load
+            preloadVideos();
+
+            // Login form handler
             const loginForm = document.getElementById('loginForm');
             if (loginForm) {
                 loginForm.addEventListener('submit', function(e) {
                     e.preventDefault();
+                    console.log('Login form submitted');
                     
-                    // Check if modal is available
                     if (!loadingModal) {
                         console.error('Loading modal not initialized');
                         return;
@@ -333,12 +408,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     // Hide previous error
                     document.getElementById('loginError').classList.add('d-none');
 
-                    // Setup video with fallback to spinner
-                    setupLoadingVideo();
+                    // Setup initial loading video
+                    setupLoadingVideo('../assets/images/Trail-Loading.webm', true);
                     loadingMessage.textContent = "Verifying Credentials. This won't take long...";
                     loadingModal.show();
 
-                    // Gather form data
+                    // Submit form data
                     const formData = new FormData(loginForm);
                     fetch(window.location.href, {
                             method: 'POST',
@@ -349,56 +424,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         })
                         .then(response => response.json())
                         .then(data => {
+                            console.log('Login response:', data);
                             const username = formData.get('username') || '';
+                            
                             if (data.success) {
-                                // Success case - show Success_Check.webm
+                                // Success case
                                 loadingMessage.textContent = `Verification Successful! Welcome back ${data.username || username}!`;
+                                setupLoadingVideo('../assets/images/Success_Check.webm', false);
                                 
-                                if (loadingVideo && loadingVideo.style.display !== 'none') {
-                                    // Switch to Success_Check.webm
-                                    loadingVideo.src = '../assets/images/Success_Check.webm';
-                                    loadingVideo.loop = false; // Play only once
-                                    loadingVideo.load();
-                                    
-                                    // Handle video load errors
-                                    loadingVideo.onerror = function() {
-                                        loadingVideo.style.display = 'none';
-                                        loadingSpinner.style.display = 'block';
-                                    };
-                                    
-                                    // Wait for video to end or 3 seconds, then redirect
+                                // Handle video end or timeout
+                                if (loadingVideo) {
                                     loadingVideo.addEventListener('ended', function() {
+                                        console.log('Success video ended, redirecting');
                                         window.location.href = 'dashboard.php';
                                     }, { once: true });
-                                    
-                                    // Fallback timeout - redirect after 3 seconds regardless
-                                    setTimeout(() => {
-                                        window.location.href = 'dashboard.php';
-                                    }, 3000);
-                                } else {
-                                    // Fallback if video not available
-                                    setTimeout(() => {
-                                        window.location.href = 'dashboard.php';
-                                    }, 3000);
                                 }
+                                
+                                // Fallback redirect
+                                setTimeout(() => {
+                                    console.log('Fallback redirect to dashboard');
+                                    window.location.href = 'dashboard.php';
+                                }, 4000);
+                                
                             } else {
-                                // Failure case - show Cross.webm
+                                // Failure case
                                 loadingMessage.textContent = 'Failed to verify credentials! Please try again...';
+                                setupLoadingVideo('../assets/images/Cross.webm', false);
                                 
-                                if (loadingVideo && loadingVideo.style.display !== 'none') {
-                                    // Switch to Cross.webm
-                                    loadingVideo.src = '../assets/images/Cross.webm';
-                                    loadingVideo.loop = false; // Play only once
-                                    loadingVideo.load();
-                                    
-                                    // Handle video load errors
-                                    loadingVideo.onerror = function() {
-                                        loadingVideo.style.display = 'none';
-                                        loadingSpinner.style.display = 'block';
-                                    };
-                                }
-                                
-                                // Close modal after exactly 3 seconds
+                                // Close modal and show error after 3 seconds
                                 setTimeout(() => {
                                     loadingModal.hide();
                                     document.getElementById('loginError').textContent = 'Wrong Username or Password! Please try again!';
@@ -406,16 +459,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     document.getElementById('username').value = username;
                                     document.getElementById('password').value = '';
                                     
-                                    // Reset video for next attempt
-                                    if (loadingVideo) {
-                                        loadingVideo.src = '../assets/images/Trail-Loading.webm';
-                                        loadingVideo.loop = true;
-                                        loadingVideo.load();
-                                    }
+                                    // Reset for next attempt
+                                    setupLoadingVideo('../assets/images/Trail-Loading.webm', true);
                                 }, 3000);
                             }
                         })
-                        .catch(() => {
+                        .catch(error => {
+                            console.error('Login error:', error);
                             loadingModal.hide();
                             document.getElementById('loginError').textContent = 'An error occurred. Please try again.';
                             document.getElementById('loginError').classList.remove('d-none');
@@ -423,26 +473,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 });
             }
 
-            // Forgot Password Link functionality
+            // Forgot Password Link handler
             const forgotPasswordLink = document.getElementById('forgotPasswordLink');
             if (forgotPasswordLink) {
                 forgotPasswordLink.addEventListener('click', function(e) {
                     e.preventDefault();
+                    console.log('Forgot password clicked');
                     
-                    // Check if modal is available
                     if (!loadingModal) {
-                        console.error('Loading modal not initialized');
-                        // Fallback - direct redirect
+                        console.error('Loading modal not initialized, redirecting directly');
                         window.location.href = 'forgot-password.php';
                         return;
                     }
                     
-                    // Setup video with fallback to spinner
-                    setupLoadingVideo();
+                    setupLoadingVideo('../assets/images/Trail-Loading.webm', true);
                     loadingMessage.textContent = "Redirecting! Please Wait...";
                     loadingModal.show();
 
-                    // Redirect after 3 seconds
                     setTimeout(function() {
                         window.location.href = 'forgot-password.php';
                     }, 3000);

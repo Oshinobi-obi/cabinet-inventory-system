@@ -364,138 +364,161 @@ try {
     <link href="../assets/css/mobile-enhancements.css" rel="stylesheet">
     <link rel="preload" as="video" href="../assets/images/Trail-Loading.webm">
     <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
-        /* Search Input Styling - Remove Blue Highlight */
-        #activitySearch:focus {
-            outline: none !important;
-            box-shadow: none !important;
-            border-color: #ced4da !important;
+        /* Modern Dashboard Design - Matching Login Style */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
 
-        /* Loading Modal Styling */
-        #loadingModal .modal-content {
-            border: none;
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        #content {
+            background: transparent;
+        }
+
+        .container-fluid {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            padding: 30px !important;
+            max-width: calc(100% - 40px);
+        }
+
+        /* Navbar styling to match gradient theme */
+        .admin-navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
         }
 
-        #loadingModal .modal-body {
-            padding: 30px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        /* Card improvements */
+        .card {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
         }
 
-        #loadingModal video {
-            margin: 0 auto;
-            display: block;
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
         }
 
-        #loadingMessage {
-            color: #6c757d;
-            font-weight: 500;
-            text-align: center;
-            margin-top: 15px;
-        }
-
-        /* Hide number input spinners/arrows */
-        .page-input::-webkit-outer-spin-button,
-        .page-input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        /* Firefox */
-        .page-input[type=number] {
-            -moz-appearance: textfield;
-            appearance: textfield;
-        }
-
-        /* Make page input smaller and improve spacing */
-        .page-input {
-            width: 40px !important;
-            height: 30px !important;
-            font-size: 0.8rem !important;
-            padding: 2px 4px !important;
-            border-radius: 4px !important;
-        }
-
-        /* Adjust pagination spacing */
-        .pagination .page-item:not(:first-child) .page-link {
-            margin-left: 3px;
-        }
-
-        .pagination .page-item.active {
-            margin: 0 5px;
-        }
-
-        /* Ensure consistent height for all pagination elements */
-        .pagination .page-link {
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-    </style>
-    <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
-        /* Glassmorphism overlay for logout modal */
-        #logoutConfirmModal {
-            background: rgba(255, 255, 255, 0.25) !important;
-            backdrop-filter: blur(8px) saturate(1.2);
-            -webkit-backdrop-filter: blur(8px) saturate(1.2);
-            transition: background 0.2s;
-            z-index: 2000;
-        }
-
-        #logoutConfirmModal .modal-content,
-        #logoutConfirmModal .modal-title,
-        #logoutConfirmModal .modal-body,
-        #logoutConfirmModal .modal-footer,
-        #logoutConfirmModal .modal-content p,
-        #logoutConfirmModal .modal-content h5 {
-            color: #222 !important;
-            background: #fff !important;
-            user-select: none;
-        }
-
-        #logoutConfirmModal .modal-content {
-            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.18);
-        }
-
-        #logoutConfirmModal .modal-title {
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
             font-weight: 600;
+            padding: 15px 20px;
         }
 
-        #logoutConfirmModal .modal-footer {
-            background: #fff !important;
+        /* Statistics cards gradient improvements */
+        .card.bg-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         }
 
-        #logoutConfirmModal .btn-danger,
-        #logoutConfirmModal .btn-secondary {
-            user-select: none;
+        .card.bg-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
         }
 
-        /* N/A Item Category Dropdown Styling */
-        .form-select:disabled {
-            background-color: #e9ecef !important;
-            color: #6c757d !important;
-            cursor: not-allowed !important;
-            opacity: 0.7;
+        .card.bg-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
         }
 
-        .form-select:disabled option {
-            color: #6c757d;
+        .card.bg-warning {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%) !important;
         }
 
-        /* Visual indicator for N/A items */
-        .item-row .form-control:disabled + .form-label::after {
-            content: " (N/A Item)";
-            font-size: 0.8em;
-            color: #6c757d;
-            font-style: italic;
+        /* Button improvements */
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
 
-        /* Remove arrow buttons from quantity input */
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(17, 153, 142, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            border: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(250, 112, 154, 0.3);
+        }
+
+        .btn-secondary {
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(108, 117, 125, 0.3);
+        }
+
+        /* Form controls */
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        /* Table improvements */
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Remove spinner arrows from number inputs */
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -507,12 +530,125 @@ try {
             appearance: textfield;
         }
 
-        /* Disabled quantity input styling */
-        input[type="number"]:disabled {
-            background-color: #e9ecef !important;
-            color: #6c757d !important;
-            cursor: not-allowed !important;
-            opacity: 0.7;
+        .btn-outline-secondary:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .table thead th {
+            background: transparent;
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+            transition: background-color 0.3s ease;
+        }
+
+        /* Badge improvements */
+        .badge {
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-weight: 500;
+        }
+
+        /* Modal improvements */
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            border-bottom: none;
+            padding: 25px 25px 15px;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .modal-footer {
+            border-top: none;
+            padding: 15px 25px 25px;
+        }
+
+        /* Progress bars */
+        .progress {
+            border-radius: 10px;
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+
+        .progress-bar {
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* Alert improvements */
+        .alert {
+            border-radius: 15px;
+            border: none;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+        }
+
+        /* Welcome message styling */
+        h2 {
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* Statistics card icons */
+        .card-body i.fa-2x {
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        /* Input group styling */
+        .input-group-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px 0 0 10px;
+        }
+
+        /* Pagination improvements */
+        .pagination .page-link {
+            border-radius: 8px;
+            margin: 0 3px;
+            border: 2px solid #e9ecef;
+            color: #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .pagination .page-link:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .pagination .page-item.active .page-link {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
         }
     </style>
 </head>
@@ -522,18 +658,27 @@ try {
     <?php include '../includes/sidebar.php'; ?>
 
     <!-- Logout Confirmation Modal (hidden by default) -->
-    <div class="modal" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" style="display:none;">
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius:12px;">
-                <div class="modal-header" style="border-bottom:none;">
-                    <h5 class="modal-title">Confirm Logout</h5>
+            <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px 15px 0 0; border-bottom: none;">
+                    <h5 class="modal-title text-white fw-bold">
+                        <i class="fas fa-sign-out-alt me-2"></i>Confirm Logout
+                    </h5>
                 </div>
-                <div class="modal-body text-center">
-                    <p>Are you sure you want to log out?</p>
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="fas fa-question-circle text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <p class="mb-0 text-dark fw-semibold" style="font-size: 1.1rem;">Are you sure you want to logout?</p>
                 </div>
-                <div class="modal-footer" style="border-top:none; justify-content:center;">
-                    <button id="confirmLogoutBtn" class="btn btn-danger">Yes, Log Out</button>
-                    <button id="cancelLogoutBtn" class="btn btn-secondary ms-2">Cancel</button>
+                <div class="modal-footer" style="border-top: none; justify-content: center; padding: 1rem 2rem 2rem;">
+                    <button id="cancelLogoutBtn" class="btn btn-outline-secondary me-2" style="border-radius: 8px; padding: 8px 20px;">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button id="confirmLogoutBtn" class="btn btn-danger" style="border-radius: 8px; padding: 8px 20px;">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </button>
                 </div>
             </div>
         </div>
@@ -555,13 +700,13 @@ try {
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary admin-navbar">
             <div class="container-fluid">
                 <div class="d-flex align-items-center">
-                    <button id="sidebarToggle" class="btn btn-outline-light me-2">
-                        <i class="fas fa-bars"></i>
+                    <button id="sidebarToggle" class="btn btn-outline-light me-2" style="background-color: rgba(255,255,255,0.1); border: 2px solid #000; color: white;">
+                        <i class="fas fa-bars text-dark" style="color: #000 !important; text-shadow: none !important;"></i>
                     </button>
-                    <span class="navbar-brand d-flex align-items-center mb-0">
-                        <i class="bi bi-archive-fill me-2"></i>
-                        <i class="fas fa-<?php echo $_SESSION['user_role'] === 'admin' ? 'crown' : 'edit'; ?>"></i>
-                        <span class="ms-2"><?php echo ucfirst($_SESSION['user_role']); ?> Dashboard</span>
+                    <span class="navbar-brand d-flex align-items-center mb-0 text-dark">
+                        <i class="bi bi-archive-fill me-2 text-dark"></i>
+                        <i class="fas fa-<?php echo $_SESSION['user_role'] === 'admin' ? 'crown' : 'edit'; ?> text-dark"></i>
+                        <span class="ms-2 text-dark"><?php echo ucfirst($_SESSION['user_role']); ?> Dashboard</span>
                     </span>
                 </div>
             </div>
@@ -783,13 +928,13 @@ try {
                                 <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Your Daily Tasks</h5>
                             </div>
                             <div class="card-body">
-                                <div class="row justify-content-center">
-                                    <div class="col-md-5 mb-2">
+                                <div class="row g-2">
+                                    <div class="col-md-6">
                                         <button type="button" class="btn btn-primary w-100 open-add-cabinet">
                                             <i class="fas fa-plus me-2"></i>Add New Cabinet
                                         </button>
                                     </div>
-                                    <div class="col-md-5 mb-2">
+                                    <div class="col-md-6">
                                         <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#selectCabinetModal">
                                             <i class="fas fa-edit me-2"></i>Edit Cabinets
                                         </button>
@@ -1285,11 +1430,11 @@ try {
 
     <!-- Loading Modal -->
     <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-sm">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-body">
-                    <video id="loadingVideo" src="../assets/images/Trail-Loading.webm" style="width: 80px; height: 80px;" autoplay muted loop playsinline></video>
-                    <h5 id="loadingMessage">Processing...</h5>
+                <div class="modal-body text-center py-4">
+                    <video id="loadingVideo" src="../assets/images/Trail-Loading.webm" style="width: 80px; height: 80px; display: block; margin: 0 auto;" autoplay muted loop playsinline></video>
+                    <h5 id="loadingMessage" class="mt-3 mb-0">Processing...</h5>
                 </div>
             </div>
         </div>
@@ -1509,6 +1654,21 @@ try {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">          
+    // Animate statistics cards on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const statCards = document.querySelectorAll('.col-lg-3, .col-lg-4');
+            statCards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         // Logout modal logic
         document.addEventListener('DOMContentLoaded', function() {
@@ -1524,7 +1684,6 @@ try {
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    document.getElementById('logoutConfirmModal').style.display = 'block';
                     confirmModal.show();
                 });
             }
@@ -1551,9 +1710,6 @@ try {
             };
             document.getElementById('cancelLogoutBtn').onclick = function() {
                 confirmModal.hide();
-                setTimeout(function() {
-                    document.getElementById('logoutConfirmModal').style.display = 'none';
-                }, 300);
             };
         });
     </script>
@@ -2254,11 +2410,11 @@ try {
 
         function getSortArrow(column, currentSort, currentOrder) {
             if (currentSort !== column) {
-                return '<i class="bi bi-arrow-up-down text-muted"></i>';
+                return '<i class="bi bi-arrow-up-down text-white"></i>';
             }
             return currentOrder === 'asc' ?
-                '<i class="bi bi-arrow-up text-primary"></i>' :
-                '<i class="bi bi-arrow-down text-primary"></i>';
+                '<i class="bi bi-arrow-up text-white"></i>' :
+                '<i class="bi bi-arrow-down text-white"></i>';
         }
 
         function toggleSort(column) {

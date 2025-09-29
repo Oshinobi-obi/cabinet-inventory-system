@@ -850,7 +850,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
 
     <div class="viewer-container">
         <div class="header">
-            <i class="fas fa-cabinet-filing"></i>
+            <i class="fas fa-archive"></i>
             <h1 class="mt-2">Cabinet Contents Viewer</h1>
             <p class="text-muted">Search by cabinet number or name, or scan QR code</p>
         </div>

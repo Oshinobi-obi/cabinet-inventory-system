@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Email Service for Cabinet Inventory System
+ * Email Service for Cabinet Management System
  * Handles sending emails with user credentials and configuration management
  */
 
@@ -238,7 +238,7 @@ class EmailService
                 'Content-Type: text/html; charset=UTF-8',
                 'From: ' . $config['from_name'] . ' <' . $config['from_email'] . '>',
                 'Reply-To: ' . ($config['reply_to'] ?: $config['from_email']),
-                'X-Mailer: Cabinet Inventory System',
+                'X-Mailer: Cabinet Management System',
                 'X-Priority: 1',
                 'Importance: High'
             ];
@@ -575,14 +575,14 @@ class EmailService
         try {
             $config = self::loadUserConfig();
             
-            $subject = 'Password Reset Request - Cabinet Inventory System';
+            $subject = 'Password Reset Request - Cabinet Management System';
             $message = self::generatePasswordResetEmailContent($fullName, $resetUrl, $token);
             
             $headers = [
-                'From: ' . ($config['from_name'] ?? 'Cabinet Inventory System') . ' <' . ($config['from_email'] ?? 'noreply@example.com') . '>',
+                'From: ' . ($config['from_name'] ?? 'Cabinet Management System') . ' <' . ($config['from_email'] ?? 'noreply@example.com') . '>',
                 'Reply-To: ' . ($config['reply_to'] ?? $config['from_email'] ?? 'noreply@example.com'),
                 'Content-Type: text/html; charset=UTF-8',
-                'X-Mailer: Cabinet Inventory System'
+                'X-Mailer: Cabinet Management System'
             ];
             
             $success = mail($email, $subject, $message, implode("\r\n", $headers));
@@ -734,7 +734,7 @@ class EmailService
             }
 
             // Prepare password reset email message
-            $subject = 'Password Reset Request - Cabinet Inventory System';
+            $subject = 'Password Reset Request - Cabinet Management System';
             $message = self::generatePasswordResetEmailContent($fullName, $resetUrl, $token);
 
             $emailMessage = "From: {$config['from_name']} <{$config['from_email']}>\r\n";
@@ -796,7 +796,7 @@ class EmailService
             
             // Content
             $mail->isHTML(true);
-            $mail->Subject = 'Password Reset Request - Cabinet Inventory System';
+            $mail->Subject = 'Password Reset Request - Cabinet Management System';
             $mail->Body = self::generatePasswordResetEmailContent($fullName, $resetUrl, $token);
             
             $mail->send();
@@ -838,14 +838,14 @@ class EmailService
             <div class='container'>
                 <div class='header'>
                     <h1>🔐 Password Reset Request</h1>
-                    <p>Cabinet Inventory System</p>
+                    <p>Cabinet Management System</p>
                 </div>
                 <div class='content'>
                     <h2>Hello {$fullName},</h2>
-                    <p>We received a request to reset your password for the Cabinet Inventory System account.</p>
+                    <p>We received a request to reset your password for the Cabinet Management System account.</p>
                     
                     <p>To reset your password, please click the button below:</p>
-                    <p style='text-align: center;'>
+                    <p style='text-align: center; color: #ffffff;'>
                         <a href='{$resetUrl}' class='button'>Reset My Password</a>
                     </p>
                     
@@ -870,7 +870,7 @@ class EmailService
                     </p>
                 </div>
                 <div class='footer'>
-                    <p>This email was sent from the Cabinet Inventory System</p>
+                    <p>This email was sent from the Cabinet Management System</p>
                     <p>If you didn't request this password reset, please contact your system administrator</p>
                 </div>
             </div>

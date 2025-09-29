@@ -3,7 +3,7 @@
 ?>
 <style>
     :root {
-        --sidebar-width: 250px;
+        --sidebar-width: 280px;
     }
 
     body {
@@ -16,12 +16,13 @@
         width: var(--sidebar-width);
         position: fixed !important;
         top: 0;
-        left: -250px !important;
+        left: -280px !important;
         /* Force hidden - move completely off screen */
         z-index: 1050;
         transition: left 0.3s ease-in-out;
-        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 0, 0, 0.1);
         transform: translateX(0);
+        border-right: 3px solid white;
         /* Ensure no transform conflicts */
     }
 
@@ -80,19 +81,19 @@
         text-transform: uppercase;
         letter-spacing: 0.1rem;
         font-weight: 600;
-        color: #6c757d !important;
+        color: white !important;
     }
 
     /* Ensure sidebar is hidden on all screen sizes initially */
     @media (max-width: 768px) {
         #sidebar {
-            left: -250px !important;
+            left: -280px !important;
         }
     }
 
     @media (min-width: 769px) {
         #sidebar {
-            left: -250px !important;
+            left: -280px !important;
             /* Keep hidden on desktop too */
         }
     }
@@ -106,7 +107,7 @@
     <div class="p-3">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="text-center text-white flex-grow-1">
-                <i class="bi bi-archive-fill" style="font-size: 40px;" class="mb-2"></i>
+                <i class="fa fa-archive text-white" style="font-size: 40px;"></i>
                 <h5>Cabinet Inventory System</h5>
             </div>
             <button class="btn btn-sm btn-outline-light d-lg-none" id="sidebarClose">
@@ -122,8 +123,8 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="cabinet.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'cabinet.php' ? 'active' : ''; ?>">
-                    <i class="fa fa-archive me-2"></i> Cabinet Management
+                <a href="cabinet.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'cabinet.php' ? 'active' : ''; ?>" style="display: flex; align-items: center;">
+                    <i class="fa fa-archive text-white me-2"></i> Cabinet Management
                 </a>
             </li>
             <!-- Search Cabinets button removed -->
@@ -136,12 +137,12 @@
             <!-- Admin-Only Navigation -->
             <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] == 'admin'): ?>
                 <li class="nav-item mt-3">
-                    <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted">
-                        <i class="fas fa-crown me-2"></i>Administration
+                    <h6 class="sidebar-heading px-3 mt-4 mb-1 text-white" style="color: white !important;">
+                        <i class="fas fa-crown me-2 text-white"></i>Administration
                     </h6>
                 </li>
                 <li class="nav-item">
-                    <a href="users.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'users.php' ? 'active' : ''; ?>">
+                    <a href="users.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'users.php' ? 'active' : ''; ?>" style="display: flex; align-items: center;">
                         <i class="fas fa-users me-2"></i> User Management
                     </a>
                 </li>
@@ -160,7 +161,7 @@
         <div class="text-center text-light small">
             <p class="mb-1">Logged in as:</p>
             <p class="mb-0"><strong><?php echo isset($_SESSION['first_name']) ? $_SESSION['first_name'] . ' ' . $_SESSION['last_name'] : 'User'; ?></strong></p>
-            <p class="mb-0 text-muted"><?php echo isset($_SESSION['user_role']) ? ucfirst($_SESSION['user_role']) : ''; ?></p>
+            <p class="mb-0 text-white"><?php echo isset($_SESSION['user_role']) ? ucfirst($_SESSION['user_role']) : ''; ?></p>
         </div>
     </div>
 </div>
@@ -186,7 +187,7 @@
         // Force sidebar to be hidden on page load
         if (sidebar) {
             sidebar.classList.remove('show');
-            sidebar.style.left = '-250px';
+            sidebar.style.left = '-280px';
             console.log('Sidebar forced to hidden position');
         }
 

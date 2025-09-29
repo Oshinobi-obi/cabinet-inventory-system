@@ -184,8 +184,9 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="../assets/css/navbar.css" rel="stylesheet">
-    <style>
-        /* Ensure sidebar is hidden on page load */
+    <link href="../assets/css/cabinet.css" rel="stylesheet">
+    <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
+        /* Modern Dashboard Design - Matching Login Style */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -204,54 +205,201 @@ try {
             background: #a8a8a8;
         }
 
-        #sidebar {
-            left: -250px !important;
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
         }
 
-        /* Role Badge Styling - matching dashboard */
-        .badge.fs-6 {
-            font-size: 0.9rem !important;
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
+        #content {
+            background: transparent;
         }
 
-        /* Glassmorphism overlay for logout modal */
-        #logoutConfirmModal {
-            background: rgba(255, 255, 255, 0.25) !important;
-            backdrop-filter: blur(8px) saturate(1.2);
-            -webkit-backdrop-filter: blur(8px) saturate(1.2);
-            transition: background 0.2s;
-            z-index: 2000;
+        .container-fluid {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            padding: 30px !important;
+            max-width: calc(100% - 40px);
         }
 
-        #logoutConfirmModal .modal-content,
-        #logoutConfirmModal .modal-title,
-        #logoutConfirmModal .modal-body,
-        #logoutConfirmModal .modal-footer,
-        #logoutConfirmModal .modal-content p,
-        #logoutConfirmModal .modal-content h5 {
-            color: #222 !important;
-            background: #fff !important;
-            user-select: none;
+        /* Navbar styling to match gradient theme */
+        .admin-navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
         }
 
-        #logoutConfirmModal .modal-content {
-            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.18);
+        /* Card improvements */
+        .card {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
         }
 
-        #logoutConfirmModal .modal-title {
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+            padding: 15px 20px;
+        }
+
+        /* Button improvements */
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(17, 153, 142, 0.3);
+        }
+
+        .btn-secondary {
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-info {
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Form controls */
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        /* Table improvements */
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .table thead th {
+            background: transparent;
+            color: white;
+            border: none;
             font-weight: 600;
         }
 
-        #logoutConfirmModal .modal-footer {
-            background: #fff !important;
+        .table-hover tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+            transition: background-color 0.3s ease;
         }
 
-        #logoutConfirmModal .btn-danger,
-        #logoutConfirmModal .btn-secondary {
-            user-select: none;
+        /* Badge improvements */
+        .badge {
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-weight: 500;
         }
-        
+
+        /* Modal improvements */
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            border-bottom: none;
+            padding: 25px 25px 15px;
+            border-radius: 20px 20px 0 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .modal-footer {
+            border-top: none;
+            padding: 15px 25px 25px;
+        }
+
+        /* Alert improvements */
+        .alert {
+            border-radius: 15px;
+            border: none;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        }
+
+        /* Pagination improvements */
+        .btn-outline-secondary {
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-secondary:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+
         /* Mobile-friendly table scrolling */
         .table-responsive {
             overflow-x: auto;
@@ -259,26 +407,21 @@ try {
             border: 1px solid #dee2e6;
             border-radius: 0.375rem;
         }
-        
+
         .table-responsive::-webkit-scrollbar {
             height: 8px;
         }
-        
+
         .table-responsive::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 4px;
         }
-        
+
         .table-responsive::-webkit-scrollbar-thumb {
             background: #c1c1c1;
             border-radius: 4px;
         }
-        
-        .table-responsive::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
-        }
-        
-        /* Ensure table doesn't break on mobile */
+
         @media (max-width: 768px) {
             .table-responsive {
                 font-size: 0.875rem;
@@ -290,16 +433,19 @@ try {
                 padding: 0.5rem 0.25rem;
             }
         }
-        
-        /* Mobile-friendly modal tables */
-        .modal .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+
+        /* Add User Button */
+        .add-user-btn {
+            margin-bottom: 20px;
         }
-        
-        .modal .table th,
-        .modal .table td {
-            white-space: nowrap;
+
+        /* Action buttons group */
+        .btn-group .btn {
+            margin-right: 5px;
+        }
+
+        .btn-group .btn:last-child {
+            margin-right: 0;
         }
     </style>
 </head>
@@ -311,11 +457,12 @@ try {
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary admin-navbar">
             <div class="container-fluid">
                 <div class="d-flex align-items-center">
-                    <button id="sidebarToggle" class="btn btn-outline-light me-2">
-                        <i class="fas fa-bars"></i>
+                    <button id="sidebarToggle" class="btn btn-outline-light me-2" style="background-color: rgba(255,255,255,0.1); border: 2px solid #000; color: white;">
+                        <i class="fas fa-bars text-dark" style="color: #000 !important; text-shadow: none !important;"></i>
                     </button>
-                    <span class="navbar-brand">
-                        <i class="fas fa-users me-2"></i>User Management
+                    <span class="navbar-brand d-flex align-items-center mb-0 text-dark">
+                        <i class="fa fa-users me-2 text-dark"></i>
+                        <span class="ms-2 text-dark">User Management</span>
                     </span>
                 </div>
             </div>
@@ -329,19 +476,25 @@ try {
             </div>
 
             <?php if (isset($error)): ?>
-                <div class="alert alert-danger"><?php echo $error; ?></div>
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <?php echo $error; ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
             <?php endif; ?>
 
             <?php if (isset($_SESSION['success'])): ?>
-                <div class="alert alert-success"><?php echo $_SESSION['success'];
-                                                    unset($_SESSION['success']); ?></div>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <?php echo $_SESSION['success'];
+                    unset($_SESSION['success']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
             <?php endif; ?>
 
 
             <!-- Users List -->
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title">Existing Users</h5>
+                    <h5 class="card-title mb-0"><i class="fas fa-users me-2"></i>Existing Users</h5>
                 </div>
                 <div class="card-body">
                     <?php if ($users): ?>
@@ -370,71 +523,81 @@ try {
                                             </td>
                                             <td><?php echo date('M j, Y', strtotime($user['created_at'])); ?></td>
                                             <td>
-                                                <button class="btn btn-sm btn-info edit-user-btn" data-user='<?php echo htmlspecialchars(json_encode($user), ENT_QUOTES, 'UTF-8'); ?>'>
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <?php if ($user['id'] != $_SESSION['user_id']): ?>
-                                                    <button class="btn btn-sm btn-danger delete-user-btn" data-user-id="<?php echo $user['id']; ?>" data-user-name="<?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name'], ENT_QUOTES, 'UTF-8'); ?>">
-                                                        <i class="fas fa-trash"></i>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-info edit-user-btn" 
+                                                            data-user='<?php echo htmlspecialchars(json_encode($user), ENT_QUOTES, 'UTF-8'); ?>'
+                                                            title="Edit User">
+                                                        <i class="fas fa-edit"></i>
                                                     </button>
-                                                <?php endif; ?>
+                                                    <?php if ($user['id'] != $_SESSION['user_id']): ?>
+                                                        <button class="btn btn-sm btn-danger delete-user-btn" 
+                                                                data-user-id="<?php echo $user['id']; ?>" 
+                                                                data-user-name="<?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                                                                title="Delete User">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    <?php endif; ?>
+                                                </div>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- Pagination -->
+                        <?php if ($totalPages > 1): ?>
+                            <nav aria-label="Users pagination" class="mt-4">
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <!-- Previous button -->
+                                    <?php if ($page > 1): ?>
+                                        <a class="btn btn-outline-secondary btn-sm me-3" href="?page=<?php echo $page - 1; ?>">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    <?php else: ?>
+                                        <button class="btn btn-outline-secondary btn-sm me-3" disabled>
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                    <?php endif; ?>
+
+                                    <!-- Current page indicator -->
+                                    <span class="fw-bold"><?php echo $page; ?></span>
+
+                                    <!-- Next button -->
+                                    <?php if ($page < $totalPages): ?>
+                                        <a class="btn btn-outline-secondary btn-sm ms-3" href="?page=<?php echo $page + 1; ?>">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    <?php else: ?>
+                                        <button class="btn btn-outline-secondary btn-sm ms-3" disabled>
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </nav>
+                        <?php endif; ?>
+
+                        <!-- Pagination info -->
+                        <div class="text-center text-muted mt-2">
+                            Showing <?php echo (($page - 1) * $usersPerPage) + 1; ?>-<?php echo min($page * $usersPerPage, $totalUsers); ?> of <?php echo $totalUsers; ?> users
+                        </div>
                     <?php else: ?>
                         <p class="text-muted">No users found.</p>
                     <?php endif; ?>
-                    <!-- Pagination Controls -->
-                    <?php if ($totalPages > 1): ?>
-                        <nav aria-label="Users pagination">
-                            <ul class="pagination justify-content-center mt-3">
-                                <li class="page-item<?php if ($page <= 1) echo ' disabled'; ?>">
-                                    <a class="page-link" href="?page=<?php echo $page - 1; ?>" tabindex="-1">Previous</a>
-                                </li>
-                                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                    <li class="page-item<?php if ($i == $page) echo ' active'; ?>">
-                                        <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                                    </li>
-                                <?php endfor; ?>
-                                <li class="page-item<?php if ($page >= $totalPages) echo ' disabled'; ?>">
-                                    <a class="page-link" href="?page=<?php echo $page + 1; ?>">Next</a>
-                                </li>
-                            </ul>
-                        </nav>
-                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Loading Modal (reusable, matches login.php style) -->
-    <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" style="background:rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="background:transparent; border:none; box-shadow:none; align-items:center;">
-                <div class="modal-body text-center">
-                    <div class="position-relative" style="width:120px; height:120px; margin:0 auto;">
-                        <video id="loadingVideo" style="width:120px; height:120px; border-radius:50%; background:#fff; display:none;" autoplay loop muted playsinline>
-                            <source src="../assets/images/Trail-Loading.webm" type="video/webm">
-                        </video>
-                        <div id="loadingSpinner" class="spinner-border text-primary" style="width:120px; height:120px;" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                    <div id="loadingMessage" class="mt-3 text-white fw-bold" style="font-size:1.2rem; text-shadow:0 1px 4px #000;">Loading Details...</div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Edit User Modal -->
-    <div class="modal fade" id="editUserModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog">
+    <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Edit User</h5>
+                    <h5 class="modal-title" id="editUserModalLabel">
+                        <i class="fas fa-edit me-2"></i>Edit User
+                    </h5>
                 </div>
                 <form method="POST" action="">
                     <div class="modal-body">
@@ -490,11 +653,17 @@ try {
                         <div class="mb-3">
                             <label class="form-label">New Password (leave blank to keep current)</label>
                             <input type="password" class="form-control" name="password">
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Leave empty to keep the current password unchanged
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" name="edit_user" class="btn btn-primary">Update User</button>
+                        <button type="submit" name="edit_user" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Update User
+                        </button>
                     </div>
                 </form>
             </div>
@@ -502,37 +671,71 @@ try {
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteUserModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirm Delete</h5>
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteUserModalLabel">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete
+                    </h5>
                 </div>
                 <div class="modal-body">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> This action cannot be undone!
+                    </div>
                     <p>Are you sure you want to delete user <strong id="deleteUserName"></strong>?</p>
-                    <p class="text-danger">This action cannot be undone.</p>
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        All data associated with this user will be permanently removed.
+                    </p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <a id="confirmDeleteBtn" href="#" class="btn btn-danger">Delete User</a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    <a id="confirmDeleteBtn" href="#" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i> Delete User
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-body text-center py-4">
+                    <video id="loadingVideo" src="../assets/images/Trail-Loading.webm" style="width: 80px; height: 80px;" autoplay muted loop playsinline></video>
+                    <h6 id="loadingMessage" class="mt-3 text-muted">Loading User Details...</h6>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Logout Confirmation Modal (hidden by default) -->
-    <div class="modal" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" style="display:none;">
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius:12px;">
-                <div class="modal-header" style="border-bottom:none;">
-                    <h5 class="modal-title">Confirm Logout</h5>
+            <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px 15px 0 0; border-bottom: none;">
+                    <h5 class="modal-title text-white fw-bold">
+                        <i class="fas fa-sign-out-alt me-2"></i>Confirm Logout
+                    </h5>
                 </div>
-                <div class="modal-body">
-                    <p class="mb-0">Are you sure you want to logout?</p>
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="fas fa-question-circle text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <p class="mb-0 text-dark fw-semibold" style="font-size: 1.1rem;">Are you sure you want to logout?</p>
                 </div>
-                <div class="modal-footer" style="border-top:none;">
-                    <button type="button" class="btn btn-secondary" id="cancelLogoutBtn">Cancel</button>
-                    <button type="button" class="btn btn-danger" id="confirmLogoutBtn">Logout</button>
+                <div class="modal-footer" style="border-top: none; justify-content: center; padding: 1rem 2rem 2rem;">
+                    <button type="button" class="btn btn-outline-secondary me-2" id="cancelLogoutBtn" style="border-radius: 8px; padding: 8px 20px;">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmLogoutBtn" style="border-radius: 8px; padding: 8px 20px;">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </button>
                 </div>
             </div>
         </div>
@@ -597,7 +800,19 @@ try {
                 }, 300);
             };
 
-            // Generate random password (only if button exists)
+            // Toggle sidebar
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            const content = document.getElementById('content');
+
+            if (sidebarToggle && sidebar && content) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                    content.classList.toggle('expanded');
+                });
+            }
+
+            // Generate random password
             var genBtn = document.getElementById('generatePassword');
             if (genBtn) {
                 genBtn.addEventListener('click', function() {
@@ -616,7 +831,7 @@ try {
                 return password;
             }
 
-            // Toggle password visibility (only if button exists)
+            // Toggle password visibility
             var toggleBtn = document.getElementById('togglePassword');
             if (toggleBtn) {
                 toggleBtn.addEventListener('click', function() {
@@ -624,13 +839,14 @@ try {
                     if (!passwordInput) return;
                     if (passwordInput.type === "password") {
                         passwordInput.type = "text";
-                        this.textContent = "Hide";
+                        this.innerHTML = '<i class="fas fa-eye-slash"></i>';
                     } else {
                         passwordInput.type = "password";
-                        this.textContent = "Show";
+                        this.innerHTML = '<i class="fas fa-eye"></i>';
                     }
                 });
             }
+
             // Edit and Delete button event delegation for CSP compliance
             document.querySelector('tbody').addEventListener('click', function(e) {
                 // Edit
@@ -650,33 +866,16 @@ try {
         });
 
         function editUser(user) {
-            // Show loading modal with role-specific message
+            // Show loading modal
             var loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'), {
                 backdrop: 'static',
                 keyboard: false
             });
             var loadingMessage = document.getElementById('loadingMessage');
-            var loadingVideo = document.getElementById('loadingVideo');
-            var loadingSpinner = document.getElementById('loadingSpinner');
             var roleLabel = user.role === 'admin' ? 'Admin' : 'Encoder';
             loadingMessage.textContent = `Loading ${roleLabel} Details...`;
-            if (loadingVideo) {
-                loadingVideo.style.display = 'block';
-                loadingSpinner.style.display = 'none';
-                loadingVideo.src = 'assets/images/Trail-Loading.webm';
-                loadingVideo.load();
-                loadingVideo.onerror = function() {
-                    loadingVideo.style.display = 'none';
-                    loadingSpinner.style.display = 'block';
-                };
-                setTimeout(function() {
-                    if (loadingVideo.readyState < 2) {
-                        loadingVideo.style.display = 'none';
-                        loadingSpinner.style.display = 'block';
-                    }
-                }, 500);
-            }
             loadingModal.show();
+
             setTimeout(function() {
                 loadingModal.hide();
                 // Fill form fields
@@ -690,7 +889,7 @@ try {
                 document.getElementById('edit_username').value = user.username;
                 document.getElementById('edit_role').value = user.role;
                 new bootstrap.Modal(document.getElementById('editUserModal')).show();
-            }, 900);
+            }, 1000);
         }
 
         function deleteUser(userId, userName) {

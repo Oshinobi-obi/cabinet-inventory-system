@@ -100,46 +100,288 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="icon" type="image/x-icon" href="../assets/images/DepEd_Logo.webp">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="../assets/css/navbar.css" rel="stylesheet">
-    <link href="../assets/css/dashboard.css" rel="stylesheet">
-    <link rel="preload" as="video" href="../assets/images/Trail-Loading.webm">
-    <style>
-        /* Glassmorphism overlay for logout modal */
-        #logoutConfirmModal {
-            background: rgba(255, 255, 255, 0.25) !important;
-            backdrop-filter: blur(8px) saturate(1.2);
-            -webkit-backdrop-filter: blur(8px) saturate(1.2);
-            transition: background 0.2s;
-            z-index: 2000;
+    <link href="../assets/css/cabinet.css" rel="stylesheet">
+    <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
+        /* Modern Dashboard Design - Matching Login Style */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
 
-        #logoutConfirmModal .modal-content,
-        #logoutConfirmModal .modal-title,
-        #logoutConfirmModal .modal-body,
-        #logoutConfirmModal .modal-footer,
-        #logoutConfirmModal .modal-content p,
-        #logoutConfirmModal .modal-content h5 {
-            color: #222 !important;
-            background: #fff !important;
-            user-select: none;
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
         }
 
-        #logoutConfirmModal .modal-content {
-            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.18);
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
         }
 
-        #logoutConfirmModal .modal-title {
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        #content {
+            background: transparent;
+        }
+
+        .container-fluid {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            padding: 30px !important;
+            max-width: calc(100% - 40px);
+        }
+
+        /* Navbar styling to match gradient theme */
+        .admin-navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Card improvements */
+        .card {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+            padding: 15px 20px;
+        }
+
+        /* Button improvements */
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(17, 153, 142, 0.3);
+        }
+
+        .btn-secondary {
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-info {
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Form controls */
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .form-control:disabled {
+            background-color: #f8f9fa;
+            border-color: #e9ecef;
+        }
+
+        /* Table improvements */
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .table thead th {
+            background: transparent;
+            color: white;
+            border: none;
             font-weight: 600;
         }
 
-        #logoutConfirmModal .modal-footer {
-            background: #fff !important;
+        .table-hover tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+            transition: background-color 0.3s ease;
         }
 
-        #logoutConfirmModal .btn-danger,
-        #logoutConfirmModal .btn-secondary {
-            user-select: none;
+        /* Badge improvements */
+        .badge {
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-weight: 500;
+        }
+
+        /* Modal improvements */
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            border-bottom: none;
+            padding: 25px 25px 15px;
+            border-radius: 20px 20px 0 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .modal-footer {
+            border-top: none;
+            padding: 15px 25px 25px;
+        }
+
+        /* Alert improvements */
+        .alert {
+            border-radius: 15px;
+            border: none;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+        }
+
+        /* Pagination improvements */
+        .btn-outline-secondary {
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-secondary:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+
+        /* Mobile-friendly table scrolling */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+        }
+
+        .table-responsive::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+            
+            .table th,
+            .table td {
+                white-space: nowrap;
+                padding: 0.5rem 0.25rem;
+            }
+        }
+
+        /* Password criteria styling */
+        #passwordCriteria div {
+            transition: all 0.3s ease;
+        }
+        
+        /* Profile specific styles */
+        .profile-card {
+            margin-bottom: 25px;
+        }
+        
+        .profile-card .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .profile-info-row {
+            margin-bottom: 15px;
+        }
+        
+        .password-criteria {
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -151,23 +393,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary admin-navbar">
             <div class="container-fluid">
                 <div class="d-flex align-items-center">
-                    <button id="sidebarToggle" class="btn btn-outline-light me-2">
-                        <i class="fas fa-bars"></i>
+                    <button id="sidebarToggle" class="btn btn-outline-light me-2" style="background-color: rgba(255,255,255,0.1); border: 2px solid #000; color: white;">
+                        <i class="fas fa-bars text-dark" style="color: #000 !important; text-shadow: none !important;"></i>
                     </button>
-                    <span class="navbar-brand d-flex align-items-center mb-0">
-                        <i class="fas fa-user-shield me-2"></i> <span class="ms-2">My Profile</span>
+                    <span class="navbar-brand d-flex align-items-center mb-0 text-dark">
+                        <i class="fa fa-user me-2 text-dark"></i>
+                        <span class="ms-2 text-dark">Profile Management</span>
                     </span>
                 </div>
             </div>
         </nav>
-
-        <div class="container p-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Account Security</h2>
-                <span class="badge bg-<?php echo $_SESSION['user_role'] === 'admin' ? 'danger' : 'primary'; ?>">
-                    <?php echo ucfirst($_SESSION['user_role']); ?>
-                </span>
-            </div>
+        <div class="container-fluid p-4">
+            <?php if ($_SESSION['user_role'] === 'encoder'): ?>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>
+                        Welcome, <?php echo $_SESSION['first_name'] . ' ' . $_SESSION['last_name']; ?>!
+                    </h2>
+                    <div class="badge bg-primary fs-6">Encoder Access</div>
+                </div>
+            <?php elseif ($_SESSION['user_role'] === 'admin'): ?>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>
+                        Welcome, <?php echo $_SESSION['first_name'] . ' ' . $_SESSION['last_name']; ?>!
+                    </h2>
+                    <div class="badge bg-danger fs-6">Admin Access</div>
+                </div>
+            <?php else: ?>
+                <h2 class="mb-4"><i class="bi bi-person-fill me-2"></i>Profile</h2>
+            <?php endif; ?>
 
             <?php
             // Show a professional first-time password alert to encoders whose password hasn't been changed yet
@@ -182,23 +435,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <?php if ($success): ?>
-                <div class="alert alert-success"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="fas fa-check-circle me-2"></i><?php echo $success; ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
             <?php endif; ?>
+
             <?php if ($errors): ?>
-                <div class="alert alert-danger">
+                <div class="alert alert-danger alert-dismissible fade show">
                     <ul class="mb-0">
                         <?php foreach ($errors as $e): ?>
                             <li><?php echo htmlspecialchars($e); ?></li>
                         <?php endforeach; ?>
                     </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
 
             <div id="ajaxErrorContainer" class="alert alert-danger d-none"></div>
 
-            <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <strong>Profile Overview</strong>
+            <!-- Profile Information Card -->
+            <div class="card profile-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="bi bi-person-fill me-2"></i>Profile Overview</h5>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -218,9 +477,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
 
+            <!-- Change Password Card -->
             <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-key me-2"></i>Change Password</h5>
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-key me-2"></i>Change Password</h5>
                 </div>
                 <div class="card-body">
                     <form id="changePasswordForm" method="post" action="">
@@ -230,7 +490,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="col-md-4">
                                 <label class="form-label">Current Password (hidden)</label>
                                 <input type="text" class="form-control" value="••••••••" disabled>
-                                <div class="form-text">For security, your current password isn’t displayed.</div>
+                                <div class="form-text">For security, your current password isn't displayed.</div>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">New Password</label>
@@ -239,7 +499,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <button class="btn btn-outline-secondary" type="button" id="toggleNew"><i class="fas fa-eye"></i></button>
                                 </div>
                                 <div class="form-text">At least 8 chars, include upper, lower, number, and special char.</div>
-                                <div class="mt-2 small" id="passwordCriteria">
+                                <div class="password-criteria small" id="passwordCriteria">
                                     <div id="crit-length" class="text-muted"><i class="fas fa-circle me-1"></i> At least 8 characters</div>
                                     <div id="crit-upper" class="text-muted"><i class="fas fa-circle me-1"></i> Uppercase letter (A-Z)</div>
                                     <div id="crit-lower" class="text-muted"><i class="fas fa-circle me-1"></i> Lowercase letter (a-z)</div>
@@ -274,7 +534,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
                 <div class="modal-body text-center py-4">
-                    <video src="../assets/images/Trail-Loading.webm" style="width: 80px; height: 80px;" autoplay muted loop playsinline></video>
+                    <video id="loadingVideo" src="../assets/images/Trail-Loading.webm" style="width: 80px; height: 80px;" autoplay muted loop playsinline></video>
                     <h6 id="loadingMessage" class="mt-3 text-muted">Updating Password, please wait...</h6>
                 </div>
             </div>
@@ -299,18 +559,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <!-- Logout Confirmation Modal (hidden by default) -->
-    <div class="modal" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" style="display:none;">
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius:12px;">
-                <div class="modal-header" style="border-bottom:none;">
-                    <h5 class="modal-title">Confirm Logout</h5>
+            <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px 15px 0 0; border-bottom: none;">
+                    <h5 class="modal-title text-white fw-bold">
+                        <i class="fas fa-sign-out-alt me-2"></i>Confirm Logout
+                    </h5>
                 </div>
-                <div class="modal-body">
-                    <p class="mb-0">Are you sure you want to logout?</p>
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="fas fa-question-circle text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <p class="mb-0 text-dark fw-semibold" style="font-size: 1.1rem;">Are you sure you want to logout?</p>
                 </div>
-                <div class="modal-footer" style="border-top:none;">
-                    <button type="button" class="btn btn-secondary" id="cancelLogoutBtn">Cancel</button>
-                    <button type="button" class="btn btn-danger" id="confirmLogoutBtn">Logout</button>
+                <div class="modal-footer" style="border-top: none; justify-content: center; padding: 1rem 2rem 2rem;">
+                    <button type="button" class="btn btn-outline-secondary me-2" id="cancelLogoutBtn" style="border-radius: 8px; padding: 8px 20px;">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmLogoutBtn" style="border-radius: 8px; padding: 8px 20px;">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </button>
                 </div>
             </div>
         </div>
@@ -350,7 +619,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    document.getElementById('logoutConfirmModal').style.display = 'block';
                     confirmModal.show();
                 });
             }
@@ -377,10 +645,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             };
             document.getElementById('cancelLogoutBtn').onclick = function() {
                 confirmModal.hide();
-                setTimeout(function() {
-                    document.getElementById('logoutConfirmModal').style.display = 'none';
-                }, 300);
             };
+
+            // Toggle sidebar
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            const content = document.getElementById('content');
+
+            if (sidebarToggle && sidebar && content) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                    content.classList.toggle('expanded');
+                });
+            }
 
             // Eye icons toggle for password fields
             const bindToggle = (btnId, inputId) => {
@@ -597,7 +874,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             if (newPwdEl) {
                 newPwdEl.addEventListener('input', function() {
-                    const pwd = newPwdEl.value || '';
+                    const pwd = this.value || '';
                     updateCriteriaUI({
                         length: pwd.length >= 8,
                         upper: /[A-Z]/.test(pwd),
@@ -605,13 +882,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         number: /[0-9]/.test(pwd),
                         special: /[^A-Za-z0-9]/.test(pwd)
                     });
-                    // Also re-check match when new password changes
-                    setConfirmValidity(pwd === (confirmPwdEl?.value || ''));
+                    setConfirmValidity(pwd === confirmPwdEl.value);
                 });
             }
             if (confirmPwdEl) {
                 confirmPwdEl.addEventListener('input', function() {
-                    setConfirmValidity((newPwdEl?.value || '') === confirmPwdEl.value);
+                    setConfirmValidity(this.value === newPwdEl.value);
                 });
             }
         });
