@@ -13,7 +13,7 @@ define('BASE_URL', 'http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/cabine
 function getDbHost()
 {
     // Check if we have network config (from mobile server)
-    $networkConfigFile = dirname(dirname(__FILE__)) . '/network_config.json';
+    $networkConfigFile = dirname(dirname(__FILE__)) . '/includes/network_config.json';
     if (file_exists($networkConfigFile)) {
         $networkConfig = json_decode(file_get_contents($networkConfigFile), true);
         if ($networkConfig && isset($networkConfig['server_ip'])) {
@@ -24,7 +24,6 @@ function getDbHost()
             }
         }
     }
-
     // For localhost access, use localhost
     return 'localhost';
 }
@@ -33,7 +32,7 @@ define('DB_HOST', getDbHost());     // Smart host detection
 define('DB_PORT', '3306');          // Replace with your MySQL server port if different
 define('DB_NAME', 'cabinet_info_system');
 define('DB_USER', 'root'); // Replace with your MySQL username
-define('DB_PASS', ''); // Replace with your MySQL password
+define('DB_PASS', 'Mico2025!'); // Replace with your MySQL password
 
 // Security configuration
 define('SESSION_TIMEOUT', 3600); // 1 hour in seconds
@@ -107,6 +106,8 @@ try {
     $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 } catch (PDOException $e) {
     error_log("Database connection failed: " . $e->getMessage());
+    error_log("Attempted connection to: " . DB_HOST . ":" . DB_PORT . " with user: " . DB_USER);
+    error_log("HTTP_HOST: " . ($_SERVER['HTTP_HOST'] ?? 'not set'));
     die("A database error occurred. Please try again later.");
 }
 
