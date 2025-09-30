@@ -5,7 +5,7 @@ require_once 'config.php';
 function getBaseURL()
 {
     // Check if network config exists (from server.php)
-    $networkConfigFile = __DIR__ . '/../network_config.json';
+    $networkConfigFile = __DIR__ . '/network_config.json';
     if (file_exists($networkConfigFile)) {
         $networkConfig = json_decode(file_get_contents($networkConfigFile), true);
         if ($networkConfig && isset($networkConfig['base_url'])) {
@@ -37,7 +37,7 @@ function getBaseURL()
 function getServerIP()
 {
     // Method 1: Try to get from network config
-    $networkConfigFile = __DIR__ . '/../network_config.json';
+    $networkConfigFile = __DIR__ . '/network_config.json';
     if (file_exists($networkConfigFile)) {
         $networkConfig = json_decode(file_get_contents($networkConfigFile), true);
         if ($networkConfig && isset($networkConfig['server_ip'])) {
@@ -410,12 +410,14 @@ function generateQRCode($cabinetNumber, $saveToFile = false)
     }
 
     // Use network-aware base URL for mobile access
-    $baseUrl = getBaseURL() . '/';
+    $baseUrl = getBaseURL();
     if (defined('BASE_URL')) {
-        $baseUrl = BASE_URL;
+        // Remove the /cabinet-inventory-system/ part and use the base URL
+        $baseUrl = rtrim($baseUrl, '/');
     }
 
-    $qrContent = $baseUrl . "index.php?cabinet=" . urlencode($cabinetNumber);
+    // QR codes should point to the public interface
+    $qrContent = $baseUrl . "/public/index.php?cabinet=" . urlencode($cabinetNumber);
     $qrFileName = 'cabinet_' . preg_replace('/[^a-zA-Z0-9]/', '_', $cabinetNumber) . '.png';
     $qrFile = $qrDir . $qrFileName;
     $qrRelativePath = 'qrcodes/' . $qrFileName;

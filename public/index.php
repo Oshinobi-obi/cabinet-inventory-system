@@ -477,9 +477,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         }
 
         /* What's New Button */
+        /* Fix What's New button overlapping with mobile sidebar */
         #whatsNewBtn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1035; /* Lower than mobile sidebar (1050) but higher than other content */
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
+            border-radius: 50%;
             box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
             transition: all 0.3s ease;
         }
@@ -487,6 +499,44 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
         #whatsNewBtn:hover {
             transform: translateY(-2px);
             box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Hide What's New button when mobile sidebar is open */
+        #mobileSidebar.show ~ #whatsNewBtn {
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.8);
+            transition: all 0.3s ease;
+        }
+
+        /* Ensure proper z-index layering */
+        #mobileSidebar {
+            z-index: 1050;
+        }
+
+        .mobile-sidebar-overlay {
+            z-index: 1040;
+        }
+
+        .public-navbar {
+            z-index: 1030;
+        }
+
+        /* Alternative: Move What's New button when sidebar is open */
+        @media (max-width: 991.98px) {
+            #mobileSidebar.show ~ #whatsNewBtn {
+                right: 300px; /* Move button left when sidebar is open */
+                opacity: 0.7;
+                visibility: visible;
+            }
+        }
+
+        /* For very small screens, hide the button completely when sidebar is open */
+        @media (max-width: 576px) {
+            #mobileSidebar.show ~ #whatsNewBtn {
+                opacity: 0;
+                visibility: hidden;
+            }
         }
 
         /* Pagination Styling */
@@ -840,13 +890,119 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             <a class="navbar-brand" href="#">
                 <i class="fas fa-cabinet-filing me-2"></i>Cabinet Management System
             </a>
-            <div class="ms-auto">
-                <a href="../admin/login.php" class="btn btn-outline-light">
+            
+            <!-- Mobile burger menu button -->
+            <button class="navbar-toggler d-lg-none" type="button" id="mobileMenuToggle">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <!-- Desktop login button -->
+            <div class="d-none d-lg-block ms-auto">
+                <a href="../admin/pin-verify.php" class="btn btn-outline-light">
                     <i class="fas fa-sign-in-alt me-1"></i> Login
                 </a>
             </div>
         </div>
     </nav>
+
+    <style>
+        /* Mobile Sidebar Styles */
+        #mobileSidebar {
+            min-height: 100vh;
+            width: 280px;
+            position: fixed;
+            top: 0;
+            right: -280px;
+            z-index: 1050;
+            transition: right 0.3s ease-in-out;
+            box-shadow: -4px 0 15px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            border-left: 3px solid white;
+        }
+
+        #mobileSidebar.show {
+            right: 0;
+        }
+
+        .mobile-sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1040;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .mobile-sidebar-overlay.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .mobile-sidebar-link {
+            color: #adb5bd;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: block;
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .mobile-sidebar-link:hover,
+        .mobile-sidebar-link.active {
+            color: #fff;
+            background-color: #0d6efd;
+            text-decoration: none;
+        }
+
+        .mobile-sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+
+    <div class="mobile-sidebar-overlay" id="mobileSidebarOverlay"></div>
+
+    <div id="mobileSidebar" class="bg-dark">
+        <div class="p-3">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="text-center text-white flex-grow-1">
+                    <i class="fa fa-archive text-white" style="font-size: 40px;"></i>
+                    <h5 class="mt-2">Cabinet Inventory System</h5>
+                </div>
+                <button class="btn btn-sm btn-outline-light" id="mobileSidebarClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <hr class="text-light">
+            
+            <!-- Login Button in Sidebar -->
+            <div class="mb-4">
+                <a href="../admin/login.php" class="btn btn-outline-light w-100 mobile-sidebar-link text-center">
+                    <i class="fas fa-sign-in-alt me-2"></i> Login to Admin Panel
+                </a>
+            </div>
+
+            <hr class="text-light">
+            
+            <!-- Footer Section -->
+            <div class="mobile-sidebar-footer">
+                <div class="text-center text-light small">
+                    <p class="mb-1">Policy Planning and Research Division</p>
+                    <p class="mb-0"><strong>Cabinet Management System 2025</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="viewer-container">
         <div class="header">
@@ -1263,6 +1419,67 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script nonce="<?php echo isset($GLOBALS['csp_nonce']) ? $GLOBALS['csp_nonce'] : ''; ?>">
+        // Mobile sidebar functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const mobileSidebarClose = document.getElementById('mobileSidebarClose');
+            const mobileSidebar = document.getElementById('mobileSidebar');
+            const mobileSidebarOverlay = document.getElementById('mobileSidebarOverlay');
+
+            function showMobileSidebar() {
+                if (mobileSidebar) {
+                    mobileSidebar.classList.add('show');
+                }
+                if (mobileSidebarOverlay) {
+                    mobileSidebarOverlay.classList.add('show');
+                }
+                document.body.style.overflow = 'hidden';
+            }
+
+            function hideMobileSidebar() {
+                if (mobileSidebar) {
+                    mobileSidebar.classList.remove('show');
+                }
+                if (mobileSidebarOverlay) {
+                    mobileSidebarOverlay.classList.remove('show');
+                }
+                document.body.style.overflow = '';
+            }
+
+            // Toggle mobile sidebar when burger menu is clicked
+            if (mobileMenuToggle) {
+                mobileMenuToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showMobileSidebar();
+                });
+            }
+
+            // Close mobile sidebar when close button is clicked
+            if (mobileSidebarClose) {
+                mobileSidebarClose.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    hideMobileSidebar();
+                });
+            }
+
+            // Close mobile sidebar when overlay is clicked
+            if (mobileSidebarOverlay) {
+                mobileSidebarOverlay.addEventListener('click', function() {
+                    hideMobileSidebar();
+                });
+            }
+
+            // Close mobile sidebar on escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && mobileSidebar && mobileSidebar.classList.contains('show')) {
+                    hideMobileSidebar();
+                }
+            });
+        });
+    </script>
     <script nonce="<?php echo isset($GLOBALS['csp_nonce']) ? $GLOBALS['csp_nonce'] : ''; ?>">
         document.addEventListener('DOMContentLoaded', function() {
             updateQRButtonState();

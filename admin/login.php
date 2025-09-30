@@ -1,5 +1,12 @@
 <?php
 require_once '../includes/config.php';
+require_once '../includes/pin-auth.php';
+
+// Check PIN authentication first (but not if coming from successful login)
+if (!isPINAuthenticated() || isPINSessionExpired()) {
+    clearPINAuthentication();
+    redirect('pin-verify.php');
+}
 
 // Redirect if already logged in
 if (isLoggedIn()) {
@@ -10,26 +17,56 @@ if (isLoggedIn()) {
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     $username = sanitizeInput($_POST['username']);
-    $password = $_POST['password']; // Don't sanitize password before verification
+    $password = $_POST['password'];
     $result = ["success" => false, "message" => "Invalid username or password"];
+    
     try {
         $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
         $stmt->execute([$username]);
         $user = $stmt->fetch();
+        
         if ($user && password_verify($password, $user['password'])) {
-            // Set session variables
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['user_role'] = $user['role'];
-            $_SESSION['first_name'] = $user['first_name'];
-            $_SESSION['last_name'] = $user['last_name'];
-            $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'];
-            $_SESSION['last_activity'] = time();
-            $result = ["success" => true, "username" => $user['username']];
+            // Validate user role matches PIN role
+            $pinRole = getPINRole();
+            $userRole = $user['role'];
+            
+            if (!validateUserRoleWithPIN($userRole)) {
+                // Role mismatch
+                if (strtolower($pinRole) === 'admin' && strtolower($userRole) === 'encoder') {
+                    $result = [
+                        "success" => false, 
+                        "message" => "Encoder Credentials Detected! Only Admin Credentials Are Allowed!",
+                        "role_mismatch" => true
+                    ];
+                } else if (strtolower($pinRole) === 'encoder' && strtolower($userRole) === 'admin') {
+                    $result = [
+                        "success" => false, 
+                        "message" => "Admin Credentials Detected! Only Encoder Credentials Are Allowed!",
+                        "role_mismatch" => true
+                    ];
+                } else {
+                    $result = [
+                        "success" => false, 
+                        "message" => "Role mismatch. Please use the correct PIN.",
+                        "role_mismatch" => true
+                    ];
+                }
+            } else {
+                // Valid credentials and role match
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['user_role'] = $user['role'];
+                $_SESSION['first_name'] = $user['first_name'];
+                $_SESSION['last_name'] = $user['last_name'];
+                $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'];
+                $_SESSION['last_activity'] = time();
+                $result = ["success" => true, "username" => $user['username']];
+            }
         }
     } catch (PDOException $e) {
         $result = ["success" => false, "message" => "Login error: " . $e->getMessage()];
     }
+    
     if ($isAjax) {
         header('Content-Type: application/json');
         echo json_encode($result);
@@ -40,6 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $error = $result["message"];
     }
 }
+
+$pinRole = getPINRole();
+$roleDisplay = ucfirst($pinRole ?? 'Unknown');
 ?>
 
 <!DOCTYPE html>
@@ -77,6 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             align-items: center;
             justify-content: center;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
         }
 
         .login-container {
@@ -88,6 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             width: 100%;
             max-width: 450px;
             border: 1px solid rgba(255, 255, 255, 0.2);
+            margin: auto;
         }
 
         .logo-section {
@@ -104,13 +146,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         .logo-section h2 {
             color: #333;
             font-weight: 600;
-            margin-bottom: 0;
+            margin-bottom: 8px;
         }
 
         .logo-section p {
             color: #6c757d;
-            margin-top: 8px;
+            margin-top: 0;
             font-size: 0.95rem;
+            margin-bottom: 8px;
+        }
+
+        .role-text {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-top: 5px;
+            margin-bottom: 0;
+        }
+
+        .role-text.admin {
+            color: #ff6b6b;
+        }
+
+        .role-text.encoder {
+            color: #4ecdc4;
         }
 
         .form-control {
@@ -181,13 +239,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             color: #721c24;
         }
 
-        /* Loading animation improvements */
         .spinner-border {
             border-color: #667eea;
             border-right-color: transparent;
         }
 
-        /* Video loading styles */
         .video-container {
             position: relative;
             width: 120px;
@@ -211,8 +267,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         .loading-spinner {
             position: absolute;
             z-index: 1;
-            width: 120px;
-            height: 120px;
+        }
+
+        @media (max-width: 576px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+            
+            .logo-section h2 {
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
@@ -223,6 +287,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <i class="fas fa-archive"></i>
             <h2>Cabinet Management System</h2>
             <p>Welcome back! Please sign in to continue</p>
+            <p class="role-text <?php echo strtolower($pinRole); ?>">
+                <?php echo $roleDisplay; ?> Login
+            </p>
         </div>
 
         <div id="loginError" class="alert alert-danger d-none"></div>
@@ -256,6 +323,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <i class="fas fa-key me-1"></i>Forgot Password?
             </a>
             <br>
+            <a href="#" id="changePinLink">
+                <i class="fas fa-shield-alt me-1"></i>Change PIN
+            </a>
+            <br>
             <a href="../public/index.php">
                 <i class="fas fa-arrow-left me-1"></i>Back to Viewer
             </a>
@@ -263,22 +334,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 
     <!-- Loading Modal -->
-    <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" style="background:rgba(0,0,0,0.5);">
+    <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="background:transparent; border:none; box-shadow:none; align-items:center;">
+            <div class="modal-content" style="background:transparent; border:none; box-shadow:none;">
                 <div class="modal-body text-center">
                     <div class="video-container">
-                        <!-- Fallback spinner (always present) -->
-                        <div id="loadingSpinner" class="spinner-border text-primary loading-spinner" role="status">
+                        <div id="loadingSpinner" class="spinner-border text-primary loading-spinner" role="status" style="width: 3rem; height: 3rem;">
                             <span class="visually-hidden">Loading...</span>
                         </div>
-                        <!-- Video overlay -->
                         <video id="loadingVideo" class="loading-video" autoplay loop muted playsinline preload="auto" style="display:none;">
                             <source src="../assets/images/Trail-Loading.webm" type="video/webm">
-                            Your browser does not support the video tag.
                         </video>
                     </div>
-                    <div id="loadingMessage" class="mt-3 text-white fw-bold" style="font-size:1.2rem; text-shadow:0 1px 4px #000;">Verifying Credentials. This won't take long...</div>
+                    <div id="loadingMessage" class="mt-3 text-white fw-bold" style="font-size:1.2rem; text-shadow:0 2px 4px rgba(0,0,0,0.8);">
+                        Verifying Credentials. This won't take long...
+                    </div>
                 </div>
             </div>
         </div>
@@ -287,29 +357,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Login page initialized');
-
-            // Initialize loading modal and elements
             const loadingModalElement = document.getElementById('loadingModal');
             const loadingMessage = document.getElementById('loadingMessage');
             const loadingVideo = document.getElementById('loadingVideo');
             const loadingSpinner = document.getElementById('loadingSpinner');
             let loadingModal = null;
             
-            // Create modal instance
             if (loadingModalElement && typeof bootstrap !== 'undefined') {
-                try {
-                    loadingModal = new bootstrap.Modal(loadingModalElement, {
-                        backdrop: 'static',
-                        keyboard: false
-                    });
-                    console.log('Loading modal created successfully');
-                } catch (error) {
-                    console.error('Bootstrap Modal creation failed:', error);
-                }
+                loadingModal = new bootstrap.Modal(loadingModalElement, {
+                    backdrop: 'static',
+                    keyboard: false
+                });
             }
 
-            // Pre-load videos for better performance
             function preloadVideos() {
                 const videos = [
                     '../assets/images/Trail-Loading.webm',
@@ -323,145 +383,117 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     video.src = src;
                     video.load();
                 });
-                console.log('Videos preloaded');
             }
 
-            // Function to setup video with better error handling
             function setupLoadingVideo(videoSrc = '../assets/images/Trail-Loading.webm', loop = true) {
-                console.log('Setting up video:', videoSrc);
-                
-                if (!loadingVideo) {
-                    console.error('Loading video element not found');
-                    return;
-                }
+                if (!loadingVideo) return;
 
-                // Reset video state
                 loadingVideo.style.display = 'none';
                 loadingSpinner.style.display = 'block';
                 
-                // Set video properties
                 loadingVideo.src = videoSrc;
                 loadingVideo.loop = loop;
                 loadingVideo.muted = true;
                 loadingVideo.autoplay = true;
                 loadingVideo.preload = 'auto';
 
-                // Clear any existing event listeners
                 loadingVideo.onloadeddata = null;
                 loadingVideo.oncanplaythrough = null;
                 loadingVideo.onerror = null;
                 loadingVideo.onended = null;
 
-                // Video success handler
                 const onVideoReady = () => {
-                    console.log('Video ready to play:', videoSrc);
                     loadingVideo.style.display = 'block';
                     loadingSpinner.style.display = 'none';
                     
-                    // Ensure video plays
-                    loadingVideo.play().catch(e => {
-                        console.log('Video play failed, using spinner:', e);
+                    loadingVideo.play().catch(() => {
                         loadingVideo.style.display = 'none';
                         loadingSpinner.style.display = 'block';
                     });
                 };
 
-                // Video error handler
-                const onVideoError = (e) => {
-                    console.log('Video failed to load:', videoSrc, e);
+                const onVideoError = () => {
                     loadingVideo.style.display = 'none';
                     loadingSpinner.style.display = 'block';
                 };
 
-                // Set up event listeners
                 loadingVideo.addEventListener('loadeddata', onVideoReady, { once: true });
                 loadingVideo.addEventListener('canplaythrough', onVideoReady, { once: true });
                 loadingVideo.addEventListener('error', onVideoError, { once: true });
 
-                // Load the video
                 loadingVideo.load();
 
-                // Timeout fallback
                 setTimeout(() => {
                     if (loadingVideo.readyState < 2) {
-                        console.log('Video loading timeout, using spinner fallback');
-                        onVideoError('timeout');
+                        onVideoError();
                     }
                 }, 2000);
             }
 
-            // Pre-load videos on page load
             preloadVideos();
 
-            // Login form handler
             const loginForm = document.getElementById('loginForm');
             if (loginForm) {
                 loginForm.addEventListener('submit', function(e) {
                     e.preventDefault();
-                    console.log('Login form submitted');
                     
-                    if (!loadingModal) {
-                        console.error('Loading modal not initialized');
-                        return;
-                    }
+                    if (!loadingModal) return;
                     
-                    // Hide previous error
                     document.getElementById('loginError').classList.add('d-none');
 
-                    // Setup initial loading video
                     setupLoadingVideo('../assets/images/Trail-Loading.webm', true);
                     loadingMessage.textContent = "Verifying Credentials. This won't take long...";
                     loadingModal.show();
 
-                    // Submit form data
                     const formData = new FormData(loginForm);
                     fetch(window.location.href, {
                             method: 'POST',
                             body: formData,
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
                         })
                         .then(response => response.json())
                         .then(data => {
-                            console.log('Login response:', data);
                             const username = formData.get('username') || '';
                             
                             if (data.success) {
-                                // Success case
                                 loadingMessage.textContent = `Verification Successful! Welcome back ${data.username || username}!`;
                                 setupLoadingVideo('../assets/images/Success_Check.webm', false);
                                 
-                                // Handle video end or timeout
                                 if (loadingVideo) {
                                     loadingVideo.addEventListener('ended', function() {
-                                        console.log('Success video ended, redirecting');
                                         window.location.href = 'dashboard.php';
                                     }, { once: true });
                                 }
                                 
-                                // Fallback redirect
                                 setTimeout(() => {
-                                    console.log('Fallback redirect to dashboard');
                                     window.location.href = 'dashboard.php';
                                 }, 4000);
                                 
                             } else {
-                                // Failure case
-                                loadingMessage.textContent = 'Failed to verify credentials! Please try again...';
-                                setupLoadingVideo('../assets/images/Cross.webm', false);
-                                
-                                // Close modal and show error after 3 seconds
-                                setTimeout(() => {
-                                    loadingModal.hide();
-                                    document.getElementById('loginError').textContent = 'Wrong Username or Password! Please try again!';
-                                    document.getElementById('loginError').classList.remove('d-none');
-                                    document.getElementById('username').value = username;
-                                    document.getElementById('password').value = '';
+                                if (data.role_mismatch) {
+                                    loadingMessage.textContent = data.message;
+                                    setupLoadingVideo('../assets/images/Cross.webm', false);
                                     
-                                    // Reset for next attempt
-                                    setupLoadingVideo('../assets/images/Trail-Loading.webm', true);
-                                }, 3000);
+                                    setTimeout(() => {
+                                        loadingModal.hide();
+                                        document.getElementById('loginError').textContent = data.message;
+                                        document.getElementById('loginError').classList.remove('d-none');
+                                        document.getElementById('password').value = '';
+                                        setupLoadingVideo('../assets/images/Trail-Loading.webm', true);
+                                    }, 3000);
+                                } else {
+                                    loadingMessage.textContent = 'Failed to verify credentials! Please try again...';
+                                    setupLoadingVideo('../assets/images/Cross.webm', false);
+                                    
+                                    setTimeout(() => {
+                                        loadingModal.hide();
+                                        document.getElementById('loginError').textContent = 'Wrong Username or Password! Please try again!';
+                                        document.getElementById('loginError').classList.remove('d-none');
+                                        document.getElementById('username').value = username;
+                                        document.getElementById('password').value = '';
+                                        setupLoadingVideo('../assets/images/Trail-Loading.webm', true);
+                                    }, 3000);
+                                }
                             }
                         })
                         .catch(error => {
@@ -473,15 +505,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 });
             }
 
-            // Forgot Password Link handler
             const forgotPasswordLink = document.getElementById('forgotPasswordLink');
             if (forgotPasswordLink) {
                 forgotPasswordLink.addEventListener('click', function(e) {
                     e.preventDefault();
-                    console.log('Forgot password clicked');
                     
                     if (!loadingModal) {
-                        console.error('Loading modal not initialized, redirecting directly');
                         window.location.href = 'forgot-password.php';
                         return;
                     }
@@ -492,11 +521,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                     setTimeout(function() {
                         window.location.href = 'forgot-password.php';
-                    }, 3000);
+                    }, 2000);
+                });
+            }
+
+            // Change PIN link handler
+            const changePinLink = document.getElementById('changePinLink');
+            if (changePinLink) {
+                changePinLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    if (!loadingModal) {
+                        window.location.href = 'pin-verify.php';
+                        return;
+                    }
+                    
+                    setupLoadingVideo('../assets/images/Trail-Loading.webm', true);
+                    loadingMessage.textContent = "Redirecting to PIN verification...";
+                    loadingModal.show();
+
+                    // Clear PIN session before redirecting
+                    fetch('pin-verify.php?clear_session=1')
+                        .then(() => {
+                            setTimeout(function() {
+                                window.location.href = 'pin-verify.php';
+                            }, 2000);
+                        })
+                        .catch(() => {
+                            setTimeout(function() {
+                                window.location.href = 'pin-verify.php';
+                            }, 2000);
+                        });
                 });
             }
         });
     </script>
 </body>
-
 </html>

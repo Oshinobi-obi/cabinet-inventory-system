@@ -82,7 +82,7 @@ try {
         header('Content-Type: application/json');
         echo json_encode([
             'success' => true,
-            'message' => 'QR Code generated successfully',
+            'message' => 'QR Code processed successfully',
             'cabinet_name' => $cabinet['name'],
             'cabinet_number' => $cabinet['cabinet_number'],
             'qr_path' => $qrPathOrError

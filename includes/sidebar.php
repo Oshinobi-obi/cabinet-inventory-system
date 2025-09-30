@@ -146,6 +146,11 @@
                         <i class="fas fa-users me-2"></i> User Management
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="pin-management.php" class="nav-link sidebar-link <?php echo basename($_SERVER['PHP_SELF']) == 'pin-management.php' ? 'active' : ''; ?>" style="display: flex; align-items: center;">
+                        <i class="fas fa-key me-2"></i> PIN Management
+                    </a>
+                </li>
             <?php endif; ?>
 
 

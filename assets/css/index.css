@@ -645,3 +645,31 @@ body {
 .qr-scanner-loading .spinner-border {
     margin-bottom: 10px;
 }
+
+@media (max-width: 991.98px) {
+    .navbar-toggler {
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .navbar-toggler:focus {
+        box-shadow: none;
+    }
+}
+
+/* Ensure content doesn't shift when sidebar opens */
+body.mobile-sidebar-open {
+    overflow: hidden;
+}
+
+/* Mobile sidebar specific styles */
+#mobileSidebar .sidebar-footer {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#mobileSidebar .sidebar-footer p {
+    margin-bottom: 0.25rem;
+    line-height: 1.2;
+}

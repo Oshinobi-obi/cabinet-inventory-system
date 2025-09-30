@@ -538,14 +538,14 @@ if ($format === 'pdf') {
                                                 <?php 
                                                 // Get base URL from network_config.json or fallback to current server
                                                 $baseUrl = 'http://localhost/cabinet-inventory-system/';
-                                                $configFile = __DIR__ . '/../network_config.json';
+                                                $configFile = __DIR__ . '/network_config.json';
                                                 if (file_exists($configFile)) {
                                                     $config = json_decode(file_get_contents($configFile), true);
                                                     if (isset($config['base_url'])) {
                                                         $baseUrl = $config['base_url'] . '/';
                                                     }
                                                 }
-                                                echo $baseUrl . "public/index.php?cabinet=" . urlencode($cabinet['cabinet_number']); 
+                                                echo $baseUrl . "/public/index.php?cabinet=" . urlencode($cabinet['cabinet_number']); 
                                                 ?>
                                             </p>
                                             <p class="small text-muted">

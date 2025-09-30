@@ -436,6 +436,11 @@ $categories = $stmt->fetchAll();
             border-left: none !important;
         }
 
+        .qr-generate-btn .qr-btn-text {
+            margin-left: 4px;
+            font-size: 0.75rem;
+        }
+
         .btn-group .view-cabinet-btn:hover,
         .btn-group .qr-generate-btn:hover {
             z-index: 1;
@@ -645,10 +650,12 @@ $categories = $stmt->fetchAll();
                                                     </button>
                                                     <button type="button"
                                                         class="btn btn-sm btn-secondary qr-generate-btn"
-                                                        title="Generate QR Code"
+                                                        title="<?php echo (!empty($cabinet['qr_path']) && file_exists(__DIR__ . '/../' . $cabinet['qr_path'])) ? 'Update QR Code' : 'Generate QR Code'; ?>"
                                                         data-bs-toggle="tooltip"
-                                                        data-cabinet-id="<?php echo $cabinet['id']; ?>">
+                                                        data-cabinet-id="<?php echo $cabinet['id']; ?>"
+                                                        data-qr-exists="<?php echo (!empty($cabinet['qr_path']) && file_exists(__DIR__ . '/../' . $cabinet['qr_path'])) ? 'true' : 'false'; ?>">
                                                         <i class="fas fa-qrcode"></i>
+                                                        <span class="qr-btn-text"><?php echo (!empty($cabinet['qr_path']) && file_exists(__DIR__ . '/../' . $cabinet['qr_path'])) ? 'Update QR' : 'Generate QR'; ?></span>
                                                     </button>
                                                 </div>
                                             </td>
@@ -981,7 +988,10 @@ $categories = $stmt->fetchAll();
                                         <i class="fas fa-info-circle me-1"></i>
                                         The QR code links to:
                                         <br>
-                                        <code class="small"><?php echo (defined('BASE_URL') ? BASE_URL : 'http://localhost/cabinet-inventory-system/') . "index.php?cabinet=" . urlencode($_SESSION['qr_cabinet_number'] ?? ''); ?></code>
+                                        <code class="small"><?php 
+                                        $baseUrl = defined('BASE_URL') ? rtrim(BASE_URL, '/') : 'http://localhost/cabinet-inventory-system';
+                                        echo $baseUrl . "/public/index.php?cabinet=" . urlencode($_SESSION['qr_cabinet_number'] ?? ''); 
+                                        ?></code>
                                     </small>
                                 </div>
                             </div>
@@ -1773,8 +1783,13 @@ $categories = $stmt->fetchAll();
             toggleAllCabinetsOption();
         }
 
-        // QR Generation function with loading animation
+        // QR Generation/Update function with loading animation
         function generateQR(cabinetId) {
+            // Get the button that was clicked to determine if it's generate or update
+            const clickedButton = document.querySelector(`[data-cabinet-id="${cabinetId}"].qr-generate-btn`);
+            const isUpdate = clickedButton.getAttribute('data-qr-exists') === 'true';
+            const actionText = isUpdate ? 'Updating' : 'Generating';
+            
             // Create a modal-like overlay for QR generation using the same structure as edit modal
             const overlay = document.createElement('div');
             overlay.id = 'qr-loading-overlay';
@@ -1796,7 +1811,7 @@ $categories = $stmt->fetchAll();
                     <div class="modal-content">
                         <div class="modal-body text-center py-5">
                             <video src="../assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline><\/video>
-                            <h5 class="mt-3 text-muted">Generating QR Code...</h5>
+                            <h5 class="mt-3 text-muted">${actionText} QR Code...</h5>
                         </div>
                     </div>
                 </div>
@@ -1836,8 +1851,9 @@ $categories = $stmt->fetchAll();
 
                     if (data.success) {
                         // Show success modal
+                        const actionText = isUpdate ? 'Updated' : 'Generated';
                         document.getElementById('qrSuccessMessage').textContent =
-                            `${data.cabinet_name} (${data.cabinet_number}) QR Code Generated Successfully ✓`;
+                            `${data.cabinet_name} (${data.cabinet_number}) QR Code ${actionText} Successfully ✓`;
                         const qrSuccessModal = new bootstrap.Modal(document.getElementById('qrSuccessModal'));
                         qrSuccessModal.show();
 
