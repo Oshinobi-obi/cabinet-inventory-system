@@ -153,6 +153,39 @@
     transition: all 0.3s ease;
 }
 
+/* Mobile sidebar close button - responsive sizing */
+#sidebarClose {
+    border-radius: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    transition: all 0.3s ease;
+    /* Default desktop size */
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    font-size: 0.875rem !important;
+}
+
+#sidebarClose:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    transform: scale(1.05);
+}
+
+#sidebarClose i {
+    font-size: 0.875rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
 #sidebarToggle i {
     margin: 0 !important;
     padding: 0 !important;
@@ -207,7 +240,21 @@
     white-space: nowrap !important;
 }
 
-/* Responsive adjustments */
+/* Tablet responsive adjustments */
+@media (max-width: 1024px) and (min-width: 769px) {
+    #sidebarClose {
+        width: 28px !important;
+        height: 28px !important;
+        padding: 0.2rem !important;
+        font-size: 0.75rem !important;
+    }
+    
+    #sidebarClose i {
+        font-size: 0.75rem !important;
+    }
+}
+
+/* Mobile responsive adjustments */
 @media (max-width: 768px) {
     .navbar-brand {
         font-size: 1rem !important;
@@ -224,6 +271,21 @@
     .navbar .btn {
         font-size: 0.8rem !important;
         padding: 0.4rem 0.8rem !important;
+    }
+    
+    /* Mobile sidebar close button */
+    #sidebarClose {
+        width: 24px !important;
+        height: 24px !important;
+        padding: 0 !important;
+        font-size: 0.625rem !important;
+    }
+    
+    #sidebarClose i {
+        font-size: 0.625rem !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1 !important;
     }
 }
 
@@ -246,6 +308,21 @@
     
     .navbar .btn {
         height: 36px !important;
+    }
+    
+    /* Extra small mobile sidebar close button */
+    #sidebarClose {
+        width: 20px !important;
+        height: 20px !important;
+        padding: 0 !important;
+        font-size: 0.5rem !important;
+    }
+    
+    #sidebarClose i {
+        font-size: 0.5rem !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1 !important;
     }
 }
 

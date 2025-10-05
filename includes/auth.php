@@ -40,9 +40,6 @@ function authorize($allowedRoles)
     }
 }
 
-/**
- * Validate login attempt and prevent brute force attacks
- */
 function validateLoginAttempt($username)
 {
     if (!isset($_SESSION['login_attempts'])) {
@@ -68,9 +65,6 @@ function validateLoginAttempt($username)
     return true;
 }
 
-/**
- * Generate CSRF token
- */
 function generateCSRFToken()
 {
     if (
@@ -85,9 +79,6 @@ function generateCSRFToken()
     return $_SESSION['csrf_token'];
 }
 
-/**
- * Validate CSRF token
- */
 function validateCSRFToken($token)
 {
     return !empty($_SESSION['csrf_token']) &&

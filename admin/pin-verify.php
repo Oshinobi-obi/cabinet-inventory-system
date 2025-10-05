@@ -329,12 +329,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             function setupVideo(videoSrc, loop = true) {
                 if (!loadingVideo) return;
-                
+
+                // Simple approach like forgot password button
                 loadingVideo.style.display = 'none';
                 loadingSpinner.style.display = 'block';
+                
+                // Clear any existing event listeners
+                loadingVideo.onloadeddata = null;
+                loadingVideo.oncanplaythrough = null;
+                loadingVideo.onerror = null;
+                loadingVideo.onended = null;
+                loadingVideo.onloadstart = null;
+                
+                // Set video properties
                 loadingVideo.src = videoSrc;
                 loadingVideo.loop = loop;
-                
+                loadingVideo.muted = true;
+                loadingVideo.autoplay = true;
+                loadingVideo.preload = 'auto';
+                loadingVideo.playsInline = true;
+
                 const onVideoReady = () => {
                     loadingVideo.style.display = 'block';
                     loadingSpinner.style.display = 'none';
@@ -343,15 +357,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         loadingSpinner.style.display = 'block';
                     });
                 };
-                
-                loadingVideo.addEventListener('loadeddata', onVideoReady, { once: true });
-                loadingVideo.addEventListener('error', () => {
+
+                const onVideoError = () => {
                     loadingVideo.style.display = 'none';
                     loadingSpinner.style.display = 'block';
-                }, { once: true });
-                
+                };
+
+                // Simple event listeners
+                loadingVideo.addEventListener('loadeddata', onVideoReady, { once: true });
+                loadingVideo.addEventListener('canplaythrough', onVideoReady, { once: true });
+                loadingVideo.addEventListener('error', onVideoError, { once: true });
+
+                // Load the video
                 loadingVideo.load();
+
+                // Simple timeout like forgot password (2 seconds)
+                setTimeout(() => {
+                    if (loadingVideo.readyState < 2) {
+                        loadingVideo.style.display = 'none';
+                        loadingSpinner.style.display = 'block';
+                    }
+                }, 2000);
             }
+
 
             pinForm.addEventListener('submit', function(e) {
                 e.preventDefault();

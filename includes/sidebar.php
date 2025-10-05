@@ -24,6 +24,10 @@
         transform: translateX(0);
         border-right: 3px solid white;
         /* Ensure no transform conflicts */
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     /* Show sidebar when 'show' class is added */
@@ -84,10 +88,137 @@
         color: white !important;
     }
 
-    /* Ensure sidebar is hidden on all screen sizes initially */
+    /* Tablet-specific improvements */
+    @media (max-width: 1024px) and (min-width: 769px) {
+        #sidebarClose {
+            width: 28px !important;
+            height: 28px !important;
+            padding: 0.2rem !important;
+            font-size: 0.75rem !important;
+        }
+        
+        #sidebarClose i {
+            font-size: 0.75rem !important;
+        }
+    }
+
+    /* Mobile-specific sidebar improvements */
     @media (max-width: 768px) {
         #sidebar {
             left: -280px !important;
+            width: 280px;
+            max-height: 100vh;
+            /* Account for mobile browser UI */
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        
+        /* Fix close button size on mobile - much smaller */
+        #sidebarClose {
+            width: 24px !important;
+            height: 24px !important;
+            padding: 0 !important;
+            font-size: 0.625rem !important;
+            border-radius: 4px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-width: 24px !important;
+            min-height: 24px !important;
+        }
+        
+        #sidebarClose i {
+            font-size: 0.625rem !important;
+            line-height: 1 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        
+        /* Ensure footer is visible on mobile */
+        #sidebar .sidebar-footer {
+            margin-top: auto;
+            padding: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Mobile-specific content padding */
+        #sidebar .p-3 {
+            padding: 1rem !important;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Allow flex shrinking */
+        }
+        
+        /* Ensure navigation takes available space */
+        #sidebar .nav {
+            flex: 1;
+            margin-bottom: 1rem;
+            overflow-y: auto;
+        }
+        
+        /* Mobile viewport height handling */
+        #sidebar {
+            height: 100vh;
+            height: 100dvh; /* Dynamic viewport height for mobile */
+            /* Account for mobile navigation bars */
+            padding-bottom: 60px; /* Space for mobile navigation bar */
+            box-sizing: border-box;
+        }
+        
+        /* Ensure footer is always visible above mobile nav bar */
+        #sidebar .sidebar-footer {
+            position: sticky;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            margin-top: auto;
+            padding: 0.75rem 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            /* Force footer above mobile navigation */
+            margin-bottom: 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Additional mobile navigation bar handling */
+        @supports (padding: max(0px)) {
+            #sidebar {
+                padding-bottom: max(60px, env(safe-area-inset-bottom, 0px));
+            }
+        }
+        
+        /* Prevent body scroll when sidebar is open */
+        body.sidebar-open {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+    }
+    
+    /* Extra small mobile devices */
+    @media (max-width: 480px) {
+        #sidebarClose {
+            width: 20px !important;
+            height: 20px !important;
+            padding: 0.1rem !important;
+            font-size: 0.5rem !important;
+        }
+        
+        #sidebarClose i {
+            font-size: 0.5rem !important;
+        }
+        
+        #sidebar {
+            padding-bottom: 80px; /* More space for smaller devices */
+        }
+        
+        #sidebar .sidebar-footer {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.75rem;
         }
     }
 
@@ -161,8 +292,11 @@
                 </a>
             </li>
         </ul>
-
-        <hr class="text-light mt-4">
+    </div>
+    
+    <!-- Mobile-optimized footer -->
+    <div class="sidebar-footer">
+        <hr class="text-light">
         <div class="text-center text-light small">
             <p class="mb-1">Logged in as:</p>
             <p class="mb-0"><strong><?php echo isset($_SESSION['first_name']) ? $_SESSION['first_name'] . ' ' . $_SESSION['last_name'] : 'User'; ?></strong></p>
@@ -208,6 +342,8 @@
             if (sidebarOverlay) {
                 sidebarOverlay.classList.add('show');
             }
+            // Mobile-specific body scroll prevention
+            document.body.classList.add('sidebar-open');
             document.body.style.overflow = 'hidden';
         }
 
@@ -219,6 +355,8 @@
             if (sidebarOverlay) {
                 sidebarOverlay.classList.remove('show');
             }
+            // Restore body scroll
+            document.body.classList.remove('sidebar-open');
             document.body.style.overflow = '';
         }
 
@@ -255,6 +393,31 @@
             if (e.key === 'Escape' && sidebar && sidebar.classList.contains('show')) {
                 hideSidebar();
             }
+        });
+        
+        // Mobile navigation bar detection and handling
+        function handleMobileNavigationBar() {
+            if (window.innerWidth <= 768) {
+                // Detect if mobile navigation bar is present
+                const viewportHeight = window.innerHeight;
+                const screenHeight = window.screen.height;
+                const navigationBarHeight = screenHeight - viewportHeight;
+                
+                if (navigationBarHeight > 0) {
+                    // Mobile navigation bar detected
+                    const sidebar = document.getElementById('sidebar');
+                    if (sidebar) {
+                        sidebar.style.paddingBottom = (navigationBarHeight + 20) + 'px';
+                    }
+                }
+            }
+        }
+        
+        // Run on load and resize
+        handleMobileNavigationBar();
+        window.addEventListener('resize', handleMobileNavigationBar);
+        window.addEventListener('orientationchange', function() {
+            setTimeout(handleMobileNavigationBar, 100);
         });
     });
 </script>

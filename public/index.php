@@ -959,14 +959,46 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             text-decoration: none;
         }
 
-        .mobile-sidebar-footer {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 1rem;
-            background: rgba(0, 0, 0, 0.2);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        /* Normal mobile sidebar close button */
+        #mobileSidebarClose {
+            width: 32px !important;
+            height: 32px !important;
+            padding: 0.25rem !important;
+            font-size: 0.875rem !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
+            transition: all 0.3s ease;
+        }
+        
+        #mobileSidebarClose:hover {
+            background-color: rgba(255, 255, 255, 0.2) !important;
+            border-color: rgba(255, 255, 255, 0.5) !important;
+            transform: scale(1.05);
+        }
+        
+        #mobileSidebarClose i {
+            font-size: 0.875rem !important;
+        }
+        
+        /* Mobile-specific sidebar adjustments */
+        @media (max-width: 768px) {
+            #mobileSidebar {
+                /* Remove footer space on mobile */
+                padding-bottom: 0;
+            }
+            
+            /* Ensure sidebar content fits without footer */
+            #mobileSidebar .p-3 {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+            }
         }
     </style>
 
@@ -992,15 +1024,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                 </a>
             </div>
 
-            <hr class="text-light">
-            
-            <!-- Footer Section -->
-            <div class="mobile-sidebar-footer">
-                <div class="text-center text-light small">
-                    <p class="mb-1">Policy Planning and Research Division</p>
-                    <p class="mb-0"><strong>Cabinet Management System 2025</strong></p>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -1612,47 +1635,59 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                     </div>
                 `;
                 
-                // Handle video loading with improved logic
+                // Handle video loading with simplified approach (like admin pages)
                 const video = container.querySelector('.search-loading-video');
                 const spinner = container.querySelector('.search-loading-spinner');
                 
                 if (video && spinner) {
-                    // Initially hide spinner and show video
-                    spinner.style.display = 'none';
-                    video.style.display = 'block';
-                    video.style.opacity = '1';
+                    // Simple approach like admin pages
+                    video.style.display = 'none';
+                    spinner.style.display = 'block';
                     
+                    // Clear any existing event listeners
+                    video.onloadeddata = null;
+                    video.oncanplaythrough = null;
+                    video.onerror = null;
+                    video.onended = null;
+                    video.onloadstart = null;
+                    
+                    // Set video properties
+                    video.src = '../assets/images/Trail-Loading.webm';
+                    video.loop = true;
+                    video.muted = true;
+                    video.autoplay = true;
+                    video.preload = 'auto';
+                    video.playsInline = true;
+
                     const onVideoReady = () => {
-                        video.style.opacity = '1';
                         video.style.display = 'block';
                         spinner.style.display = 'none';
-                        console.log('Search loading video ready');
-                    };
-                    
-                    const onVideoError = () => {
-                        console.log('Search loading video failed, using spinner');
-                        video.style.display = 'none';
-                        spinner.style.display = 'inline-block';
-                    };
-                    
-                    video.addEventListener('loadeddata', onVideoReady, {
-                        once: true
-                    });
-                    video.addEventListener('canplaythrough', onVideoReady, {
-                        once: true
-                    });
-                    video.addEventListener('error', onVideoError, {
-                        once: true
-                    });
-                    
-                    // Fallback if video doesn't load within 3 seconds
-                    setTimeout(() => {
-                        if (video.style.display === 'block' && video.readyState < 2) {
-                            console.log('Search loading video timeout, using spinner');
+                        video.play().catch(() => {
                             video.style.display = 'none';
-                            spinner.style.display = 'inline-block';
+                            spinner.style.display = 'block';
+                        });
+                    };
+
+                    const onVideoError = () => {
+                        video.style.display = 'none';
+                        spinner.style.display = 'block';
+                    };
+
+                    // Simple event listeners
+                    video.addEventListener('loadeddata', onVideoReady, { once: true });
+                    video.addEventListener('canplaythrough', onVideoReady, { once: true });
+                    video.addEventListener('error', onVideoError, { once: true });
+
+                    // Load the video
+                    video.load();
+
+                    // Simple timeout (2 seconds like admin pages)
+                    setTimeout(() => {
+                        if (video.readyState < 2) {
+                            video.style.display = 'none';
+                            spinner.style.display = 'block';
                         }
-                    }, 3000);
+                    }, 2000);
                 }
             }
             
@@ -2393,28 +2428,58 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                 </div>
             `;
 
-            // Handle video loading for QR modal
+            // Handle video loading for QR modal (simplified approach)
             const video = modalBody.querySelector('.search-loading-video');
             const spinner = modalBody.querySelector('.search-loading-spinner');
             if (video && spinner) {
-                spinner.style.display = 'none';
-                video.style.display = 'block';
-                video.style.opacity = '1';
+                // Simple approach like admin pages
+                video.style.display = 'none';
+                spinner.style.display = 'block';
+                
+                // Clear any existing event listeners
+                video.onloadeddata = null;
+                video.oncanplaythrough = null;
+                video.onerror = null;
+                video.onended = null;
+                video.onloadstart = null;
+                
+                // Set video properties
+                video.src = '../assets/images/Trail-Loading.webm';
+                video.loop = true;
+                video.muted = true;
+                video.autoplay = true;
+                video.preload = 'auto';
+                video.playsInline = true;
 
                 const onVideoReady = () => {
-                    video.style.opacity = '1';
+                    video.style.display = 'block';
                     spinner.style.display = 'none';
+                    video.play().catch(() => {
+                        video.style.display = 'none';
+                        spinner.style.display = 'block';
+                    });
                 };
+
                 const onVideoError = () => {
                     video.style.display = 'none';
-                    spinner.style.display = 'inline-block';
+                    spinner.style.display = 'block';
                 };
-                video.addEventListener('loadeddata', onVideoReady, {
-                    once: true
-                });
-                video.addEventListener('error', onVideoError, {
-                    once: true
-                });
+
+                // Simple event listeners
+                video.addEventListener('loadeddata', onVideoReady, { once: true });
+                video.addEventListener('canplaythrough', onVideoReady, { once: true });
+                video.addEventListener('error', onVideoError, { once: true });
+
+                // Load the video
+                video.load();
+
+                // Simple timeout (2 seconds like admin pages)
+                setTimeout(() => {
+                    if (video.readyState < 2) {
+                        video.style.display = 'none';
+                        spinner.style.display = 'block';
+                    }
+                }, 2000);
             }
 
             setTimeout(() => {
@@ -2478,28 +2543,58 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
             `;
             modal.show();
 
-            // Handle initial loading video/spinner
+            // Handle initial loading video/spinner (simplified approach)
             const video = content.querySelector('.search-loading-video');
             const spinner = content.querySelector('.search-loading-spinner');
             if (video && spinner) {
-                spinner.style.display = 'none';
-                video.style.display = 'block';
-                video.style.opacity = '1';
+                // Simple approach like admin pages
+                video.style.display = 'none';
+                spinner.style.display = 'block';
+                
+                // Clear any existing event listeners
+                video.onloadeddata = null;
+                video.oncanplaythrough = null;
+                video.onerror = null;
+                video.onended = null;
+                video.onloadstart = null;
+                
+                // Set video properties
+                video.src = '../assets/images/Trail-Loading.webm';
+                video.loop = true;
+                video.muted = true;
+                video.autoplay = true;
+                video.preload = 'auto';
+                video.playsInline = true;
 
                 const onVideoReady = () => {
-                    video.style.opacity = '1';
+                    video.style.display = 'block';
                     spinner.style.display = 'none';
+                    video.play().catch(() => {
+                        video.style.display = 'none';
+                        spinner.style.display = 'block';
+                    });
                 };
+
                 const onVideoError = () => {
                     video.style.display = 'none';
-                    spinner.style.display = 'inline-block';
+                    spinner.style.display = 'block';
                 };
-                video.addEventListener('loadeddata', onVideoReady, {
-                    once: true
-                });
-                video.addEventListener('error', onVideoError, {
-                    once: true
-                });
+
+                // Simple event listeners
+                video.addEventListener('loadeddata', onVideoReady, { once: true });
+                video.addEventListener('canplaythrough', onVideoReady, { once: true });
+                video.addEventListener('error', onVideoError, { once: true });
+
+                // Load the video
+                video.load();
+
+                // Simple timeout (2 seconds like admin pages)
+                setTimeout(() => {
+                    if (video.readyState < 2) {
+                        video.style.display = 'none';
+                        spinner.style.display = 'block';
+                    }
+                }, 2000);
             }
 
             fetch(`public_api.php?action=get_cabinet&cabinet_id=${cabinetId}`)
@@ -2530,28 +2625,58 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset($_GET['cabinet']) || isset($_G
                             </div>
                         `;
 
-                        // Handle second-phase loading video/spinner
+                        // Handle second-phase loading video/spinner (simplified approach)
                         const phase2Video = content.querySelector('.search-loading-video');
                         const phase2Spinner = content.querySelector('.search-loading-spinner');
                         if (phase2Video && phase2Spinner) {
-                            phase2Spinner.style.display = 'none';
-                            phase2Video.style.display = 'block';
-                            phase2Video.style.opacity = '1';
+                            // Simple approach like admin pages
+                            phase2Video.style.display = 'none';
+                            phase2Spinner.style.display = 'block';
+                            
+                            // Clear any existing event listeners
+                            phase2Video.onloadeddata = null;
+                            phase2Video.oncanplaythrough = null;
+                            phase2Video.onerror = null;
+                            phase2Video.onended = null;
+                            phase2Video.onloadstart = null;
+                            
+                            // Set video properties
+                            phase2Video.src = '../assets/images/Trail-Loading.webm';
+                            phase2Video.loop = true;
+                            phase2Video.muted = true;
+                            phase2Video.autoplay = true;
+                            phase2Video.preload = 'auto';
+                            phase2Video.playsInline = true;
 
                             const onPhase2Ready = () => {
-                                phase2Video.style.opacity = '1';
+                                phase2Video.style.display = 'block';
                                 phase2Spinner.style.display = 'none';
+                                phase2Video.play().catch(() => {
+                                    phase2Video.style.display = 'none';
+                                    phase2Spinner.style.display = 'block';
+                                });
                             };
+
                             const onPhase2Error = () => {
                                 phase2Video.style.display = 'none';
-                                phase2Spinner.style.display = 'inline-block';
+                                phase2Spinner.style.display = 'block';
                             };
-                            phase2Video.addEventListener('loadeddata', onPhase2Ready, {
-                                once: true
-                            });
-                            phase2Video.addEventListener('error', onPhase2Error, {
-                                once: true
-                            });
+
+                            // Simple event listeners
+                            phase2Video.addEventListener('loadeddata', onPhase2Ready, { once: true });
+                            phase2Video.addEventListener('canplaythrough', onPhase2Ready, { once: true });
+                            phase2Video.addEventListener('error', onPhase2Error, { once: true });
+
+                            // Load the video
+                            phase2Video.load();
+
+                            // Simple timeout (2 seconds like admin pages)
+                            setTimeout(() => {
+                                if (phase2Video.readyState < 2) {
+                                    phase2Video.style.display = 'none';
+                                    phase2Spinner.style.display = 'block';
+                                }
+                            }, 2000);
                         }
 
                         setTimeout(() => {

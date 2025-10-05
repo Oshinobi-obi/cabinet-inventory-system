@@ -377,35 +377,60 @@ $roleDisplay = ucfirst($pinRole ?? 'Unknown');
                     '../assets/images/Cross.webm'
                 ];
                 
+                console.log('Browser video support:', {
+                    webm: document.createElement('video').canPlayType('video/webm'),
+                    mp4: document.createElement('video').canPlayType('video/mp4'),
+                    ogg: document.createElement('video').canPlayType('video/ogg')
+                });
+                
                 videos.forEach(src => {
                     const video = document.createElement('video');
                     video.preload = 'auto';
                     video.src = src;
+                    video.muted = true;
+                    video.playsInline = true;
                     video.load();
+                    
+                    // Test if Trail-Loading.webm can be loaded
+                    if (src.includes('Trail-Loading')) {
+                        video.addEventListener('error', (e) => {
+                            console.warn('Trail-Loading.webm failed to preload:', e);
+                        });
+                        video.addEventListener('loadeddata', () => {
+                            console.log('✅ Trail-Loading.webm preloaded successfully');
+                        });
+                        video.addEventListener('loadstart', () => {
+                            console.log('🔄 Trail-Loading.webm preload started');
+                        });
+                    }
                 });
             }
 
             function setupLoadingVideo(videoSrc = '../assets/images/Trail-Loading.webm', loop = true) {
                 if (!loadingVideo) return;
 
+                // Simple approach like forgot password button
                 loadingVideo.style.display = 'none';
                 loadingSpinner.style.display = 'block';
                 
+                // Clear any existing event listeners
+                loadingVideo.onloadeddata = null;
+                loadingVideo.oncanplaythrough = null;
+                loadingVideo.onerror = null;
+                loadingVideo.onended = null;
+                loadingVideo.onloadstart = null;
+                
+                // Set video properties
                 loadingVideo.src = videoSrc;
                 loadingVideo.loop = loop;
                 loadingVideo.muted = true;
                 loadingVideo.autoplay = true;
                 loadingVideo.preload = 'auto';
-
-                loadingVideo.onloadeddata = null;
-                loadingVideo.oncanplaythrough = null;
-                loadingVideo.onerror = null;
-                loadingVideo.onended = null;
+                loadingVideo.playsInline = true;
 
                 const onVideoReady = () => {
                     loadingVideo.style.display = 'block';
                     loadingSpinner.style.display = 'none';
-                    
                     loadingVideo.play().catch(() => {
                         loadingVideo.style.display = 'none';
                         loadingSpinner.style.display = 'block';
@@ -417,15 +442,19 @@ $roleDisplay = ucfirst($pinRole ?? 'Unknown');
                     loadingSpinner.style.display = 'block';
                 };
 
+                // Simple event listeners
                 loadingVideo.addEventListener('loadeddata', onVideoReady, { once: true });
                 loadingVideo.addEventListener('canplaythrough', onVideoReady, { once: true });
                 loadingVideo.addEventListener('error', onVideoError, { once: true });
 
+                // Load the video
                 loadingVideo.load();
 
+                // Simple timeout like forgot password (2 seconds)
                 setTimeout(() => {
                     if (loadingVideo.readyState < 2) {
-                        onVideoError();
+                        loadingVideo.style.display = 'none';
+                        loadingSpinner.style.display = 'block';
                     }
                 }, 2000);
             }

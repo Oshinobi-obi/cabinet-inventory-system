@@ -1,4 +1,12 @@
 <?php
+// Handle logout POST (AJAX) at the very top before any output
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
+    require_once '../includes/auth.php';
+    $_SESSION = array();
+    session_destroy();
+    exit;
+}
+
 require_once '../includes/auth.php';
 require_once '../includes/pin-auth.php';
 authenticate();
@@ -396,6 +404,45 @@ $history = getPINChangeHistory($limit, $offset);
         </div>
     </div>
 
+    <!-- Logout Confirmation Modal -->
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-modal="true" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px 15px 0 0; border-bottom: none;">
+                    <h5 class="modal-title text-white fw-bold">
+                        <i class="fas fa-sign-out-alt me-2"></i>Confirm Logout
+                    </h5>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="fas fa-question-circle text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <p class="mb-0 text-dark fw-semibold" style="font-size: 1.1rem;">Are you sure you want to logout?</p>
+                </div>
+                <div class="modal-footer" style="border-top: none; justify-content: center; padding: 1rem 2rem 2rem;">
+                    <button type="button" class="btn btn-outline-secondary me-2" id="cancelLogoutBtn" style="border-radius: 8px; padding: 8px 20px;">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmLogoutBtn" style="border-radius: 8px; padding: 8px 20px;">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Loading Modal -->
+    <div class="modal" id="logoutLoadingModal" tabindex="-1" aria-hidden="true" style="display:none; background:rgba(255,255,255,0.25); backdrop-filter: blur(8px) saturate(1.2); -webkit-backdrop-filter: blur(8px) saturate(1.2); z-index:2100;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background:transparent; border:none; box-shadow:none; align-items:center;">
+                <div class="modal-body text-center">
+                    <video src="../assets/images/Trail-Loading.webm" autoplay loop muted style="width:120px; border-radius:50%; background:#fff;"></video>
+                    <div class="mt-3 text-dark fw-bold" style="font-size:1.2rem; text-shadow:0 1px 4px #fff;">Logging Out! Thank you...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         // Reusable function for PIN loading animations (matching dashboard.php)
@@ -600,6 +647,52 @@ $history = getPINChangeHistory($limit, $offset);
                 newActiveLink.parentElement.classList.add('active');
             }
         }
+
+        // Logout functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            var logoutBtn = document.getElementById('logoutSidebarBtn');
+            var confirmModal = new bootstrap.Modal(document.getElementById('logoutConfirmModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+            var loadingModal = new bootstrap.Modal(document.getElementById('logoutLoadingModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+            
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    confirmModal.show();
+                });
+            }
+            
+            document.getElementById('confirmLogoutBtn').onclick = function() {
+                confirmModal.hide();
+                setTimeout(function() {
+                    document.getElementById('logoutLoadingModal').style.display = 'block';
+                    loadingModal.show();
+                    // AJAX POST to logout (destroy session)
+                    fetch('pin-management.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'logout=1',
+                        cache: 'no-store',
+                        credentials: 'same-origin'
+                    }).then(function() {
+                        setTimeout(function() {
+                            window.location.replace('login.php');
+                        }, 2000);
+                    });
+                }, 300);
+            };
+            
+            document.getElementById('cancelLogoutBtn').onclick = function() {
+                confirmModal.hide();
+            };
+        });
     </script>
 </body>
 </html>
