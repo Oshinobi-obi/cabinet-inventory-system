@@ -1,12 +1,12 @@
 MIT License
 
+Copyright (c) 2025 Oshinobi
+
 Cabinet and Inventory Management System (with QR Code and Guest View)
 Developed for the Department of Education – Policy Planning and Research Division
 
-Copyright (c) 2025 Department of Education - Policy Planning and Research Division
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the “Software”), to deal
+of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
@@ -20,10 +20,13 @@ their own databases, servers, and configurations. The Department of
 Education – Policy Planning and Research Division provides no hosting or
 operational support for third-party deployments.
 
-Disclaimer:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+DISCLAIMER:
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 
 LIABILITY:
 IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
