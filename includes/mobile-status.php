@@ -140,22 +140,7 @@ header('Content-Type: text/html; charset=utf-8');
                             ];
                         }
 
-                        // Check 5: Mobile CSS
-                        if (file_exists(__DIR__ . '/assets/css/mobile-enhancements.css')) {
-                            $checks[] = [
-                                'status' => 'success',
-                                'icon' => 'fas fa-mobile-alt',
-                                'title' => 'Mobile Enhancements Available',
-                                'message' => 'Enhanced mobile styles are loaded'
-                            ];
-                        } else {
-                            $checks[] = [
-                                'status' => 'warning',
-                                'icon' => 'fas fa-exclamation-triangle',
-                                'title' => 'Mobile CSS Missing',
-                                'message' => 'Mobile enhancement stylesheet not found'
-                            ];
-                        }
+                        // Check 5: Mobile CSS - Removed mobile-enhancements.css check
 
                         // Display checks
                         foreach ($checks as $check) {

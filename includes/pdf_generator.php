@@ -186,7 +186,7 @@ class PDFGenerator {
         </div>
         <div class="footer">
             <p style="margin: 5px 0; font-size: 11px; color: #666;">
-                Cabinet Information System - Cabinet Information System | Report Date: ' . date('Y-m-d') . ' | Page: 1
+                Policy Planning and Research Division - Cabinet Management System | Report Date: ' . date('Y-m-d') . ' | Page: 1
             </p>
         </div>
     </div>

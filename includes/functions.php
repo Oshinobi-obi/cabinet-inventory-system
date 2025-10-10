@@ -4,7 +4,17 @@ require_once 'config.php';
 // Get the current server base URL (network-aware)
 function getBaseURL()
 {
-    // Check if network config exists (from server.php)
+    // PRIORITY 1: Check if we're on production domain
+    if (isset($_SERVER['HTTP_HOST'])) {
+        $host = $_SERVER['HTTP_HOST'];
+        
+        // If we're on the production domain, use it
+        if (strpos($host, 'cabinet.pprd.website') !== false) {
+            return 'https://cabinet.pprd.website';
+        }
+    }
+    
+    // PRIORITY 2: Check if network config exists (from server.php)
     $networkConfigFile = __DIR__ . '/network_config.json';
     if (file_exists($networkConfigFile)) {
         $networkConfig = json_decode(file_get_contents($networkConfigFile), true);
@@ -13,7 +23,7 @@ function getBaseURL()
         }
     }
 
-    // Fallback to auto-detection
+    // PRIORITY 3: Fallback to auto-detection
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
@@ -411,12 +421,8 @@ function generateQRCode($cabinetNumber, $saveToFile = false)
 
     // Use network-aware base URL for mobile access
     $baseUrl = getBaseURL();
-    if (defined('BASE_URL')) {
-        // Remove the /cabinet-inventory-system/ part and use the base URL
-        $baseUrl = rtrim($baseUrl, '/');
-    }
-
-    // QR codes should point to the public interface
+    
+    // QR codes should point to the public interface with correct path
     $qrContent = $baseUrl . "/public/index.php?cabinet=" . urlencode($cabinetNumber);
     $qrFileName = 'cabinet_' . preg_replace('/[^a-zA-Z0-9]/', '_', $cabinetNumber) . '.png';
     $qrFile = $qrDir . $qrFileName;

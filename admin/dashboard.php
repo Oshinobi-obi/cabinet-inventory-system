@@ -361,7 +361,6 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="../assets/css/navbar.css" rel="stylesheet">
     <link href="../assets/css/dashboard.css" rel="stylesheet">
-    <link href="../assets/css/mobile-enhancements.css" rel="stylesheet">
     <link rel="preload" as="video" href="../assets/images/Trail-Loading.webm">
     <style nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
         /* Modern Dashboard Design - Matching Login Style */
