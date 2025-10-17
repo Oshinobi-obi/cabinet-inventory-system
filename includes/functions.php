@@ -485,8 +485,8 @@ function generateAndSaveQRCodeToDB($pdo, $cabinetId)
             return [false, "Failed to generate QR code file"];
         }
 
-        // Update database with QR path
-        $stmt = $pdo->prepare("UPDATE cabinets SET qr_path = ? WHERE id = ?");
+        // Update database with QR path and update timestamp
+        $stmt = $pdo->prepare("UPDATE cabinets SET qr_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
         $success = $stmt->execute([$qrPath, $cabinetId]);
 
         if ($success) {

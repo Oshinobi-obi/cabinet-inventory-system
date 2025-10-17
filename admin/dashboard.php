@@ -859,6 +859,36 @@ try {
                     <div class="badge bg-primary fs-6">Encoder Access</div>
                 </div>
 
+                <!-- Encoder Quick Actions -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="fas fa-rocket me-2"></i>Quick Actions</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-2">
+                                        <button type="button" class="btn btn-primary w-100 open-add-cabinet">
+                                            <i class="fas fa-plus me-2"></i>Add Cabinet
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <a href="profile.php" class="btn btn-success w-100">
+                                            <i class="fas fa-user-cog me-2"></i>Profile Settings
+                                        </a>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <button type="button" class="btn btn-secondary w-100" data-bs-toggle="modal" data-bs-target="#exportModal">
+                                            <i class="fas fa-download me-2"></i>Export Data
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Encoder Statistics -->
                 <div class="row mb-4">
                     <div class="col-lg-4 col-md-6 mb-3">

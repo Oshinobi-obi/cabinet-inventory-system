@@ -1027,22 +1027,6 @@ $categories = $stmt->fetchAll();
         </div>
     </div>
 
-    <!-- QR Code Success Modal -->
-    <div class="modal fade" id="qrSuccessModal" tabindex="-1" aria-labelledby="qrSuccessModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-body text-center py-4">
-                    <div class="mb-3">
-                        <i class="fas fa-check-circle fa-3x text-success"></i>
-                    </div>
-                    <h5 id="qrSuccessMessage">Cabinet QR Code Generated Successfully ✓</h5>
-                </div>
-                <div class="modal-footer border-0 justify-content-center">
-                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script nonce="<?php echo $GLOBALS['csp_nonce']; ?>">
@@ -1125,11 +1109,14 @@ $categories = $stmt->fetchAll();
         });
 
 
-            // Show QR success modal if QR code was generated
+            // Handle success animations for QR code generation
             <?php if (isset($_SESSION['qr_file'])): ?>
-                document.getElementById('qrSuccessMessage').textContent = '<?php echo $_SESSION['qr_cabinet_name']; ?> QR Code Generated Successfully ✓';
-                const qrSuccessModal = new bootstrap.Modal(document.getElementById('qrSuccessModal'));
-                qrSuccessModal.show();
+                showLoadingAnimation(
+                    'Generating QR Code...',
+                    '<?php echo $_SESSION['qr_cabinet_name']; ?> QR Code Generated Successfully ✓'
+                ).then(() => {
+                    location.reload();
+                });
             <?php endif; ?>
         });
 
@@ -1788,37 +1775,14 @@ $categories = $stmt->fetchAll();
             // Get the button that was clicked to determine if it's generate or update
             const clickedButton = document.querySelector(`[data-cabinet-id="${cabinetId}"].qr-generate-btn`);
             const isUpdate = clickedButton.getAttribute('data-qr-exists') === 'true';
-            const actionText = isUpdate ? 'Updating' : 'Generating';
-            
-            // Create a modal-like overlay for QR generation using the same structure as edit modal
-            const overlay = document.createElement('div');
-            overlay.id = 'qr-loading-overlay';
-            overlay.className = 'modal fade show';
-            overlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.5);
-                z-index: 9999;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            `;
-            overlay.innerHTML = `
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-body text-center py-5">
-                            <video src="../assets/images/Trail-Loading.webm" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted loop playsinline><\/video>
-                            <h5 class="mt-3 text-muted">${actionText} QR Code...</h5>
-                        </div>
-                    </div>
-                </div>
-            `;
+            const actionText = isUpdate ? 'Update' : 'Generate';
+            const loadingText = isUpdate ? 'Updating' : 'Generating';
 
-            document.body.appendChild(overlay);
-            document.body.classList.add('modal-open');
+            showLoadingAnimation(
+                `${loadingText} QR Code...`,
+                `QR Code ${actionText}d Successfully!`,
+                'Failed to generate QR code. Please try again.'
+            );
 
             // Make AJAX request to generate QR code
             fetch('../includes/ajax_qr_generate.php', {
@@ -1831,63 +1795,98 @@ $categories = $stmt->fetchAll();
                     })
                 })
                 .then(response => {
-                    // Check if response is ok
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    
-                    // Check if response is JSON
-                    const contentType = response.headers.get('content-type');
-                    if (!contentType || !contentType.includes('application/json')) {
-                        throw new Error('Response is not JSON');
-                    }
-                    
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     return response.json();
                 })
                 .then(data => {
-                    // Remove loading overlay
-                    document.body.removeChild(overlay);
-                    document.body.classList.remove('modal-open');
-
                     if (data.success) {
-                        // Show success modal
-                        const actionText = isUpdate ? 'Updated' : 'Generated';
-                        document.getElementById('qrSuccessMessage').textContent =
-                            `${data.cabinet_name} (${data.cabinet_number}) QR Code ${actionText} Successfully ✓`;
-                        const qrSuccessModal = new bootstrap.Modal(document.getElementById('qrSuccessModal'));
-                        qrSuccessModal.show();
-
-                        // Reload the page after success modal is closed to show updated QR status
-                        document.getElementById('qrSuccessModal').addEventListener('hidden.bs.modal', function() {
-                            location.reload();
-                        }, {
-                            once: true
-                        });
+                        window.handleOperationSuccess();
+                        // Force reload after success animation ends
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
                     } else {
-                        // Show error
-                        alert('Error generating QR code: ' + data.error);
+                        window.handleOperationError(data.error || 'Failed to generate QR code');
                     }
                 })
                 .catch(error => {
-                    // Remove loading overlay
-                    if (document.getElementById('qr-loading-overlay')) {
-                        document.body.removeChild(overlay);
-                        document.body.classList.remove('modal-open');
-                    }
                     console.error('QR Generation Error:', error);
-                    console.error('Error details:', error.message);
-                    
-                    // Show more specific error message
                     let errorMessage = 'An error occurred while generating QR code. Please try again.';
                     if (error.message.includes('Response is not JSON')) {
                         errorMessage = 'Server returned invalid response. Please check server logs.';
                     } else if (error.message.includes('HTTP error')) {
                         errorMessage = 'Server error occurred. Please try again.';
                     }
-                    
-                    alert(errorMessage);
+                    window.handleOperationError(errorMessage);
                 });
         }
+        // Reusable function for loading animations
+        function showLoadingAnimation(loadingMessage, successMessage, errorMessage = null) {
+            return new Promise((resolve, reject) => {
+                // Create loading modal if it doesn't exist
+                let loadingModal = document.getElementById('loadingModal');
+                if (!loadingModal) {
+                    const modalHtml = `
+                        <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-body text-center py-4">
+                                        <video id="loadingVideo" style="width: 150px; height: 150px; margin: 0 auto; display:block;" autoplay muted playsinline>
+                                            <source src="../assets/images/Trail-Loading.webm" type="video/webm">
+                                        </video>
+                                        <h5 class="mt-3 text-muted" id="loadingMessage"></h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    loadingModal = document.getElementById('loadingModal');
+                }
+
+                const modal = new bootstrap.Modal(loadingModal);
+                const loadingVideo = document.getElementById('loadingVideo');
+                const loadingMessageEl = document.getElementById('loadingMessage');
+
+                // Set initial loading state
+                loadingVideo.src = '../assets/images/Trail-Loading.webm';
+                loadingVideo.loop = true;
+                loadingMessageEl.textContent = loadingMessage;
+                modal.show();
+
+                // Functions to handle success/error states
+                window.handleOperationSuccess = () => {
+                    loadingVideo.src = '../assets/images/Success_Check.webm';
+                    loadingVideo.loop = false;
+                    loadingMessageEl.textContent = successMessage;
+                    loadingVideo.play();
+
+                    loadingVideo.onended = () => {
+                        setTimeout(() => {
+                            modal.hide();
+                            loadingModal.addEventListener('hidden.bs.modal', () => {
+                                resolve(true);
+                            }, { once: true });
+                        }, 1000);
+                    };
+                };
+
+                window.handleOperationError = (error) => {
+                    loadingVideo.src = '../assets/images/Cross.webm';
+                    loadingVideo.loop = false;
+                    loadingMessageEl.textContent = errorMessage || 'Operation failed. Please try again.';
+                    loadingVideo.play();
+
+                    loadingVideo.onended = () => {
+                        setTimeout(() => {
+                            modal.hide();
+                            reject(error);
+                        }, 500);
+                    };
+                };
+            });
+        }
+
     </script>
 </body>
 
